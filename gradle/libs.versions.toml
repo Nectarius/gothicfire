@@ -1,0 +1,27 @@
+[versions]
+kotlin = "2.4.0"
+ktor = "3.5.1"
+kilua = "0.0.35"
+kilua-rpc = "0.0.45"
+mongodb = "5.1.0"
+logback = "1.5.6"
+
+[libraries]
+ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
+ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor" }
+ktor-server-auth = { module = "io.ktor:ktor-server-auth-jvm", version.ref = "ktor" }
+ktor-server-sessions = { module = "io.ktor:ktor-server-sessions-jvm", version.ref = "ktor" }
+ktor-server-cors = { module = "io.ktor:ktor-server-cors-jvm", version.ref = "ktor" }
+ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation-jvm", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio-jvm", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json-jvm", version.ref = "ktor" }
+mongodb-kotlin-sync = { module = "org.mongodb:mongodb-driver-kotlin-sync", version.ref = "mongodb" }
+kilua-core = { module = "dev.kilua:kilua", version.ref = "kilua" }
+kilua-rpc-core = { module = "dev.kilua:kilua-rpc-core", version.ref = "kilua-rpc" }
+kilua-rpc-ktor = { module = "dev.kilua:kilua-rpc-ktor", version.ref = "kilua-rpc" }
+logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+[plugins]
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kilua = { id = "dev.kilua", version.ref = "kilua" }

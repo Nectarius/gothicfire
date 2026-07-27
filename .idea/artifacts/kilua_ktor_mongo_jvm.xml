@@ -1,0 +1,6 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="kilua-ktor-mongo-jvm">
+    <output-path>$PROJECT_DIR$/build/libs</output-path>
+    <root id="archive" name="kilua-ktor-mongo-jvm.jar" />
+  </artifact>
+</component>

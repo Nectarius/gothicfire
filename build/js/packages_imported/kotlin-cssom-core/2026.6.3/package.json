@@ -1,0 +1,10 @@
+{
+  "name": "kotlin-cssom-core",
+  "version": "2026.6.3",
+  "main": "kotlin-cssom-core.mjs",
+  "devDependencies": {},
+  "dependencies": {},
+  "peerDependencies": {},
+  "optionalDependencies": {},
+  "bundledDependencies": []
+}

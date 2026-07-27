@@ -1,0 +1,40 @@
+kotlin version: 2.4.0
+error message: org.jetbrains.kotlin.backend.common.CompilationException: Back-end: Please report this problem https://kotl.in/issue
+js/src/kotlin/reflect/KClassImpl.kt:-1:-1
+Details: Internal error in file lowering: java.lang.OutOfMemoryError: Java heap space
+	at java.base/java.util.Arrays.copyOf(Arrays.java:3537)
+	at java.base/jdk.internal.loader.Resource.getBytes(Resource.java:102)
+	at java.base/jdk.internal.loader.URLClassPath$JarLoader$1.getBytes(URLClassPath.java:730)
+	at java.base/jdk.internal.loader.BuiltinClassLoader.defineClass(BuiltinClassLoader.java:773)
+	at java.base/jdk.internal.loader.BuiltinClassLoader.findClassOnClassPathOrNull(BuiltinClassLoader.java:691)
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClassOrNull(BuiltinClassLoader.java:620)
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:578)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:490)
+	at org.jetbrains.kotlin.ir.util.DumpKotlinLikeKt.dumpKotlinLike(dumpKotlinLike.kt:1743)
+	at org.jetbrains.kotlin.ir.util.DumpKotlinLikeKt.dumpKotlinLike$default(dumpKotlinLike.kt:37)
+	at org.jetbrains.kotlin.backend.common.CompilationException.<init>(CompilationException.kt:40)
+	at org.jetbrains.kotlin.backend.common.CompilationExceptionKt.wrapWithCompilationException(CompilationException.kt:126)
+	at org.jetbrains.kotlin.backend.common.LowerKt.runOnFilePostfix(Lower.kt:149)
+	at org.jetbrains.kotlin.backend.common.LowerKt.runOnFilePostfix$default(Lower.kt:137)
+	at org.jetbrains.kotlin.backend.common.BodyLoweringPass.lower(Lower.kt:76)
+	at org.jetbrains.kotlin.backend.common.FileLoweringPass.lower(Lower.kt:42)
+	at org.jetbrains.kotlin.backend.common.phaser.ModuleLoweringPhase.phaseBody(PhaseFactories.kt:67)
+	at org.jetbrains.kotlin.backend.common.phaser.ModuleLoweringPhase.phaseBody(PhaseFactories.kt:62)
+	at org.jetbrains.kotlin.config.phaser.NamedCompilerPhase.invoke(CompilerPhase.kt:102)
+	at org.jetbrains.kotlin.ir.backend.js.CompilerWithICKt.lowerPreservingTags(compilerWithIC.kt:115)
+	at org.jetbrains.kotlin.ir.backend.js.JsIrCompilerWithIC.compile(compilerWithIC.kt:96)
+	at org.jetbrains.kotlin.ir.backend.js.ic.CacheUpdater.compileDirtyFiles(CacheUpdater.kt:683)
+	at org.jetbrains.kotlin.ir.backend.js.ic.CacheUpdater.loadIrAndMakeIrFragmentGenerators(CacheUpdater.kt:784)
+	at org.jetbrains.kotlin.ir.backend.js.ic.CacheUpdater.actualizeCaches(CacheUpdater.kt:816)
+	at org.jetbrains.kotlin.cli.js.IcCachesKt.prepareIcCaches(IcCaches.kt:113)
+	at org.jetbrains.kotlin.cli.pipeline.web.WebBackendPipelinePhase.compileToBackendIrIncrementally(WebBackendPipelinePhase.kt:86)
+	at org.jetbrains.kotlin.cli.pipeline.web.WebBackendPipelinePhase.executePhase(WebBackendPipelinePhase.kt:56)
+	at org.jetbrains.kotlin.cli.pipeline.web.WebBackendPipelinePhase.executePhase(WebBackendPipelinePhase.kt:36)
+	at org.jetbrains.kotlin.cli.pipeline.PipelinePhase.phaseBody(PipelinePhase.kt:63)
+	at org.jetbrains.kotlin.cli.pipeline.PipelinePhase.phaseBody(PipelinePhase.kt:53)
+	at org.jetbrains.kotlin.config.phaser.NamedCompilerPhase.invoke(CompilerPhase.kt:102)
+	at org.jetbrains.kotlin.backend.common.phaser.CompositePhase.invoke(PhaseBuilders.kt:22)
+Caused by: java.lang.OutOfMemoryError: Java heap space
+	... 32 more
+
+

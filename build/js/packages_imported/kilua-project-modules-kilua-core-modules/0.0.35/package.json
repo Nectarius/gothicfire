@@ -1,0 +1,12 @@
+{
+  "name": "kilua-project-modules-kilua-core-modules",
+  "version": "0.0.35",
+  "main": "kilua-project-modules-kilua-core-modules.mjs",
+  "devDependencies": {},
+  "dependencies": {
+    "zzz-kilua-assets": "0.0.19"
+  },
+  "peerDependencies": {},
+  "optionalDependencies": {},
+  "bundledDependencies": []
+}

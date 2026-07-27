@@ -1,0 +1,15 @@
+{
+  "name": "kilua-project-kilua",
+  "version": "0.0.35",
+  "main": "kilua-project-kilua.mjs",
+  "devDependencies": {},
+  "dependencies": {
+    "mini-css-extract-plugin": "2.10.2",
+    "aaa-kilua-assets": "0.0.19",
+    "@js-joda/core": "3.2.0",
+    "zzz-kilua-assets": "0.0.19"
+  },
+  "peerDependencies": {},
+  "optionalDependencies": {},
+  "bundledDependencies": []
+}

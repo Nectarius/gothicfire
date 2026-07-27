@@ -1,0 +1,10 @@
+abi_version=2.4.0
+builtins_platform=JS
+compiler_version=2.4.0
+ir_signature_versions=1,2
+jsOutputName=kilua-ktor-mongo
+language_features=+AllowAnyAsAnActualTypeForExpectInterface +MultiPlatformProjects
+metadata_version=2.4.0
+serializedIrFileFingerprints=ltzk9aceitvi.37nr1zh4g5p31 3bc6amwjrnefd.2bfq33onsp8e1 1suwgzwqdqjay.102bojbu0bbof 10arxhody1t54.19zyk67ajqxrc 3qpnmkn6qg00o.wrcyu29e9zcv 1k2op4rsvyllh.1oat60a6r9hlr 1x5c9tzhd0eb3.eir9ck3wmyf4 3s7mz212f95g.25sfd19l0e031 21hldf41oxq4m.18g691zbcip2i 1ml6fejfqowex.23xq5mvro6tgz 1j6vjtttsce0o.27nu23mbiz78b 1wbdfuj2dy8dg.3obnxvn1c3wyu
+serializedKlibFingerprint=1273ajh064e7k.37c7u7qnmih3t
+unique_name=kilua-ktor-mongo
