@@ -55,3 +55,6 @@ out/
 *.ipr
 *.iws
 
+# Kotlin & Gradle directories
+.kotlin/
+.gradle/
