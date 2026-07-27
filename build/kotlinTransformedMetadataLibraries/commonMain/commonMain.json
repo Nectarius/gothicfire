@@ -11,7 +11,7 @@
         "name": "kotlin-stdlib"
       }
     },
-    "file": "/home/taffeite/workspaces/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlin-kotlin-stdlib-2.4.0-commonMain-pEpArg.klib",
+    "file": "/home/taffeite/workspaces/gothicfire/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlin-kotlin-stdlib-2.4.0-commonMain-pEpArg.klib",
     "sourceSetName": "commonMain"
   },
   {
@@ -26,7 +26,7 @@
         "name": "kilua-rpc-core"
       }
     },
-    "file": "/home/taffeite/workspaces/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/dev.kilua-kilua-rpc-core-0.0.45-commonMain-Ndkg_A.klib",
+    "file": "/home/taffeite/workspaces/gothicfire/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/dev.kilua-kilua-rpc-core-0.0.45-commonMain-Ndkg_A.klib",
     "sourceSetName": "commonMain"
   },
   {
@@ -41,7 +41,7 @@
         "name": "kilua-rpc-ktor"
       }
     },
-    "file": "/home/taffeite/workspaces/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/dev.kilua-kilua-rpc-ktor-0.0.45-commonMain-ShTN0Q.klib",
+    "file": "/home/taffeite/workspaces/gothicfire/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/dev.kilua-kilua-rpc-ktor-0.0.45-commonMain-ShTN0Q.klib",
     "sourceSetName": "commonMain"
   },
   {
@@ -56,7 +56,7 @@
         "name": "kilua-rpc-annotations"
       }
     },
-    "file": "/home/taffeite/workspaces/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/dev.kilua-kilua-rpc-annotations-0.0.45-commonMain-_A5tQg.klib",
+    "file": "/home/taffeite/workspaces/gothicfire/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/dev.kilua-kilua-rpc-annotations-0.0.45-commonMain-_A5tQg.klib",
     "sourceSetName": "commonMain"
   },
   {
@@ -71,7 +71,7 @@
         "name": "kilua-rpc-types"
       }
     },
-    "file": "/home/taffeite/workspaces/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/dev.kilua-kilua-rpc-types-0.0.45-commonMain-an31Iw.klib",
+    "file": "/home/taffeite/workspaces/gothicfire/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/dev.kilua-kilua-rpc-types-0.0.45-commonMain-an31Iw.klib",
     "sourceSetName": "commonMain"
   },
   {
@@ -86,7 +86,7 @@
         "name": "kotlinx-serialization-json"
       }
     },
-    "file": "/home/taffeite/workspaces/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlinx-kotlinx-serialization-json-1.11.0-commonMain-1M5Mww.klib",
+    "file": "/home/taffeite/workspaces/gothicfire/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlinx-kotlinx-serialization-json-1.11.0-commonMain-1M5Mww.klib",
     "sourceSetName": "commonMain"
   },
   {
@@ -101,7 +101,7 @@
         "name": "kotlinx-coroutines-core"
       }
     },
-    "file": "/home/taffeite/workspaces/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlinx-kotlinx-coroutines-core-1.11.0-commonMain-BviMwQ.klib",
+    "file": "/home/taffeite/workspaces/gothicfire/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlinx-kotlinx-coroutines-core-1.11.0-commonMain-BviMwQ.klib",
     "sourceSetName": "commonMain"
   },
   {
@@ -116,7 +116,7 @@
         "name": "kotlinx-serialization-core"
       }
     },
-    "file": "/home/taffeite/workspaces/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlinx-kotlinx-serialization-core-1.11.0-commonMain-POu6Pw.klib",
+    "file": "/home/taffeite/workspaces/gothicfire/gothicfire/build/kotlinTransformedMetadataLibraries/commonMain/org.jetbrains.kotlinx-kotlinx-serialization-core-1.11.0-commonMain-POu6Pw.klib",
     "sourceSetName": "commonMain"
   }
 ]

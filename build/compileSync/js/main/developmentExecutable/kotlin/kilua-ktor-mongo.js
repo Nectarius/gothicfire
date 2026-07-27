@@ -154,6 +154,15 @@
   initMetadataForCompanion(Companion_2);
   initMetadataForObject($serializer_2, '$serializer', VOID, VOID, [GeneratedSerializer]);
   initMetadataForClass(UserSession, 'UserSession', VOID, VOID, VOID, VOID, VOID, makeAssociatedObjectMapES5([SerializableWith, $serializer_getInstance_2]));
+  initMetadataForCompanion(Companion_3);
+  initMetadataForObject($serializer_3, '$serializer', VOID, VOID, [GeneratedSerializer]);
+  initMetadataForClass(TwitterPkceSession, 'TwitterPkceSession', VOID, VOID, VOID, VOID, VOID, makeAssociatedObjectMapES5([SerializableWith, $serializer_getInstance_3]));
+  initMetadataForCompanion(Companion_4);
+  initMetadataForObject($serializer_4, '$serializer', VOID, VOID, [GeneratedSerializer]);
+  initMetadataForClass(TwitterUserResponse, 'TwitterUserResponse', VOID, VOID, VOID, VOID, VOID, makeAssociatedObjectMapES5([SerializableWith, $serializer_getInstance_4]));
+  initMetadataForCompanion(Companion_5);
+  initMetadataForObject($serializer_5, '$serializer', VOID, VOID, [GeneratedSerializer]);
+  initMetadataForClass(TwitterUserInfo, 'TwitterUserInfo', VOID, VOID, VOID, VOID, VOID, makeAssociatedObjectMapES5([SerializableWith, $serializer_getInstance_5]));
   initMetadataForLambda(App$start$lambda$slambda, CoroutineImpl, VOID, [1]);
   initMetadataForLambda(App$start$lambda$lambda$lambda$lambda$lambda$lambda$lambda$slambda, CoroutineImpl, VOID, [1]);
   initMetadataForLambda(App$start$lambda$lambda$lambda$lambda$lambda$lambda$lambda$slambda_1, CoroutineImpl, VOID, [1]);
@@ -797,6 +806,8 @@
   var models_Discussion$stable;
   var models_UserSession_$serializer$stable;
   var models_UserSession$stable;
+  var models_TwitterPkceSession_$serializer$stable;
+  var models_TwitterPkceSession$stable;
   function Companion() {
     Companion_instance = this;
   }
@@ -1522,6 +1533,140 @@
       return false;
     return true;
   };
+  function Companion_3() {
+    Companion_instance_3 = this;
+  }
+  protoOf(Companion_3).serializer_9w0wvi_k$ = function () {
+    return $serializer_getInstance_3();
+  };
+  var Companion_instance_3;
+  function Companion_getInstance_4() {
+    if (Companion_instance_3 == null)
+      new Companion_3();
+    return Companion_instance_3;
+  }
+  function $serializer_3() {
+    $serializer_instance_3 = this;
+    var tmp0_serialDesc = new PluginGeneratedSerialDescriptor('models.TwitterPkceSession', this, 2);
+    tmp0_serialDesc.addElement_5pzumi_k$('codeVerifier', false);
+    tmp0_serialDesc.addElement_5pzumi_k$('state', false);
+    this.descriptor_1 = tmp0_serialDesc;
+  }
+  protoOf($serializer_3).serialize_m70w2u_k$ = function (encoder, value) {
+    var tmp0_desc = this.descriptor_1;
+    var tmp1_output = encoder.beginStructure_yljocp_k$(tmp0_desc);
+    tmp1_output.encodeStringElement_1n5wu2_k$(tmp0_desc, 0, value.codeVerifier_1);
+    tmp1_output.encodeStringElement_1n5wu2_k$(tmp0_desc, 1, value.state_1);
+    tmp1_output.endStructure_1xqz0n_k$(tmp0_desc);
+  };
+  protoOf($serializer_3).serialize_5ase3y_k$ = function (encoder, value) {
+    return this.serialize_m70w2u_k$(encoder, value instanceof TwitterPkceSession ? value : THROW_CCE());
+  };
+  protoOf($serializer_3).deserialize_sy6x50_k$ = function (decoder) {
+    var tmp0_desc = this.descriptor_1;
+    var tmp1_flag = true;
+    var tmp2_index = 0;
+    var tmp3_bitMask0 = 0;
+    var tmp4_local0 = null;
+    var tmp5_local1 = null;
+    var tmp6_input = decoder.beginStructure_yljocp_k$(tmp0_desc);
+    if (tmp6_input.decodeSequentially_xlblqy_k$()) {
+      tmp4_local0 = tmp6_input.decodeStringElement_3oenpg_k$(tmp0_desc, 0);
+      tmp3_bitMask0 = tmp3_bitMask0 | 1;
+      tmp5_local1 = tmp6_input.decodeStringElement_3oenpg_k$(tmp0_desc, 1);
+      tmp3_bitMask0 = tmp3_bitMask0 | 2;
+    } else
+      while (tmp1_flag) {
+        tmp2_index = tmp6_input.decodeElementIndex_bstkhp_k$(tmp0_desc);
+        switch (tmp2_index) {
+          case -1:
+            tmp1_flag = false;
+            break;
+          case 0:
+            tmp4_local0 = tmp6_input.decodeStringElement_3oenpg_k$(tmp0_desc, 0);
+            tmp3_bitMask0 = tmp3_bitMask0 | 1;
+            break;
+          case 1:
+            tmp5_local1 = tmp6_input.decodeStringElement_3oenpg_k$(tmp0_desc, 1);
+            tmp3_bitMask0 = tmp3_bitMask0 | 2;
+            break;
+          default:
+            throw UnknownFieldException_init_$Create$(tmp2_index);
+        }
+      }
+    tmp6_input.endStructure_1xqz0n_k$(tmp0_desc);
+    return TwitterPkceSession_init_$Create$(tmp3_bitMask0, tmp4_local0, tmp5_local1, null);
+  };
+  protoOf($serializer_3).get_descriptor_wjt6a0_k$ = function () {
+    return this.descriptor_1;
+  };
+  protoOf($serializer_3).childSerializers_5ghqw5_k$ = function () {
+    // Inline function 'kotlin.arrayOf' call
+    // Inline function 'kotlin.js.unsafeCast' call
+    // Inline function 'kotlin.js.asDynamic' call
+    return [StringSerializer_getInstance(), StringSerializer_getInstance()];
+  };
+  var $serializer_instance_3;
+  function $serializer_getInstance_3() {
+    if ($serializer_instance_3 == null)
+      new $serializer_3();
+    return $serializer_instance_3;
+  }
+  function TwitterPkceSession_init_$Init$(seen0, codeVerifier, state, serializationConstructorMarker, $this) {
+    if (!(3 === (3 & seen0))) {
+      throwMissingFieldException(seen0, 3, $serializer_getInstance_3().descriptor_1);
+    }
+    $this.codeVerifier_1 = codeVerifier;
+    $this.state_1 = state;
+    return $this;
+  }
+  function TwitterPkceSession_init_$Create$(seen0, codeVerifier, state, serializationConstructorMarker) {
+    return TwitterPkceSession_init_$Init$(seen0, codeVerifier, state, serializationConstructorMarker, objectCreate(protoOf(TwitterPkceSession)));
+  }
+  function TwitterPkceSession(codeVerifier, state) {
+    Companion_getInstance_4();
+    this.codeVerifier_1 = codeVerifier;
+    this.state_1 = state;
+  }
+  protoOf(TwitterPkceSession).get_codeVerifier_4ytgdo_k$ = function () {
+    return this.codeVerifier_1;
+  };
+  protoOf(TwitterPkceSession).get_state_iypx7s_k$ = function () {
+    return this.state_1;
+  };
+  protoOf(TwitterPkceSession).component1_7eebsc_k$ = function () {
+    return this.codeVerifier_1;
+  };
+  protoOf(TwitterPkceSession).component2_7eebsb_k$ = function () {
+    return this.state_1;
+  };
+  protoOf(TwitterPkceSession).copy_plwnsl_k$ = function (codeVerifier, state) {
+    return new TwitterPkceSession(codeVerifier, state);
+  };
+  protoOf(TwitterPkceSession).copy$default_xunmi4_k$ = function (codeVerifier, state, $super) {
+    codeVerifier = codeVerifier === VOID ? this.codeVerifier_1 : codeVerifier;
+    state = state === VOID ? this.state_1 : state;
+    return $super === VOID ? this.copy_plwnsl_k$(codeVerifier, state) : $super.copy_plwnsl_k$.call(this, codeVerifier, state);
+  };
+  protoOf(TwitterPkceSession).toString = function () {
+    return 'TwitterPkceSession(codeVerifier=' + this.codeVerifier_1 + ', state=' + this.state_1 + ')';
+  };
+  protoOf(TwitterPkceSession).hashCode = function () {
+    var result = getStringHashCode(this.codeVerifier_1);
+    result = imul(result, 31) + getStringHashCode(this.state_1) | 0;
+    return result;
+  };
+  protoOf(TwitterPkceSession).equals = function (other) {
+    if (this === other)
+      return true;
+    if (!(other instanceof TwitterPkceSession))
+      return false;
+    if (!(this.codeVerifier_1 === other.codeVerifier_1))
+      return false;
+    if (!(this.state_1 === other.state_1))
+      return false;
+    return true;
+  };
   function models_User_$serializer$stableprop_getter() {
     return models_User_$serializer$stable;
   }
@@ -1545,6 +1690,295 @@
   }
   function models_UserSession$stableprop_getter() {
     return models_UserSession$stable;
+  }
+  function models_TwitterPkceSession_$serializer$stableprop_getter() {
+    return models_TwitterPkceSession_$serializer$stable;
+  }
+  function models_TwitterPkceSession$stableprop_getter() {
+    return models_TwitterPkceSession$stable;
+  }
+  var models_TwitterUserResponse_$serializer$stable;
+  var models_TwitterUserResponse$stable;
+  var models_TwitterUserInfo_$serializer$stable;
+  var models_TwitterUserInfo$stable;
+  function Companion_4() {
+    Companion_instance_4 = this;
+  }
+  protoOf(Companion_4).serializer_9w0wvi_k$ = function () {
+    return $serializer_getInstance_4();
+  };
+  var Companion_instance_4;
+  function Companion_getInstance_5() {
+    if (Companion_instance_4 == null)
+      new Companion_4();
+    return Companion_instance_4;
+  }
+  function $serializer_4() {
+    $serializer_instance_4 = this;
+    var tmp0_serialDesc = new PluginGeneratedSerialDescriptor('models.TwitterUserResponse', this, 1);
+    tmp0_serialDesc.addElement_5pzumi_k$('data', false);
+    this.descriptor_1 = tmp0_serialDesc;
+  }
+  protoOf($serializer_4).serialize_4abex3_k$ = function (encoder, value) {
+    var tmp0_desc = this.descriptor_1;
+    var tmp1_output = encoder.beginStructure_yljocp_k$(tmp0_desc);
+    tmp1_output.encodeSerializableElement_isqxcl_k$(tmp0_desc, 0, $serializer_getInstance_5(), value.data_1);
+    tmp1_output.endStructure_1xqz0n_k$(tmp0_desc);
+  };
+  protoOf($serializer_4).serialize_5ase3y_k$ = function (encoder, value) {
+    return this.serialize_4abex3_k$(encoder, value instanceof TwitterUserResponse ? value : THROW_CCE());
+  };
+  protoOf($serializer_4).deserialize_sy6x50_k$ = function (decoder) {
+    var tmp0_desc = this.descriptor_1;
+    var tmp1_flag = true;
+    var tmp2_index = 0;
+    var tmp3_bitMask0 = 0;
+    var tmp4_local0 = null;
+    var tmp5_input = decoder.beginStructure_yljocp_k$(tmp0_desc);
+    if (tmp5_input.decodeSequentially_xlblqy_k$()) {
+      tmp4_local0 = tmp5_input.decodeSerializableElement_uahnnv_k$(tmp0_desc, 0, $serializer_getInstance_5(), tmp4_local0);
+      tmp3_bitMask0 = tmp3_bitMask0 | 1;
+    } else
+      while (tmp1_flag) {
+        tmp2_index = tmp5_input.decodeElementIndex_bstkhp_k$(tmp0_desc);
+        switch (tmp2_index) {
+          case -1:
+            tmp1_flag = false;
+            break;
+          case 0:
+            tmp4_local0 = tmp5_input.decodeSerializableElement_uahnnv_k$(tmp0_desc, 0, $serializer_getInstance_5(), tmp4_local0);
+            tmp3_bitMask0 = tmp3_bitMask0 | 1;
+            break;
+          default:
+            throw UnknownFieldException_init_$Create$(tmp2_index);
+        }
+      }
+    tmp5_input.endStructure_1xqz0n_k$(tmp0_desc);
+    return TwitterUserResponse_init_$Create$(tmp3_bitMask0, tmp4_local0, null);
+  };
+  protoOf($serializer_4).get_descriptor_wjt6a0_k$ = function () {
+    return this.descriptor_1;
+  };
+  protoOf($serializer_4).childSerializers_5ghqw5_k$ = function () {
+    // Inline function 'kotlin.arrayOf' call
+    // Inline function 'kotlin.js.unsafeCast' call
+    // Inline function 'kotlin.js.asDynamic' call
+    return [$serializer_getInstance_5()];
+  };
+  var $serializer_instance_4;
+  function $serializer_getInstance_4() {
+    if ($serializer_instance_4 == null)
+      new $serializer_4();
+    return $serializer_instance_4;
+  }
+  function TwitterUserResponse_init_$Init$(seen0, data, serializationConstructorMarker, $this) {
+    if (!(1 === (1 & seen0))) {
+      throwMissingFieldException(seen0, 1, $serializer_getInstance_4().descriptor_1);
+    }
+    $this.data_1 = data;
+    return $this;
+  }
+  function TwitterUserResponse_init_$Create$(seen0, data, serializationConstructorMarker) {
+    return TwitterUserResponse_init_$Init$(seen0, data, serializationConstructorMarker, objectCreate(protoOf(TwitterUserResponse)));
+  }
+  function TwitterUserResponse(data) {
+    Companion_getInstance_5();
+    this.data_1 = data;
+  }
+  protoOf(TwitterUserResponse).get_data_wokkxf_k$ = function () {
+    return this.data_1;
+  };
+  protoOf(TwitterUserResponse).component1_7eebsc_k$ = function () {
+    return this.data_1;
+  };
+  protoOf(TwitterUserResponse).copy_2hw1zi_k$ = function (data) {
+    return new TwitterUserResponse(data);
+  };
+  protoOf(TwitterUserResponse).copy$default_i4m4od_k$ = function (data, $super) {
+    data = data === VOID ? this.data_1 : data;
+    return $super === VOID ? this.copy_2hw1zi_k$(data) : $super.copy_2hw1zi_k$.call(this, data);
+  };
+  protoOf(TwitterUserResponse).toString = function () {
+    return 'TwitterUserResponse(data=' + this.data_1.toString() + ')';
+  };
+  protoOf(TwitterUserResponse).hashCode = function () {
+    return this.data_1.hashCode();
+  };
+  protoOf(TwitterUserResponse).equals = function (other) {
+    if (this === other)
+      return true;
+    if (!(other instanceof TwitterUserResponse))
+      return false;
+    if (!this.data_1.equals(other.data_1))
+      return false;
+    return true;
+  };
+  function Companion_5() {
+    Companion_instance_5 = this;
+  }
+  protoOf(Companion_5).serializer_9w0wvi_k$ = function () {
+    return $serializer_getInstance_5();
+  };
+  var Companion_instance_5;
+  function Companion_getInstance_6() {
+    if (Companion_instance_5 == null)
+      new Companion_5();
+    return Companion_instance_5;
+  }
+  function $serializer_5() {
+    $serializer_instance_5 = this;
+    var tmp0_serialDesc = new PluginGeneratedSerialDescriptor('models.TwitterUserInfo', this, 3);
+    tmp0_serialDesc.addElement_5pzumi_k$('id', false);
+    tmp0_serialDesc.addElement_5pzumi_k$('name', false);
+    tmp0_serialDesc.addElement_5pzumi_k$('username', false);
+    this.descriptor_1 = tmp0_serialDesc;
+  }
+  protoOf($serializer_5).serialize_ol2yfa_k$ = function (encoder, value) {
+    var tmp0_desc = this.descriptor_1;
+    var tmp1_output = encoder.beginStructure_yljocp_k$(tmp0_desc);
+    tmp1_output.encodeStringElement_1n5wu2_k$(tmp0_desc, 0, value.id_1);
+    tmp1_output.encodeStringElement_1n5wu2_k$(tmp0_desc, 1, value.name_1);
+    tmp1_output.encodeStringElement_1n5wu2_k$(tmp0_desc, 2, value.username_1);
+    tmp1_output.endStructure_1xqz0n_k$(tmp0_desc);
+  };
+  protoOf($serializer_5).serialize_5ase3y_k$ = function (encoder, value) {
+    return this.serialize_ol2yfa_k$(encoder, value instanceof TwitterUserInfo ? value : THROW_CCE());
+  };
+  protoOf($serializer_5).deserialize_sy6x50_k$ = function (decoder) {
+    var tmp0_desc = this.descriptor_1;
+    var tmp1_flag = true;
+    var tmp2_index = 0;
+    var tmp3_bitMask0 = 0;
+    var tmp4_local0 = null;
+    var tmp5_local1 = null;
+    var tmp6_local2 = null;
+    var tmp7_input = decoder.beginStructure_yljocp_k$(tmp0_desc);
+    if (tmp7_input.decodeSequentially_xlblqy_k$()) {
+      tmp4_local0 = tmp7_input.decodeStringElement_3oenpg_k$(tmp0_desc, 0);
+      tmp3_bitMask0 = tmp3_bitMask0 | 1;
+      tmp5_local1 = tmp7_input.decodeStringElement_3oenpg_k$(tmp0_desc, 1);
+      tmp3_bitMask0 = tmp3_bitMask0 | 2;
+      tmp6_local2 = tmp7_input.decodeStringElement_3oenpg_k$(tmp0_desc, 2);
+      tmp3_bitMask0 = tmp3_bitMask0 | 4;
+    } else
+      while (tmp1_flag) {
+        tmp2_index = tmp7_input.decodeElementIndex_bstkhp_k$(tmp0_desc);
+        switch (tmp2_index) {
+          case -1:
+            tmp1_flag = false;
+            break;
+          case 0:
+            tmp4_local0 = tmp7_input.decodeStringElement_3oenpg_k$(tmp0_desc, 0);
+            tmp3_bitMask0 = tmp3_bitMask0 | 1;
+            break;
+          case 1:
+            tmp5_local1 = tmp7_input.decodeStringElement_3oenpg_k$(tmp0_desc, 1);
+            tmp3_bitMask0 = tmp3_bitMask0 | 2;
+            break;
+          case 2:
+            tmp6_local2 = tmp7_input.decodeStringElement_3oenpg_k$(tmp0_desc, 2);
+            tmp3_bitMask0 = tmp3_bitMask0 | 4;
+            break;
+          default:
+            throw UnknownFieldException_init_$Create$(tmp2_index);
+        }
+      }
+    tmp7_input.endStructure_1xqz0n_k$(tmp0_desc);
+    return TwitterUserInfo_init_$Create$(tmp3_bitMask0, tmp4_local0, tmp5_local1, tmp6_local2, null);
+  };
+  protoOf($serializer_5).get_descriptor_wjt6a0_k$ = function () {
+    return this.descriptor_1;
+  };
+  protoOf($serializer_5).childSerializers_5ghqw5_k$ = function () {
+    // Inline function 'kotlin.arrayOf' call
+    // Inline function 'kotlin.js.unsafeCast' call
+    // Inline function 'kotlin.js.asDynamic' call
+    return [StringSerializer_getInstance(), StringSerializer_getInstance(), StringSerializer_getInstance()];
+  };
+  var $serializer_instance_5;
+  function $serializer_getInstance_5() {
+    if ($serializer_instance_5 == null)
+      new $serializer_5();
+    return $serializer_instance_5;
+  }
+  function TwitterUserInfo_init_$Init$(seen0, id, name, username, serializationConstructorMarker, $this) {
+    if (!(7 === (7 & seen0))) {
+      throwMissingFieldException(seen0, 7, $serializer_getInstance_5().descriptor_1);
+    }
+    $this.id_1 = id;
+    $this.name_1 = name;
+    $this.username_1 = username;
+    return $this;
+  }
+  function TwitterUserInfo_init_$Create$(seen0, id, name, username, serializationConstructorMarker) {
+    return TwitterUserInfo_init_$Init$(seen0, id, name, username, serializationConstructorMarker, objectCreate(protoOf(TwitterUserInfo)));
+  }
+  function TwitterUserInfo(id, name, username) {
+    Companion_getInstance_6();
+    this.id_1 = id;
+    this.name_1 = name;
+    this.username_1 = username;
+  }
+  protoOf(TwitterUserInfo).get_id_kntnx8_k$ = function () {
+    return this.id_1;
+  };
+  protoOf(TwitterUserInfo).get_name_woqyms_k$ = function () {
+    return this.name_1;
+  };
+  protoOf(TwitterUserInfo).get_username_ytz5i7_k$ = function () {
+    return this.username_1;
+  };
+  protoOf(TwitterUserInfo).component1_7eebsc_k$ = function () {
+    return this.id_1;
+  };
+  protoOf(TwitterUserInfo).component2_7eebsb_k$ = function () {
+    return this.name_1;
+  };
+  protoOf(TwitterUserInfo).component3_7eebsa_k$ = function () {
+    return this.username_1;
+  };
+  protoOf(TwitterUserInfo).copy_nc7k0r_k$ = function (id, name, username) {
+    return new TwitterUserInfo(id, name, username);
+  };
+  protoOf(TwitterUserInfo).copy$default_d3tc9j_k$ = function (id, name, username, $super) {
+    id = id === VOID ? this.id_1 : id;
+    name = name === VOID ? this.name_1 : name;
+    username = username === VOID ? this.username_1 : username;
+    return $super === VOID ? this.copy_nc7k0r_k$(id, name, username) : $super.copy_nc7k0r_k$.call(this, id, name, username);
+  };
+  protoOf(TwitterUserInfo).toString = function () {
+    return 'TwitterUserInfo(id=' + this.id_1 + ', name=' + this.name_1 + ', username=' + this.username_1 + ')';
+  };
+  protoOf(TwitterUserInfo).hashCode = function () {
+    var result = getStringHashCode(this.id_1);
+    result = imul(result, 31) + getStringHashCode(this.name_1) | 0;
+    result = imul(result, 31) + getStringHashCode(this.username_1) | 0;
+    return result;
+  };
+  protoOf(TwitterUserInfo).equals = function (other) {
+    if (this === other)
+      return true;
+    if (!(other instanceof TwitterUserInfo))
+      return false;
+    if (!(this.id_1 === other.id_1))
+      return false;
+    if (!(this.name_1 === other.name_1))
+      return false;
+    if (!(this.username_1 === other.username_1))
+      return false;
+    return true;
+  };
+  function models_TwitterUserResponse_$serializer$stableprop_getter() {
+    return models_TwitterUserResponse_$serializer$stable;
+  }
+  function models_TwitterUserResponse$stableprop_getter() {
+    return models_TwitterUserResponse$stable;
+  }
+  function models_TwitterUserInfo_$serializer$stableprop_getter() {
+    return models_TwitterUserInfo_$serializer$stable;
+  }
+  function models_TwitterUserInfo$stableprop_getter() {
+    return models_TwitterUserInfo$stable;
   }
   function AppService() {
   }
@@ -1789,9 +2223,10 @@
           a($this$div, '/logout', null, null, null, 'btn btn-primary text-none', null, ComposableSingletons$AppKt_getInstance().lambda$1423674711__1, $composer_0, 12779568 | 14 & $dirty, 46);
           $composer_0.endReplaceGroup_ek144q_k$();
         } else {
-          $composer_0.startReplaceGroup_5hh8aj_k$(-1864889521);
-          sourceInformation($composer_0, '80@3342L145');
+          $composer_0.startReplaceGroup_5hh8aj_k$(-1864883941);
+          sourceInformation($composer_0, '80@3342L145,83@3512L155');
           a($this$div, '/login', null, null, null, 'btn btn-primary text-none', null, ComposableSingletons$AppKt_getInstance().lambda$981898720__1, $composer_0, 12779568 | 14 & $dirty, 46);
+          a($this$div, '/auth/twitter', null, null, null, 'btn btn-primary text-none', null, ComposableSingletons$AppKt_getInstance().lambda$169099991__1, $composer_0, 12779568 | 14 & $dirty, 46);
           $composer_0.endReplaceGroup_ek144q_k$();
         }
         var tmp_2;
@@ -1816,7 +2251,7 @@
   function App$start$lambda$lambda($currentUser$delegate) {
     return function ($this$nav, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C70@2847L95,73@3005L522,73@2959L568:App.kt');
+      sourceInformation($composer_0, 'C70@2847L95,73@3005L702,73@2959L748:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -1908,7 +2343,7 @@
   function App$start$lambda$lambda$lambda$lambda_0($currentTab$delegate) {
     return function ($this$button, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C100@4298L24,100@4290L32:App.kt');
+      sourceInformation($composer_0, 'C103@4478L24,103@4470L32:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -1918,7 +2353,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(2011626353, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:100)');
+          traceEventStart(2011626353, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:103)');
         }
         sourceInformationMarkerStart($composer_0, 437643273, 'CC(remember):App.kt#9igjgp');
         // Inline function 'androidx.compose.runtime.cache' call
@@ -1963,7 +2398,7 @@
   function App$start$lambda$lambda$lambda$lambda_1($currentTab$delegate) {
     return function ($this$button, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C103@4521L30,103@4513L38:App.kt');
+      sourceInformation($composer_0, 'C106@4701L30,106@4693L38:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -1973,7 +2408,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(-205068248, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:103)');
+          traceEventStart(-205068248, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:106)');
         }
         sourceInformationMarkerStart($composer_0, 497910534, 'CC(remember):App.kt#9igjgp');
         // Inline function 'androidx.compose.runtime.cache' call
@@ -2012,7 +2447,7 @@
   function App$start$lambda$lambda$lambda_0($currentTab$delegate) {
     return function ($this$div, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C99@4260L88,99@4160L188,102@4483L94,102@4373L204:App.kt');
+      sourceInformation($composer_0, 'C102@4440L88,102@4340L188,105@4663L94,105@4553L204:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -2022,7 +2457,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(718062559, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous> (App.kt:99)');
+          traceEventStart(718062559, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous> (App.kt:102)');
         }
         var tmp_1 = 'btn ' + (invoke$lambda_5($currentTab$delegate) === 'notes' ? 'btn-primary' : 'glass');
         // Inline function 'kotlin.run' call
@@ -2091,7 +2526,7 @@
   function App$start$lambda$lambda$lambda$lambda$lambda$lambda($title$delegate) {
     return function ($this$text, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C117@5275L28,117@5267L36:App.kt');
+      sourceInformation($composer_0, 'C120@5455L28,120@5447L36:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -2101,7 +2536,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(-358738271, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:117)');
+          traceEventStart(-358738271, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:120)');
         }
         sourceInformationMarkerStart($composer_0, -1150093123, 'CC(remember):App.kt#9igjgp');
         // Inline function 'androidx.compose.runtime.cache' call
@@ -2148,7 +2583,7 @@
   function App$start$lambda$lambda$lambda$lambda$lambda$lambda_0($content$delegate) {
     return function ($this$textArea, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C120@5505L30,120@5497L38:App.kt');
+      sourceInformation($composer_0, 'C123@5685L30,123@5677L38:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -2158,7 +2593,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(-1191175809, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:120)');
+          traceEventStart(-1191175809, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:123)');
         }
         sourceInformationMarkerStart($composer_0, 2036317213, 'CC(remember):App.kt#9igjgp');
         // Inline function 'androidx.compose.runtime.cache' call
@@ -2283,7 +2718,7 @@
   function App$start$lambda$lambda$lambda$lambda$lambda$lambda_1(this$0, $title$delegate, $content$delegate, $notes$delegate) {
     return function ($this$button, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C123@5722L604,123@5714L612:App.kt');
+      sourceInformation($composer_0, 'C126@5902L604,126@5894L612:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -2293,7 +2728,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(-624409048, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:123)');
+          traceEventStart(-624409048, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:126)');
         }
         sourceInformationMarkerStart($composer_0, 1238328516, 'CC(remember):App.kt#9igjgp');
         // Inline function 'androidx.compose.runtime.cache' call
@@ -2333,7 +2768,7 @@
   function App$start$lambda$lambda$lambda$lambda$lambda_1($title$delegate, $content$delegate, this$0, $notes$delegate) {
     return function ($this$div, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C116@5225L116,116@5166L175,119@5455L118,119@5378L195,122@5672L692,122@5610L754:App.kt');
+      sourceInformation($composer_0, 'C119@5405L116,119@5346L175,122@5635L118,122@5558L195,125@5852L692,125@5790L754:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -2343,7 +2778,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(-1219515882, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:116)');
+          traceEventStart(-1219515882, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:119)');
         }
         var tmp_1 = invoke$lambda_7($title$delegate);
         // Inline function 'kotlin.run' call
@@ -2423,7 +2858,7 @@
   function App$start$lambda$lambda$lambda$lambda_2(this$0, $notes$delegate) {
     return function ($this$div, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C111@4838L27,112@4911L31,113@4990L31,115@5128L1270,115@5087L1311:App.kt');
+      sourceInformation($composer_0, 'C114@5018L27,115@5091L31,116@5170L31,118@5308L1270,118@5267L1311:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -2433,7 +2868,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(432544392, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:111)');
+          traceEventStart(432544392, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:114)');
         }
         h3($this$div, null, null, ComposableSingletons$AppKt_getInstance().lambda$2044966344__1, $composer_0, 3072 | 14 & $dirty, 3);
         sourceInformationMarkerStart($composer_0, -936663545, 'CC(remember):App.kt#9igjgp');
@@ -2506,7 +2941,7 @@
   function App$start$lambda$lambda$lambda$lambda$lambda$lambda_2($note) {
     return function ($this$h4, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C141@6740L20:App.kt');
+      sourceInformation($composer_0, 'C144@6920L20:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -2516,7 +2951,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(-451167439, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:141)');
+          traceEventStart(-451167439, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:144)');
         }
         textNode($this$h4, $note.get_title_iz32un_k$(), $composer_0, 14 & $dirty);
         var tmp_1;
@@ -2541,7 +2976,7 @@
   function App$start$lambda$lambda$lambda$lambda$lambda$lambda_3($note) {
     return function ($this$p, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C143@6885L22:App.kt');
+      sourceInformation($composer_0, 'C146@7065L22:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -2551,7 +2986,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(2014374109, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:143)');
+          traceEventStart(2014374109, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:146)');
         }
         textNode($this$p, $note.get_content_h02jrk_k$(), $composer_0, 14 & $dirty);
         var tmp_1;
@@ -2661,7 +3096,7 @@
   function App$start$lambda$lambda$lambda$lambda$lambda$lambda_4(this$0, $note, $notes$delegate) {
     return function ($this$button, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C146@7126L402,146@7118L410:App.kt');
+      sourceInformation($composer_0, 'C149@7306L402,149@7298L410:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -2671,7 +3106,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(-255176959, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:146)');
+          traceEventStart(-255176959, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:149)');
         }
         sourceInformationMarkerStart($composer_0, -411919597, 'CC(remember):App.kt#9igjgp');
         // Inline function 'androidx.compose.runtime.cache' call
@@ -2711,7 +3146,7 @@
   function App$start$lambda$lambda$lambda$lambda$lambda_2($note, this$0, $notes$delegate) {
     return function ($this$div, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C141@6738L24,141@6716L46,142@6838L111,142@6803L146,145@7072L498,145@6990L580:App.kt');
+      sourceInformation($composer_0, 'C144@6918L24,144@6896L46,145@7018L111,145@6983L146,148@7252L498,148@7170L580:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -2721,7 +3156,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(-1541063185, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:141)');
+          traceEventStart(-1541063185, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:144)');
         }
         // Inline function 'kotlin.run' call
         var dispatchReceiver = rememberComposableLambda(-451167439, true, App$start$lambda$lambda$lambda$lambda$lambda$lambda_2($note), $composer_0, 54);
@@ -2799,7 +3234,7 @@
   function App$start$lambda$lambda$lambda$lambda_3($notes$delegate, this$0) {
     return function ($this$div, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C*140@6674L934,140@6644L964:App.kt');
+      sourceInformation($composer_0, 'C*143@6854L934,143@6824L964:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -2809,7 +3244,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(590790527, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:139)');
+          traceEventStart(590790527, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:142)');
         }
         var _iterator__ex2g4s = invoke$lambda_1($notes$delegate).iterator_jk1svi_k$();
         while (_iterator__ex2g4s.hasNext_bitz1p_k$()) {
@@ -2855,7 +3290,7 @@
   function App$start$lambda$lambda$lambda_1(this$0, $notes$delegate) {
     return function ($this$div, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C110@4804L1624,110@4769L1659,138@6552L1120,138@6528L1144:App.kt');
+      sourceInformation($composer_0, 'C113@4984L1624,113@4949L1659,141@6732L1120,141@6708L1144:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -2865,7 +3300,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(-1991026310, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous> (App.kt:110)');
+          traceEventStart(-1991026310, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous> (App.kt:113)');
         }
         // Inline function 'kotlin.run' call
         var dispatchReceiver = rememberComposableLambda(432544392, true, App$start$lambda$lambda$lambda$lambda_2(this$0, $notes$delegate), $composer_0, 54);
@@ -2932,7 +3367,7 @@
   function App$start$lambda$lambda$lambda$lambda$lambda$lambda_5($content$delegate) {
     return function ($this$textArea, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C167@8300L30,167@8292L38:App.kt');
+      sourceInformation($composer_0, 'C170@8480L30,170@8472L38:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -2942,7 +3377,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(-1404104504, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:167)');
+          traceEventStart(-1404104504, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:170)');
         }
         sourceInformationMarkerStart($composer_0, -724695770, 'CC(remember):App.kt#9igjgp');
         // Inline function 'androidx.compose.runtime.cache' call
@@ -3057,7 +3492,7 @@
   function App$start$lambda$lambda$lambda$lambda$lambda$lambda_6(this$0, $content$delegate, $discussions$delegate) {
     return function ($this$button, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C170@8512L530,170@8504L538:App.kt');
+      sourceInformation($composer_0, 'C173@8692L530,173@8684L538:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -3067,7 +3502,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(-1671670863, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:170)');
+          traceEventStart(-1671670863, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:173)');
         }
         sourceInformationMarkerStart($composer_0, -157928509, 'CC(remember):App.kt#9igjgp');
         // Inline function 'androidx.compose.runtime.cache' call
@@ -3107,7 +3542,7 @@
   function App$start$lambda$lambda$lambda$lambda$lambda_3($content$delegate, this$0, $discussions$delegate) {
     return function ($this$div, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C166@8250L118,166@8160L208,169@8462L618,169@8405L675:App.kt');
+      sourceInformation($composer_0, 'C169@8430L118,169@8340L208,172@8642L618,172@8585L675:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -3117,7 +3552,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(-1649943777, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:166)');
+          traceEventStart(-1649943777, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:169)');
         }
         var tmp_1 = invoke$lambda_11($content$delegate);
         // Inline function 'kotlin.run' call
@@ -3178,7 +3613,7 @@
   function App$start$lambda$lambda$lambda$lambda_4(this$0, $discussions$delegate) {
     return function ($this$div, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C162@7898L38,163@7984L31,165@8122L992,165@8081L1033:App.kt');
+      sourceInformation($composer_0, 'C165@8078L38,166@8164L31,168@8302L992,168@8261L1033:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -3188,7 +3623,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(537247761, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:162)');
+          traceEventStart(537247761, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:165)');
         }
         h3($this$div, null, null, ComposableSingletons$AppKt_getInstance().lambda$_1932580015_39spuq_1, $composer_0, 3072 | 14 & $dirty, 3);
         sourceInformationMarkerStart($composer_0, 899026672, 'CC(remember):App.kt#9igjgp');
@@ -3246,7 +3681,7 @@
   function App$start$lambda$lambda$lambda$lambda$lambda$lambda$lambda_5($post) {
     return function ($this$span, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C189@9641L25:App.kt');
+      sourceInformation($composer_0, 'C192@9821L25:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -3256,7 +3691,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(-224502140, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:189)');
+          traceEventStart(-224502140, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:192)');
         }
         textNode($this$span, $post.get_authorName_q0vry7_k$(), $composer_0, 14 & $dirty);
         var tmp_1;
@@ -3281,7 +3716,7 @@
   function App$start$lambda$lambda$lambda$lambda$lambda$lambda_7($post) {
     return function ($this$div, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C188@9590L122,188@9548L164,191@9757L160:App.kt');
+      sourceInformation($composer_0, 'C191@9770L122,191@9728L164,194@9937L160:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -3291,7 +3726,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(-502327866, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:188)');
+          traceEventStart(-502327866, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:191)');
         }
         // Inline function 'kotlin.run' call
         var dispatchReceiver = rememberComposableLambda(-224502140, true, App$start$lambda$lambda$lambda$lambda$lambda$lambda$lambda_5($post), $composer_0, 54);
@@ -3334,7 +3769,7 @@
   function App$start$lambda$lambda$lambda$lambda$lambda$lambda_8($post) {
     return function ($this$p, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C196@10070L22:App.kt');
+      sourceInformation($composer_0, 'C199@10250L22:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -3344,7 +3779,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(1298669478, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:196)');
+          traceEventStart(1298669478, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:199)');
         }
         textNode($this$p, $post.get_content_h02jrk_k$(), $composer_0, 14 & $dirty);
         var tmp_1;
@@ -3369,7 +3804,7 @@
   function App$start$lambda$lambda$lambda$lambda$lambda_4($post) {
     return function ($this$div, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C187@9502L457,187@9460L499,195@10023L111,195@10000L134:App.kt');
+      sourceInformation($composer_0, 'C190@9682L457,190@9640L499,198@10203L111,198@10180L134:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -3379,7 +3814,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(173183288, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:187)');
+          traceEventStart(173183288, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:190)');
         }
         // Inline function 'kotlin.run' call
         var dispatchReceiver = rememberComposableLambda(-502327866, true, App$start$lambda$lambda$lambda$lambda$lambda$lambda_7($post), $composer_0, 54);
@@ -3439,7 +3874,7 @@
   function App$start$lambda$lambda$lambda$lambda_5($discussions$delegate) {
     return function ($this$div, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C*186@9418L754,186@9388L784:App.kt');
+      sourceInformation($composer_0, 'C*189@9598L754,189@9568L784:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -3449,7 +3884,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(1610036936, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:185)');
+          traceEventStart(1610036936, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous>.<anonymous> (App.kt:188)');
         }
         var _iterator__ex2g4s = invoke$lambda_3($discussions$delegate).iterator_jk1svi_k$();
         while (_iterator__ex2g4s.hasNext_bitz1p_k$()) {
@@ -3495,7 +3930,7 @@
   function App$start$lambda$lambda$lambda_2(this$0, $discussions$delegate) {
     return function ($this$div, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C161@7864L1280,161@7829L1315,184@9290L946,184@9249L987:App.kt');
+      sourceInformation($composer_0, 'C164@8044L1280,164@8009L1315,187@9470L946,187@9429L987:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -3505,7 +3940,7 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(-86502525, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous> (App.kt:161)');
+          traceEventStart(-86502525, $dirty, -1, 'App.start.<anonymous>.<anonymous>.<anonymous> (App.kt:164)');
         }
         // Inline function 'kotlin.run' call
         var dispatchReceiver = rememberComposableLambda(537247761, true, App$start$lambda$lambda$lambda$lambda_4(this$0, $discussions$delegate), $composer_0, 54);
@@ -3575,16 +4010,16 @@
       var tmp_0;
       if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
         if (isTraceInProgress()) {
-          traceEventStart(376215085, $dirty, -1, 'App.start.<anonymous>.<anonymous> (App.kt:89)');
+          traceEventStart(376215085, $dirty, -1, 'App.start.<anonymous>.<anonymous> (App.kt:92)');
         }
         if (invoke$lambda($currentUser$delegate) == null) {
           $composer_0.startReplaceGroup_5hh8aj_k$(-2040990701);
-          sourceInformation($composer_0, '90@3677L346');
+          sourceInformation($composer_0, '93@3857L346');
           div($this$div, 'glass card text-center p-4', null, ComposableSingletons$AppKt_getInstance().lambda$1210904790__1, $composer_0, 3120 | 14 & $dirty, 2);
           $composer_0.endReplaceGroup_ek144q_k$();
         } else {
           $composer_0.startReplaceGroup_5hh8aj_k$(-2040419898);
-          sourceInformation($composer_0, '98@4134L465,98@4097L502');
+          sourceInformation($composer_0, '101@4314L465,101@4277L502');
           // Inline function 'kotlin.run' call
           var dispatchReceiver = rememberComposableLambda(718062559, true, App$start$lambda$lambda$lambda_0($currentTab$delegate), $composer_0, 54);
           // Inline function 'androidx.compose.runtime.remember' call
@@ -3605,7 +4040,7 @@
           div($this$div, 'd-flex gap-1 mb-2', null, tmp$ret$0, $composer_0, 3120 | 14 & $dirty, 2);
           if (invoke$lambda_5($currentTab$delegate) === 'notes') {
             $composer_0.startReplaceGroup_5hh8aj_k$(-2039903159);
-            sourceInformation($composer_0, '108@4698L3000,108@4694L3004');
+            sourceInformation($composer_0, '111@4878L3000,111@4874L3004');
             // Inline function 'kotlin.run' call
             var dispatchReceiver_0 = rememberComposableLambda(-1991026310, true, App$start$lambda$lambda$lambda_1(this$0, $notes$delegate), $composer_0, 54);
             // Inline function 'androidx.compose.runtime.remember' call
@@ -3627,7 +4062,7 @@
             $composer_0.endReplaceGroup_ek144q_k$();
           } else {
             $composer_0.startReplaceGroup_5hh8aj_k$(-2036884937);
-            sourceInformation($composer_0, '160@7799L2463,160@7795L2467');
+            sourceInformation($composer_0, '163@7979L2463,163@7975L2467');
             // Inline function 'kotlin.run' call
             var dispatchReceiver_1 = rememberComposableLambda(-86502525, true, App$start$lambda$lambda$lambda_2(this$0, $discussions$delegate), $composer_0, 54);
             // Inline function 'androidx.compose.runtime.remember' call
@@ -3672,7 +4107,7 @@
   function App$start$lambda(this$0) {
     return function ($this$root, $composer, $changed) {
       var $composer_0 = $composer;
-      sourceInformation($composer_0, 'C23@713L1190,49@1962L33,50@2021L46,51@2099L52,52@2182L36,55@2320L441,69@2829L712,69@2797L744,88@3612L6704,88@3583L6733:App.kt');
+      sourceInformation($composer_0, 'C23@713L1190,49@1962L33,50@2021L46,51@2099L52,52@2182L36,55@2320L441,69@2829L892,69@2797L924,91@3792L6704,91@3763L6733:App.kt');
       var $dirty = $changed;
       var tmp;
       if (($changed & 6) === 0) {
@@ -3916,17 +4351,17 @@
       return Unit_getInstance();
     }, 3, 0, 'androidx.compose.runtime.internal/ComposableLambda.invoke|invoke(kotlin.Any?;androidx.compose.runtime.Composer;kotlin.Int){}[0]', VOID, [p0]);
   }
-  function ComposableSingletons$AppKt$lambda$_335720428$lambda_jfq2q2($this$h2, $composer, $changed) {
+  function ComposableSingletons$AppKt$lambda$169099991$lambda($this$a, $composer, $changed) {
     var $composer_0 = $composer;
-    sourceInformation($composer_0, 'C91@3754L45:App.kt');
+    sourceInformation($composer_0, 'C84@3609L32:App.kt');
     var $dirty = $changed;
     if (($changed & 6) === 0)
-      $dirty = $dirty | ((($changed & 8) === 0 ? $composer_0.changed_ga7h3f_k$($this$h2) : $composer_0.changedInstance_s1wkiy_k$($this$h2)) ? 4 : 2);
+      $dirty = $dirty | ((($changed & 8) === 0 ? $composer_0.changed_ga7h3f_k$($this$a) : $composer_0.changedInstance_s1wkiy_k$($this$a)) ? 4 : 2);
     if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
       if (isTraceInProgress()) {
-        traceEventStart(-335720428, $dirty, -1, 'ComposableSingletons$AppKt.lambda$-335720428.<anonymous> (App.kt:91)');
+        traceEventStart(169099991, $dirty, -1, 'ComposableSingletons$AppKt.lambda$169099991.<anonymous> (App.kt:84)');
       }
-      textNode($this$h2, 'Secure Notes & Global Discussions', $composer_0, 48 | 14 & $dirty);
+      textNode($this$a, 'Login with X/Twitter', $composer_0, 48 | 14 & $dirty);
       if (isTraceInProgress()) {
         traceEventEnd();
       }
@@ -3941,17 +4376,17 @@
       return Unit_getInstance();
     }, 3, 0, 'androidx.compose.runtime.internal/ComposableLambda.invoke|invoke(kotlin.Any?;androidx.compose.runtime.Composer;kotlin.Int){}[0]', VOID, [p0]);
   }
-  function ComposableSingletons$AppKt$lambda$1235161540$lambda($this$p, $composer, $changed) {
+  function ComposableSingletons$AppKt$lambda$_335720428$lambda_jfq2q2($this$h2, $composer, $changed) {
     var $composer_0 = $composer;
-    sourceInformation($composer_0, 'C93@3884L91:App.kt');
+    sourceInformation($composer_0, 'C94@3934L45:App.kt');
     var $dirty = $changed;
     if (($changed & 6) === 0)
-      $dirty = $dirty | ((($changed & 8) === 0 ? $composer_0.changed_ga7h3f_k$($this$p) : $composer_0.changedInstance_s1wkiy_k$($this$p)) ? 4 : 2);
+      $dirty = $dirty | ((($changed & 8) === 0 ? $composer_0.changed_ga7h3f_k$($this$h2) : $composer_0.changedInstance_s1wkiy_k$($this$h2)) ? 4 : 2);
     if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
       if (isTraceInProgress()) {
-        traceEventStart(1235161540, $dirty, -1, 'ComposableSingletons$AppKt.lambda$1235161540.<anonymous> (App.kt:93)');
+        traceEventStart(-335720428, $dirty, -1, 'ComposableSingletons$AppKt.lambda$-335720428.<anonymous> (App.kt:94)');
       }
-      textNode($this$p, 'Login to create your private notes and participate in the community discussion.', $composer_0, 48 | 14 & $dirty);
+      textNode($this$h2, 'Secure Notes & Global Discussions', $composer_0, 48 | 14 & $dirty);
       if (isTraceInProgress()) {
         traceEventEnd();
       }
@@ -3966,18 +4401,17 @@
       return Unit_getInstance();
     }, 3, 0, 'androidx.compose.runtime.internal/ComposableLambda.invoke|invoke(kotlin.Any?;androidx.compose.runtime.Composer;kotlin.Int){}[0]', VOID, [p0]);
   }
-  function ComposableSingletons$AppKt$lambda$1210904790$lambda($this$div, $composer, $changed) {
+  function ComposableSingletons$AppKt$lambda$1235161540$lambda($this$p, $composer, $changed) {
     var $composer_0 = $composer;
-    sourceInformation($composer_0, 'C91@3749L52,92@3826L175:App.kt');
+    sourceInformation($composer_0, 'C96@4064L91:App.kt');
     var $dirty = $changed;
     if (($changed & 6) === 0)
-      $dirty = $dirty | ((($changed & 8) === 0 ? $composer_0.changed_ga7h3f_k$($this$div) : $composer_0.changedInstance_s1wkiy_k$($this$div)) ? 4 : 2);
+      $dirty = $dirty | ((($changed & 8) === 0 ? $composer_0.changed_ga7h3f_k$($this$p) : $composer_0.changedInstance_s1wkiy_k$($this$p)) ? 4 : 2);
     if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
       if (isTraceInProgress()) {
-        traceEventStart(1210904790, $dirty, -1, 'ComposableSingletons$AppKt.lambda$1210904790.<anonymous> (App.kt:91)');
+        traceEventStart(1235161540, $dirty, -1, 'ComposableSingletons$AppKt.lambda$1235161540.<anonymous> (App.kt:96)');
       }
-      h2($this$div, null, null, ComposableSingletons$AppKt_getInstance().lambda$_335720428_hujefq_1, $composer_0, 3072 | 14 & $dirty, 3);
-      p($this$div, 'text-gray', null, ComposableSingletons$AppKt_getInstance().lambda$1235161540__1, $composer_0, 3120 | 14 & $dirty, 2);
+      textNode($this$p, 'Login to create your private notes and participate in the community discussion.', $composer_0, 48 | 14 & $dirty);
       if (isTraceInProgress()) {
         traceEventEnd();
       }
@@ -3992,17 +4426,18 @@
       return Unit_getInstance();
     }, 3, 0, 'androidx.compose.runtime.internal/ComposableLambda.invoke|invoke(kotlin.Any?;androidx.compose.runtime.Composer;kotlin.Int){}[0]', VOID, [p0]);
   }
-  function ComposableSingletons$AppKt$lambda$2044966344$lambda($this$h3, $composer, $changed) {
+  function ComposableSingletons$AppKt$lambda$1210904790$lambda($this$div, $composer, $changed) {
     var $composer_0 = $composer;
-    sourceInformation($composer_0, 'C111@4843L20:App.kt');
+    sourceInformation($composer_0, 'C94@3929L52,95@4006L175:App.kt');
     var $dirty = $changed;
     if (($changed & 6) === 0)
-      $dirty = $dirty | ((($changed & 8) === 0 ? $composer_0.changed_ga7h3f_k$($this$h3) : $composer_0.changedInstance_s1wkiy_k$($this$h3)) ? 4 : 2);
+      $dirty = $dirty | ((($changed & 8) === 0 ? $composer_0.changed_ga7h3f_k$($this$div) : $composer_0.changedInstance_s1wkiy_k$($this$div)) ? 4 : 2);
     if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
       if (isTraceInProgress()) {
-        traceEventStart(2044966344, $dirty, -1, 'ComposableSingletons$AppKt.lambda$2044966344.<anonymous> (App.kt:111)');
+        traceEventStart(1210904790, $dirty, -1, 'ComposableSingletons$AppKt.lambda$1210904790.<anonymous> (App.kt:94)');
       }
-      textNode($this$h3, 'Add Note', $composer_0, 48 | 14 & $dirty);
+      h2($this$div, null, null, ComposableSingletons$AppKt_getInstance().lambda$_335720428_hujefq_1, $composer_0, 3072 | 14 & $dirty, 3);
+      p($this$div, 'text-gray', null, ComposableSingletons$AppKt_getInstance().lambda$1235161540__1, $composer_0, 3120 | 14 & $dirty, 2);
       if (isTraceInProgress()) {
         traceEventEnd();
       }
@@ -4017,17 +4452,17 @@
       return Unit_getInstance();
     }, 3, 0, 'androidx.compose.runtime.internal/ComposableLambda.invoke|invoke(kotlin.Any?;androidx.compose.runtime.Composer;kotlin.Int){}[0]', VOID, [p0]);
   }
-  function ComposableSingletons$AppKt$lambda$_1932580015$lambda_9p7sf0($this$h3, $composer, $changed) {
+  function ComposableSingletons$AppKt$lambda$2044966344$lambda($this$h3, $composer, $changed) {
     var $composer_0 = $composer;
-    sourceInformation($composer_0, 'C162@7903L31:App.kt');
+    sourceInformation($composer_0, 'C114@5023L20:App.kt');
     var $dirty = $changed;
     if (($changed & 6) === 0)
       $dirty = $dirty | ((($changed & 8) === 0 ? $composer_0.changed_ga7h3f_k$($this$h3) : $composer_0.changedInstance_s1wkiy_k$($this$h3)) ? 4 : 2);
     if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
       if (isTraceInProgress()) {
-        traceEventStart(-1932580015, $dirty, -1, 'ComposableSingletons$AppKt.lambda$-1932580015.<anonymous> (App.kt:162)');
+        traceEventStart(2044966344, $dirty, -1, 'ComposableSingletons$AppKt.lambda$2044966344.<anonymous> (App.kt:114)');
       }
-      textNode($this$h3, 'Join the discussion', $composer_0, 48 | 14 & $dirty);
+      textNode($this$h3, 'Add Note', $composer_0, 48 | 14 & $dirty);
       if (isTraceInProgress()) {
         traceEventEnd();
       }
@@ -4042,15 +4477,40 @@
       return Unit_getInstance();
     }, 3, 0, 'androidx.compose.runtime.internal/ComposableLambda.invoke|invoke(kotlin.Any?;androidx.compose.runtime.Composer;kotlin.Int){}[0]', VOID, [p0]);
   }
+  function ComposableSingletons$AppKt$lambda$_1932580015$lambda_9p7sf0($this$h3, $composer, $changed) {
+    var $composer_0 = $composer;
+    sourceInformation($composer_0, 'C165@8083L31:App.kt');
+    var $dirty = $changed;
+    if (($changed & 6) === 0)
+      $dirty = $dirty | ((($changed & 8) === 0 ? $composer_0.changed_ga7h3f_k$($this$h3) : $composer_0.changedInstance_s1wkiy_k$($this$h3)) ? 4 : 2);
+    if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
+      if (isTraceInProgress()) {
+        traceEventStart(-1932580015, $dirty, -1, 'ComposableSingletons$AppKt.lambda$-1932580015.<anonymous> (App.kt:165)');
+      }
+      textNode($this$h3, 'Join the discussion', $composer_0, 48 | 14 & $dirty);
+      if (isTraceInProgress()) {
+        traceEventEnd();
+      }
+    } else {
+      $composer_0.skipToGroupEnd_lh3zi2_k$();
+    }
+    return Unit_getInstance();
+  }
+  function ComposableLambda$invoke$ref_37(p0) {
+    return constructCallableReference(function (p0_0, p1, p2) {
+      p0.invoke_c9vvnb_k$(p0_0, p1, p2);
+      return Unit_getInstance();
+    }, 3, 0, 'androidx.compose.runtime.internal/ComposableLambda.invoke|invoke(kotlin.Any?;androidx.compose.runtime.Composer;kotlin.Int){}[0]', VOID, [p0]);
+  }
   function ComposableSingletons$AppKt$lambda$_841285509$lambda_9fkg68($this$span, $composer, $changed) {
     var $composer_0 = $composer;
-    sourceInformation($composer_0, 'C192@9851L20:App.kt');
+    sourceInformation($composer_0, 'C195@10031L20:App.kt');
     var $dirty = $changed;
     if (($changed & 6) === 0)
       $dirty = $dirty | ((($changed & 8) === 0 ? $composer_0.changed_ga7h3f_k$($this$span) : $composer_0.changedInstance_s1wkiy_k$($this$span)) ? 4 : 2);
     if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
       if (isTraceInProgress()) {
-        traceEventStart(-841285509, $dirty, -1, 'ComposableSingletons$AppKt.lambda$-841285509.<anonymous> (App.kt:192)');
+        traceEventStart(-841285509, $dirty, -1, 'ComposableSingletons$AppKt.lambda$-841285509.<anonymous> (App.kt:195)');
       }
       textNode($this$span, 'Just now', $composer_0, 48 | 14 & $dirty);
       if (isTraceInProgress()) {
@@ -4070,17 +4530,19 @@
     var tmp_1 = this;
     tmp_1.lambda$981898720__1 = ComposableLambda$invoke$ref_30(composableLambdaInstance(981898720, false, ComposableSingletons$AppKt$lambda$981898720$lambda));
     var tmp_2 = this;
-    tmp_2.lambda$_335720428_hujefq_1 = ComposableLambda$invoke$ref_31(composableLambdaInstance(-335720428, false, ComposableSingletons$AppKt$lambda$_335720428$lambda_jfq2q2));
+    tmp_2.lambda$169099991__1 = ComposableLambda$invoke$ref_31(composableLambdaInstance(169099991, false, ComposableSingletons$AppKt$lambda$169099991$lambda));
     var tmp_3 = this;
-    tmp_3.lambda$1235161540__1 = ComposableLambda$invoke$ref_32(composableLambdaInstance(1235161540, false, ComposableSingletons$AppKt$lambda$1235161540$lambda));
+    tmp_3.lambda$_335720428_hujefq_1 = ComposableLambda$invoke$ref_32(composableLambdaInstance(-335720428, false, ComposableSingletons$AppKt$lambda$_335720428$lambda_jfq2q2));
     var tmp_4 = this;
-    tmp_4.lambda$1210904790__1 = ComposableLambda$invoke$ref_33(composableLambdaInstance(1210904790, false, ComposableSingletons$AppKt$lambda$1210904790$lambda));
+    tmp_4.lambda$1235161540__1 = ComposableLambda$invoke$ref_33(composableLambdaInstance(1235161540, false, ComposableSingletons$AppKt$lambda$1235161540$lambda));
     var tmp_5 = this;
-    tmp_5.lambda$2044966344__1 = ComposableLambda$invoke$ref_34(composableLambdaInstance(2044966344, false, ComposableSingletons$AppKt$lambda$2044966344$lambda));
+    tmp_5.lambda$1210904790__1 = ComposableLambda$invoke$ref_34(composableLambdaInstance(1210904790, false, ComposableSingletons$AppKt$lambda$1210904790$lambda));
     var tmp_6 = this;
-    tmp_6.lambda$_1932580015_39spuq_1 = ComposableLambda$invoke$ref_35(composableLambdaInstance(-1932580015, false, ComposableSingletons$AppKt$lambda$_1932580015$lambda_9p7sf0));
+    tmp_6.lambda$2044966344__1 = ComposableLambda$invoke$ref_35(composableLambdaInstance(2044966344, false, ComposableSingletons$AppKt$lambda$2044966344$lambda));
     var tmp_7 = this;
-    tmp_7.lambda$_841285509_dmfuxg_1 = ComposableLambda$invoke$ref_36(composableLambdaInstance(-841285509, false, ComposableSingletons$AppKt$lambda$_841285509$lambda_9fkg68));
+    tmp_7.lambda$_1932580015_39spuq_1 = ComposableLambda$invoke$ref_36(composableLambdaInstance(-1932580015, false, ComposableSingletons$AppKt$lambda$_1932580015$lambda_9p7sf0));
+    var tmp_8 = this;
+    tmp_8.lambda$_841285509_dmfuxg_1 = ComposableLambda$invoke$ref_37(composableLambdaInstance(-841285509, false, ComposableSingletons$AppKt$lambda$_841285509$lambda_9fkg68));
   }
   protoOf(ComposableSingletons$AppKt).get_lambda$1863277179_bwlb4k_k$ = function () {
     return this.lambda$1863277179__1;
@@ -4090,6 +4552,9 @@
   };
   protoOf(ComposableSingletons$AppKt).get_lambda$981898720_1dsvv3_k$ = function () {
     return this.lambda$981898720__1;
+  };
+  protoOf(ComposableSingletons$AppKt).get_lambda$169099991_omw6ms_k$ = function () {
+    return this.lambda$169099991__1;
   };
   protoOf(ComposableSingletons$AppKt).get_lambda$_335720428_y7itf8_k$ = function () {
     return this.lambda$_335720428_hujefq_1;
@@ -4133,7 +4598,7 @@
   function test() {
     root('test', VOID, ComposableSingletons$TestKt_getInstance().lambda$_1507044987_trarpf_1);
   }
-  function ComposableLambda$invoke$ref_37(p0) {
+  function ComposableLambda$invoke$ref_38(p0) {
     return constructCallableReference(function (p0_0, p1, p2) {
       p0.invoke_c9vvnb_k$(p0_0, p1, p2);
       return Unit_getInstance();
@@ -4161,7 +4626,7 @@
   function ComposableSingletons$TestKt() {
     ComposableSingletons$TestKt_instance = this;
     var tmp = this;
-    tmp.lambda$_1507044987_trarpf_1 = ComposableLambda$invoke$ref_37(composableLambdaInstance(-1507044987, false, ComposableSingletons$TestKt$lambda$_1507044987$lambda_2px05q));
+    tmp.lambda$_1507044987_trarpf_1 = ComposableLambda$invoke$ref_38(composableLambdaInstance(-1507044987, false, ComposableSingletons$TestKt$lambda$_1507044987$lambda_2px05q));
   }
   protoOf(ComposableSingletons$TestKt).get_lambda$_1507044987_fsmy2p_k$ = function () {
     return this.lambda$_1507044987_trarpf_1;
@@ -4177,6 +4642,9 @@
   protoOf($serializer_0).typeParametersSerializers_fr94fx_k$ = typeParametersSerializers;
   protoOf($serializer_1).typeParametersSerializers_fr94fx_k$ = typeParametersSerializers;
   protoOf($serializer_2).typeParametersSerializers_fr94fx_k$ = typeParametersSerializers;
+  protoOf($serializer_3).typeParametersSerializers_fr94fx_k$ = typeParametersSerializers;
+  protoOf($serializer_4).typeParametersSerializers_fr94fx_k$ = typeParametersSerializers;
+  protoOf($serializer_5).typeParametersSerializers_fr94fx_k$ = typeParametersSerializers;
   //endregion
   //region block: init
   rpc_AppServiceImpl$stable = 8;
@@ -4189,6 +4657,12 @@
   models_Discussion$stable = 0;
   models_UserSession_$serializer$stable = 0;
   models_UserSession$stable = 0;
+  models_TwitterPkceSession_$serializer$stable = 0;
+  models_TwitterPkceSession$stable = 0;
+  models_TwitterUserResponse_$serializer$stable = 0;
+  models_TwitterUserResponse$stable = 0;
+  models_TwitterUserInfo_$serializer$stable = 0;
+  models_TwitterUserInfo$stable = 0;
   //endregion
   mainWrapper();
   return _;

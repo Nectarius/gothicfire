@@ -21,9 +21,30 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import models.User
 import models.UserSession
+import models.TwitterPkceSession
 import rpc.AppServiceImpl
 import dev.kilua.rpc.applyRoutes
 import com.mongodb.client.model.Filters
+import io.ktor.client.request.forms.*
+import io.ktor.util.*
+import java.security.MessageDigest
+import java.security.SecureRandom
+import java.util.Base64
+
+fun generateCodeVerifier(): String {
+    val secureRandom = SecureRandom()
+    val codeVerifier = ByteArray(32)
+    secureRandom.nextBytes(codeVerifier)
+    return Base64.getUrlEncoder().withoutPadding().encodeToString(codeVerifier)
+}
+
+fun generateCodeChallenge(codeVerifier: String): String {
+    val bytes = codeVerifier.toByteArray(Charsets.US_ASCII)
+    val messageDigest = MessageDigest.getInstance("SHA-256")
+    messageDigest.update(bytes, 0, bytes.size)
+    val digest = messageDigest.digest()
+    return Base64.getUrlEncoder().withoutPadding().encodeToString(digest)
+}
 
 fun main() {
     embeddedServer(Netty, port = 8081, host = "0.0.0.0", module = Application::module)
@@ -47,6 +68,10 @@ fun Application.module() {
         cookie<UserSession>("USER_SESSION") {
             cookie.path = "/"
             cookie.maxAgeInSeconds = 3600 * 24 * 7 // 1 week
+        }
+        cookie<TwitterPkceSession>("TWITTER_PKCE_SESSION") {
+            cookie.path = "/"
+            cookie.maxAgeInSeconds = 600 // 10 minutes
         }
     }
 
@@ -116,6 +141,95 @@ fun Application.module() {
         get("/logout") {
             call.sessions.clear<UserSession>()
             call.respondRedirect("/")
+        }
+
+        get("/auth/twitter") {
+            val codeVerifier = generateCodeVerifier()
+            val codeChallenge = generateCodeChallenge(codeVerifier)
+            val state = generateCodeVerifier() // reuse for random state string
+            
+            call.sessions.set(TwitterPkceSession(codeVerifier, state))
+            
+            val authUrl = URLBuilder(TwitterConfig.authUrl).apply {
+                parameters.append("response_type", "code")
+                parameters.append("client_id", TwitterConfig.clientId)
+                parameters.append("redirect_uri", TwitterConfig.callbackUrl)
+                parameters.append("scope", TwitterConfig.scopes)
+                parameters.append("state", state)
+                parameters.append("code_challenge", codeChallenge)
+                parameters.append("code_challenge_method", "S256")
+            }.buildString()
+            
+            call.respondRedirect(authUrl)
+        }
+
+        get("/auth/twitter/callback") {
+            val code = call.request.queryParameters["code"]
+            val state = call.request.queryParameters["state"]
+            val pkceSession = call.sessions.get<TwitterPkceSession>()
+            
+            if (code == null || state == null || pkceSession == null || state != pkceSession.state) {
+                call.respondText("Invalid request or state mismatch", status = HttpStatusCode.BadRequest)
+                return@get
+            }
+            
+            // clear pkce session
+            call.sessions.clear<TwitterPkceSession>()
+            
+            // Exchange code for token
+            val tokenResponse = httpClient.post(TwitterConfig.tokenUrl) {
+                headers {
+                    val authString = "${TwitterConfig.clientId}:${TwitterConfig.clientSecret}"
+                    val base64Auth = Base64.getEncoder().encodeToString(authString.toByteArray())
+                    append(HttpHeaders.Authorization, "Basic $base64Auth")
+                }
+                contentType(ContentType.Application.FormUrlEncoded)
+                setBody(FormDataContent(Parameters.build {
+                    append("grant_type", "authorization_code")
+                    append("client_id", TwitterConfig.clientId)
+                    append("redirect_uri", TwitterConfig.callbackUrl)
+                    append("code", code)
+                    append("code_verifier", pkceSession.codeVerifier)
+                }))
+            }
+            
+            if (tokenResponse.status.isSuccess()) {
+                val tokenText = tokenResponse.bodyAsText()
+                val json = Json.parseToJsonElement(tokenText).jsonObject
+                val accessToken = json["access_token"]?.jsonPrimitive?.content
+                
+                if (accessToken != null) {
+                    val userInfoResponse = httpClient.get("https://api.twitter.com/2/users/me") {
+                        headers {
+                            append(HttpHeaders.Authorization, "Bearer $accessToken")
+                        }
+                    }
+                    
+                    if (userInfoResponse.status.isSuccess()) {
+                        val userText = userInfoResponse.bodyAsText()
+                        val userJson = Json.parseToJsonElement(userText).jsonObject
+                        val dataObj = userJson["data"]?.jsonObject
+                        
+                        val id = dataObj?.get("id")?.jsonPrimitive?.content ?: ""
+                        val name = dataObj?.get("name")?.jsonPrimitive?.content ?: "Twitter User"
+                        val username = dataObj?.get("username")?.jsonPrimitive?.content ?: ""
+                        
+                        val twitterId = "twitter_$id"
+                        val email = "@$username"
+                        
+                        var user = MongoConfig.users.find(Filters.eq("id", twitterId)).firstOrNull()
+                        if (user == null) {
+                            user = User(twitterId, email, name, System.currentTimeMillis())
+                            MongoConfig.users.insertOne(user)
+                        }
+                        
+                        call.sessions.set(UserSession(twitterId, email, name))
+                        call.respondRedirect("/")
+                        return@get
+                    }
+                }
+            }
+            call.respondText("Failed to authenticate with Twitter", status = HttpStatusCode.InternalServerError)
         }
 
         applyRoutes(rpc.AppServiceManager)

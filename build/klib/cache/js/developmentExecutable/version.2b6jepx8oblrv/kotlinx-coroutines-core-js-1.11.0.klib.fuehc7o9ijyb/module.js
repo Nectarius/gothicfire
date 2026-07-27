@@ -25,12 +25,12 @@
   var Annotation = kotlin_kotlin.$_$.gi;
   var Key_getInstance = kotlin_kotlin.$_$.b2;
   var equals = kotlin_kotlin.$_$.jd;
+  var EmptyCoroutineContext_getInstance = kotlin_kotlin.$_$.c2;
   var toString = kotlin_kotlin.$_$.xe;
   var IllegalStateException_init_$Create$ = kotlin_kotlin.$_$.p4;
   var atomic$int$1 = kotlin_org_jetbrains_kotlinx_atomicfu.$_$.e;
   var intercepted = kotlin_kotlin.$_$.za;
   var get_COROUTINE_SUSPENDED = kotlin_kotlin.$_$.xa;
-  var EmptyCoroutineContext_getInstance = kotlin_kotlin.$_$.c2;
   var createCoroutineUnintercepted = kotlin_kotlin.$_$.ya;
   var initMetadataForInterface = kotlin_kotlin.$_$.vd;
   var UnsupportedOperationException_init_$Create$ = kotlin_kotlin.$_$.e5;
@@ -182,8 +182,8 @@
   initMetadataForInterface(ChildJob, 'ChildJob', VOID, VOID, [Job], [0]);
   initMetadataForInterface(ParentJob, 'ParentJob', VOID, VOID, [Job], [0]);
   initMetadataForClass(JobSupport, 'JobSupport', VOID, VOID, [Job, ChildJob, ParentJob], [0]);
-  initMetadataForInterface(CoroutineScope, 'CoroutineScope');
-  initMetadataForClass(AbstractCoroutine, 'AbstractCoroutine', VOID, JobSupport, [Job, Continuation, CoroutineScope], [0]);
+  initMetadataForInterface(CoroutineScope_0, 'CoroutineScope');
+  initMetadataForClass(AbstractCoroutine, 'AbstractCoroutine', VOID, JobSupport, [Job, Continuation, CoroutineScope_0], [0]);
   initMetadataForClass(InternalCoroutinesApi, 'InternalCoroutinesApi', VOID, VOID, [Annotation]);
   initMetadataForClass(ExperimentalCoroutinesApi, 'ExperimentalCoroutinesApi', VOID, VOID, [Annotation]);
   initMetadataForClass(InternalForInheritanceCoroutinesApi, 'InternalForInheritanceCoroutinesApi', VOID, VOID, [Annotation]);
@@ -364,7 +364,7 @@
   initMetadataForClass(ChannelCoroutine, 'ChannelCoroutine', VOID, AbstractCoroutine, [Channel], [1, 0]);
   initMetadataForCoroutine($consumeEachCOROUTINE$, CoroutineImpl);
   initMetadataForClass(ConflatedBufferedChannel, 'ConflatedBufferedChannel', VOID, BufferedChannel, VOID, [1, 0]);
-  initMetadataForInterface(ProducerScope, 'ProducerScope', VOID, VOID, [CoroutineScope, SendChannel], [1]);
+  initMetadataForInterface(ProducerScope, 'ProducerScope', VOID, VOID, [CoroutineScope_0, SendChannel], [1]);
   initMetadataForClass(ProducerCoroutine, 'ProducerCoroutine', VOID, ChannelCoroutine, [ProducerScope], [1, 0]);
   initMetadataForCoroutine($emitAllImplCOROUTINE$, CoroutineImpl);
   initMetadataForInterface(Flow, 'Flow', VOID, VOID, VOID, [1]);
@@ -442,7 +442,7 @@
   initMetadataForClass(LockFreeTaskQueueCore, 'LockFreeTaskQueueCore');
   initMetadataForClass(NamedDispatcher, 'NamedDispatcher', VOID, CoroutineDispatcher, [Delay], [1]);
   initMetadataForClass(UndeliveredElementException, 'UndeliveredElementException', VOID, RuntimeException);
-  initMetadataForClass(ContextScope, 'ContextScope', VOID, VOID, [CoroutineScope]);
+  initMetadataForClass(ContextScope, 'ContextScope', VOID, VOID, [CoroutineScope_0]);
   initMetadataForClass(Symbol, 'Symbol');
   initMetadataForClass(sam$kotlinx_coroutines_Runnable$0, 'sam$kotlinx_coroutines_Runnable$0', VOID, VOID, [Runnable, FunctionAdapter]);
   initMetadataForClass(OnTimeout, 'OnTimeout');
@@ -655,6 +655,14 @@
     }
     return tmp$ret$0;
   }
+  function launch(_this__u8e3s4, context, start, block) {
+    context = context === VOID ? EmptyCoroutineContext_getInstance() : context;
+    start = start === VOID ? CoroutineStart_DEFAULT_getInstance() : start;
+    var newContext = newCoroutineContext_0(_this__u8e3s4, context);
+    var coroutine = start.get_isLazy_ew1d53_k$() ? new LazyStandaloneCoroutine(newContext, block) : new StandaloneCoroutine(newContext, true);
+    coroutine.start_rn6v44_k$(start, coroutine, block);
+    return coroutine;
+  }
   function _get__decision__uou2k6($this) {
     return $this._decision_1;
   }
@@ -716,14 +724,6 @@
       throw state.get_cause_iplhs0_k$();
     return state;
   };
-  function launch(_this__u8e3s4, context, start, block) {
-    context = context === VOID ? EmptyCoroutineContext_getInstance() : context;
-    start = start === VOID ? CoroutineStart_DEFAULT_getInstance() : start;
-    var newContext = newCoroutineContext_0(_this__u8e3s4, context);
-    var coroutine = start.get_isLazy_ew1d53_k$() ? new LazyStandaloneCoroutine(newContext, block) : new StandaloneCoroutine(newContext, true);
-    coroutine.start_rn6v44_k$(start, coroutine, block);
-    return coroutine;
-  }
   function StandaloneCoroutine(parentContext, active) {
     AbstractCoroutine.call(this, parentContext, true, active);
   }
@@ -1815,10 +1815,10 @@
     addSuppressed(this_0, originalException);
     return this_0;
   }
-  function CoroutineScope() {
-  }
-  function CoroutineScope_0(context) {
+  function CoroutineScope(context) {
     return new ContextScope(!(context.get_y2st91_k$(Key_getInstance_2()) == null) ? context : context.plus_s13ygv_k$(Job_0()));
+  }
+  function CoroutineScope_0() {
   }
   function coroutineScope(block, $completion) {
     var coroutine = new ScopeCoroutine($completion.get_context_h02k06_k$(), $completion);
@@ -2140,9 +2140,9 @@
   }
   function Job() {
   }
-  function Job_0(parent) {
-    parent = parent === VOID ? null : parent;
-    return new JobImpl(parent);
+  function ParentJob() {
+  }
+  function ChildHandle() {
   }
   function DisposableHandle() {
   }
@@ -2166,6 +2166,12 @@
       ensureActive_0(tmp0_safe_receiver);
     }
   }
+  function ChildJob() {
+  }
+  function Job_0(parent) {
+    parent = parent === VOID ? null : parent;
+    return new JobImpl(parent);
+  }
   function NonDisposableHandle() {
     NonDisposableHandle_instance = this;
   }
@@ -2186,6 +2192,10 @@
       new NonDisposableHandle();
     return NonDisposableHandle_instance;
   }
+  function ensureActive_0(_this__u8e3s4) {
+    if (!_this__u8e3s4.get_isActive_quafmh_k$())
+      throw _this__u8e3s4.getCancellationException_8i1q6u_k$();
+  }
   function invokeOnCompletion(_this__u8e3s4, invokeImmediately, handler) {
     invokeImmediately = invokeImmediately === VOID ? true : invokeImmediately;
     var tmp;
@@ -2196,16 +2206,6 @@
       tmp = _this__u8e3s4.invokeOnCompletion_sct3wq_k$(tmp_0, invokeImmediately, JobNode$invoke$ref(handler));
     }
     return tmp;
-  }
-  function ChildHandle() {
-  }
-  function ChildJob() {
-  }
-  function ensureActive_0(_this__u8e3s4) {
-    if (!_this__u8e3s4.get_isActive_quafmh_k$())
-      throw _this__u8e3s4.getCancellationException_8i1q6u_k$();
-  }
-  function ParentJob() {
   }
   function JobNode$invoke$ref(p0) {
     return constructCallableReference(function (p0_0) {
@@ -11185,7 +11185,7 @@
     return tmp.doResume_5yljmg_k$();
   };
   protoOf(ChannelFlow$collect$slambda).invoke_qns8j1_k$ = function (p1, $completion) {
-    return this.invoke_d9fzmj_k$((!(p1 == null) ? isInterface(p1, CoroutineScope) : false) ? p1 : THROW_CCE(), $completion);
+    return this.invoke_d9fzmj_k$((!(p1 == null) ? isInterface(p1, CoroutineScope_0) : false) ? p1 : THROW_CCE(), $completion);
   };
   protoOf(ChannelFlow$collect$slambda).doResume_5yljmg_k$ = function () {
     var suspendResult = this.get_result_iyg5d2_k$();
@@ -11224,7 +11224,7 @@
     return i;
   };
   protoOf(ChannelFlow$collect$slambda).create_wyq9v6_k$ = function (value, completion) {
-    return this.create_rcuf4x_k$((!(value == null) ? isInterface(value, CoroutineScope) : false) ? value : THROW_CCE(), completion);
+    return this.create_rcuf4x_k$((!(value == null) ? isInterface(value, CoroutineScope_0) : false) ? value : THROW_CCE(), completion);
   };
   function ChannelFlow$collect$slambda_0($collector, this$0, resultContinuation) {
     var i = new ChannelFlow$collect$slambda($collector, this$0, resultContinuation);
@@ -12373,7 +12373,7 @@
     return tmp.doResume_5yljmg_k$();
   };
   protoOf(launchIn$slambda).invoke_qns8j1_k$ = function (p1, $completion) {
-    return this.invoke_d9fzmj_k$((!(p1 == null) ? isInterface(p1, CoroutineScope) : false) ? p1 : THROW_CCE(), $completion);
+    return this.invoke_d9fzmj_k$((!(p1 == null) ? isInterface(p1, CoroutineScope_0) : false) ? p1 : THROW_CCE(), $completion);
   };
   protoOf(launchIn$slambda).doResume_5yljmg_k$ = function () {
     var suspendResult = this.get_result_iyg5d2_k$();
@@ -12412,7 +12412,7 @@
     return i;
   };
   protoOf(launchIn$slambda).create_wyq9v6_k$ = function (value, completion) {
-    return this.create_rcuf4x_k$((!(value == null) ? isInterface(value, CoroutineScope) : false) ? value : THROW_CCE(), completion);
+    return this.create_rcuf4x_k$((!(value == null) ? isInterface(value, CoroutineScope_0) : false) ? value : THROW_CCE(), completion);
   };
   function launchIn$slambda_0($this_launchIn, resultContinuation) {
     var i = new launchIn$slambda($this_launchIn, resultContinuation);
@@ -16549,8 +16549,8 @@
   _.$_$.p = takeWhile;
   _.$_$.q = CancellableContinuationImpl;
   _.$_$.r = CoroutineDispatcher;
-  _.$_$.s = CoroutineScope_0;
-  _.$_$.t = CoroutineScope;
+  _.$_$.s = CoroutineScope;
+  _.$_$.t = CoroutineScope_0;
   _.$_$.u = Job_0;
   _.$_$.v = MainScope;
   _.$_$.w = SupervisorJob;

@@ -90,7 +90,7 @@ config.devServer.port = 5120;
 config.devServer = config.devServer || {};
 config.devServer.proxy = config.devServer.proxy || [];
 config.devServer.proxy.push({
-    context: ['/login', '/auth/google/callback', '/logout', '/rpc'],
+    context: ['/login', '/auth/google/callback', '/auth/twitter', '/auth/twitter/callback', '/logout', '/rpc'],
     target: 'http://localhost:8081',
     secure: false,
     changeOrigin: true

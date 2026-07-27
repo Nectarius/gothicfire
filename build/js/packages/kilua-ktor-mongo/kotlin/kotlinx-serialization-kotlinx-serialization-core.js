@@ -13,14 +13,14 @@
   'use strict';
   //region block: imports
   var imul = Math.imul;
-  var getKClass = kotlin_kotlin.$_$.lf;
-  var VOID = kotlin_kotlin.$_$.d;
-  var protoOf = kotlin_kotlin.$_$.ue;
   var THROW_CCE = kotlin_kotlin.$_$.cj;
-  var getStringHashCode = kotlin_kotlin.$_$.pd;
-  var toString = kotlin_kotlin.$_$.xe;
+  var protoOf = kotlin_kotlin.$_$.ue;
   var Annotation = kotlin_kotlin.$_$.gi;
   var initMetadataForClass = kotlin_kotlin.$_$.rd;
+  var VOID = kotlin_kotlin.$_$.d;
+  var getKClass = kotlin_kotlin.$_$.lf;
+  var getStringHashCode = kotlin_kotlin.$_$.pd;
+  var toString = kotlin_kotlin.$_$.xe;
   var initMetadataForInterface = kotlin_kotlin.$_$.vd;
   var asList = kotlin_kotlin.$_$.w6;
   var objectCreate = kotlin_kotlin.$_$.te;
@@ -120,10 +120,10 @@
   var HashSet_init_$Create$_1 = kotlin_kotlin.$_$.i3;
   var toString_0 = kotlin_kotlin.$_$.ik;
   var KTypeParameter = kotlin_kotlin.$_$.uf;
-  var contentHashCode = kotlin_kotlin.$_$.k7;
-  var joinToString = kotlin_kotlin.$_$.n8;
   var booleanArray = kotlin_kotlin.$_$.xc;
   var emptyMap = kotlin_kotlin.$_$.z7;
+  var joinToString = kotlin_kotlin.$_$.n8;
+  var contentHashCode = kotlin_kotlin.$_$.k7;
   var Companion_getInstance_2 = kotlin_kotlin.$_$.p2;
   var isCharArray = kotlin_kotlin.$_$.be;
   var charArray = kotlin_kotlin.$_$.ad;
@@ -190,8 +190,8 @@
   var _UByteArray___init__impl__ip4y9n_0 = kotlin_kotlin.$_$.u;
   var UByteArray__set_impl_jvcicn = kotlin_kotlin.$_$.x;
   var copyOf_6 = kotlin_kotlin.$_$.o7;
-  var trimIndent = kotlin_kotlin.$_$.zh;
   var Unit = kotlin_kotlin.$_$.nj;
+  var trimIndent = kotlin_kotlin.$_$.zh;
   var charSequenceLength = kotlin_kotlin.$_$.dd;
   var last = kotlin_kotlin.$_$.t8;
   var lastOrNull = kotlin_kotlin.$_$.s8;
@@ -216,8 +216,8 @@
   var createFailure = kotlin_kotlin.$_$.uj;
   //endregion
   //region block: pre-declaration
-  initMetadataForClass(Serializable, 'Serializable', VOID, VOID, [Annotation]);
   initMetadataForClass(InheritableSerialInfo, 'InheritableSerialInfo', VOID, VOID, [Annotation]);
+  initMetadataForClass(Serializable, 'Serializable', VOID, VOID, [Annotation]);
   initMetadataForClass(SerialInfo, 'SerialInfo', VOID, VOID, [Annotation]);
   initMetadataForClass(SerialName, 'SerialName', VOID, VOID, [Annotation]);
   initMetadataForClass(ExperimentalSerializationApi, 'ExperimentalSerializationApi', VOID, VOID, [Annotation]);
@@ -405,17 +405,17 @@
   initMetadataForClass(ByteArrayBuilder, 'ByteArrayBuilder', VOID, PrimitiveArrayBuilder);
   initMetadataForClass(UByteArrayBuilder, 'UByteArrayBuilder', VOID, PrimitiveArrayBuilder);
   initMetadataForClass(BooleanArrayBuilder, 'BooleanArrayBuilder', VOID, PrimitiveArrayBuilder);
-  initMetadataForObject(StringSerializer, 'StringSerializer', VOID, VOID, [KSerializer]);
-  initMetadataForClass(PrimitiveSerialDescriptor_0, 'PrimitiveSerialDescriptor', VOID, VOID, [SerialDescriptor]);
-  initMetadataForObject(IntSerializer, 'IntSerializer', VOID, VOID, [KSerializer]);
-  initMetadataForObject(LongSerializer, 'LongSerializer', VOID, VOID, [KSerializer]);
-  initMetadataForObject(ByteSerializer, 'ByteSerializer', VOID, VOID, [KSerializer]);
+  initMetadataForObject(DoubleSerializer, 'DoubleSerializer', VOID, VOID, [KSerializer]);
   initMetadataForObject(ShortSerializer, 'ShortSerializer', VOID, VOID, [KSerializer]);
   initMetadataForObject(CharSerializer, 'CharSerializer', VOID, VOID, [KSerializer]);
-  initMetadataForObject(DoubleSerializer, 'DoubleSerializer', VOID, VOID, [KSerializer]);
-  initMetadataForObject(FloatSerializer, 'FloatSerializer', VOID, VOID, [KSerializer]);
-  initMetadataForObject(BooleanSerializer, 'BooleanSerializer', VOID, VOID, [KSerializer]);
+  initMetadataForObject(LongSerializer, 'LongSerializer', VOID, VOID, [KSerializer]);
+  initMetadataForObject(ByteSerializer, 'ByteSerializer', VOID, VOID, [KSerializer]);
   initMetadataForObject(UnitSerializer, 'UnitSerializer', VOID, VOID, [KSerializer]);
+  initMetadataForClass(PrimitiveSerialDescriptor_0, 'PrimitiveSerialDescriptor', VOID, VOID, [SerialDescriptor]);
+  initMetadataForObject(StringSerializer, 'StringSerializer', VOID, VOID, [KSerializer]);
+  initMetadataForObject(BooleanSerializer, 'BooleanSerializer', VOID, VOID, [KSerializer]);
+  initMetadataForObject(IntSerializer, 'IntSerializer', VOID, VOID, [KSerializer]);
+  initMetadataForObject(FloatSerializer, 'FloatSerializer', VOID, VOID, [KSerializer]);
   initMetadataForClass(SerializationConstructorMarker, 'SerializationConstructorMarker');
   initMetadataForClass(TaggedEncoder, 'TaggedEncoder', VOID, VOID, [Encoder, CompositeEncoder]);
   initMetadataForClass(NamedValueEncoder, 'NamedValueEncoder', VOID, TaggedEncoder);
@@ -449,6 +449,20 @@
   initMetadataForClass(createCache$1, VOID, VOID, VOID, [SerializerCache]);
   initMetadataForClass(createParametrizedCache$1, VOID, VOID, VOID, [ParametrizedSerializerCache]);
   //endregion
+  function InheritableSerialInfo() {
+  }
+  protoOf(InheritableSerialInfo).equals = function (other) {
+    if (!(other instanceof InheritableSerialInfo))
+      return false;
+    other instanceof InheritableSerialInfo || THROW_CCE();
+    return true;
+  };
+  protoOf(InheritableSerialInfo).hashCode = function () {
+    return 0;
+  };
+  protoOf(InheritableSerialInfo).toString = function () {
+    return '@kotlinx.serialization.InheritableSerialInfo(' + ')';
+  };
   function Serializable(with_0) {
     with_0 = with_0 === VOID ? getKClass(KSerializer) : with_0;
     this.with_1 = with_0;
@@ -469,20 +483,6 @@
   };
   protoOf(Serializable).toString = function () {
     return '@kotlinx.serialization.Serializable(' + 'with=' + toString(this.with_1) + ')';
-  };
-  function InheritableSerialInfo() {
-  }
-  protoOf(InheritableSerialInfo).equals = function (other) {
-    if (!(other instanceof InheritableSerialInfo))
-      return false;
-    other instanceof InheritableSerialInfo || THROW_CCE();
-    return true;
-  };
-  protoOf(InheritableSerialInfo).hashCode = function () {
-    return 0;
-  };
-  protoOf(InheritableSerialInfo).toString = function () {
-    return '@kotlinx.serialization.InheritableSerialInfo(' + ')';
   };
   function SerialInfo() {
   }
@@ -560,11 +560,11 @@
   protoOf(SealedSerializationApi).toString = function () {
     return '@kotlinx.serialization.SealedSerializationApi(' + ')';
   };
-  function KSerializer() {
+  function SerializationStrategy() {
   }
   function DeserializationStrategy() {
   }
-  function SerializationStrategy() {
+  function KSerializer() {
   }
   function PolymorphicSerializer_init_$Init$(baseClass, classAnnotations, $this) {
     PolymorphicSerializer.call($this, baseClass);
@@ -2124,13 +2124,9 @@
   };
   function ChunkedDecoder() {
   }
-  function Decoder() {
-  }
-  function decodeStructure(_this__u8e3s4, descriptor, block) {
-    var composite = _this__u8e3s4.beginStructure_yljocp_k$(descriptor);
-    var result = block(composite);
-    composite.endStructure_1xqz0n_k$(descriptor);
-    return result;
+  function decodeIfNullable(_this__u8e3s4, deserializer, block) {
+    var isNullabilitySupported = deserializer.get_descriptor_wjt6a0_k$().get_isNullable_67sy7o_k$();
+    return isNullabilitySupported || _this__u8e3s4.decodeNotNullMark_us4ba1_k$() ? block() : _this__u8e3s4.decodeNull_jzrmuj_k$();
   }
   function Companion() {
     Companion_instance = this;
@@ -2151,18 +2147,22 @@
   }
   function CompositeDecoder() {
   }
-  function decodeIfNullable(_this__u8e3s4, deserializer, block) {
-    var isNullabilitySupported = deserializer.get_descriptor_wjt6a0_k$().get_isNullable_67sy7o_k$();
-    return isNullabilitySupported || _this__u8e3s4.decodeNotNullMark_us4ba1_k$() ? block() : _this__u8e3s4.decodeNull_jzrmuj_k$();
+  function decodeStructure(_this__u8e3s4, descriptor, block) {
+    var composite = _this__u8e3s4.beginStructure_yljocp_k$(descriptor);
+    var result = block(composite);
+    composite.endStructure_1xqz0n_k$(descriptor);
+    return result;
+  }
+  function Decoder() {
   }
   function Encoder() {
+  }
+  function CompositeEncoder() {
   }
   function encodeStructure(_this__u8e3s4, descriptor, block) {
     var composite = _this__u8e3s4.beginStructure_yljocp_k$(descriptor);
     block(composite);
     composite.endStructure_1xqz0n_k$(descriptor);
-  }
-  function CompositeEncoder() {
   }
   function encodeCollection(_this__u8e3s4, descriptor, collectionSize, block) {
     var composite = _this__u8e3s4.beginCollection_9edss2_k$(descriptor, collectionSize);
@@ -3740,47 +3740,6 @@
        while (inductionVariable < 32);
     throw MissingFieldException_init_$Create$(missingFields, descriptor.get_serialName_u2rqhk_k$());
   }
-  function hashCodeImpl(_this__u8e3s4, typeParams) {
-    var result = getStringHashCode(_this__u8e3s4.get_serialName_u2rqhk_k$());
-    result = imul(31, result) + contentHashCode(typeParams) | 0;
-    var elementDescriptors = get_elementDescriptors(_this__u8e3s4);
-    // Inline function 'kotlinx.serialization.internal.elementsHashCodeBy' call
-    // Inline function 'kotlin.collections.fold' call
-    var accumulator = 1;
-    var _iterator__ex2g4s = elementDescriptors.iterator_jk1svi_k$();
-    while (_iterator__ex2g4s.hasNext_bitz1p_k$()) {
-      var element = _iterator__ex2g4s.next_20eer_k$();
-      var hash = accumulator;
-      var tmp = imul(31, hash);
-      // Inline function 'kotlin.hashCode' call
-      var tmp0_safe_receiver = element.get_serialName_u2rqhk_k$();
-      var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : hashCode(tmp0_safe_receiver);
-      accumulator = tmp + (tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) | 0;
-    }
-    var namesHash = accumulator;
-    // Inline function 'kotlinx.serialization.internal.elementsHashCodeBy' call
-    // Inline function 'kotlin.collections.fold' call
-    var accumulator_0 = 1;
-    var _iterator__ex2g4s_0 = elementDescriptors.iterator_jk1svi_k$();
-    while (_iterator__ex2g4s_0.hasNext_bitz1p_k$()) {
-      var element_0 = _iterator__ex2g4s_0.next_20eer_k$();
-      var hash_0 = accumulator_0;
-      var tmp_0 = imul(31, hash_0);
-      // Inline function 'kotlin.hashCode' call
-      var tmp0_safe_receiver_0 = element_0.get_kind_wop7ml_k$();
-      var tmp1_elvis_lhs_0 = tmp0_safe_receiver_0 == null ? null : hashCode(tmp0_safe_receiver_0);
-      accumulator_0 = tmp_0 + (tmp1_elvis_lhs_0 == null ? 0 : tmp1_elvis_lhs_0) | 0;
-    }
-    var kindHash = accumulator_0;
-    result = imul(31, result) + namesHash | 0;
-    result = imul(31, result) + kindHash | 0;
-    return result;
-  }
-  function toStringImpl(_this__u8e3s4) {
-    var tmp = until(0, _this__u8e3s4.get_elementsCount_288r0x_k$());
-    var tmp_0 = _this__u8e3s4.get_serialName_u2rqhk_k$() + '(';
-    return joinToString(tmp, ', ', tmp_0, ')', VOID, VOID, toStringImpl$lambda(_this__u8e3s4));
-  }
   function _get_generatedSerializer__wsoshc($this) {
     return $this.generatedSerializer_1;
   }
@@ -4054,6 +4013,47 @@
   protoOf(PluginGeneratedSerialDescriptor).toString = function () {
     return toStringImpl(this);
   };
+  function toStringImpl(_this__u8e3s4) {
+    var tmp = until(0, _this__u8e3s4.get_elementsCount_288r0x_k$());
+    var tmp_0 = _this__u8e3s4.get_serialName_u2rqhk_k$() + '(';
+    return joinToString(tmp, ', ', tmp_0, ')', VOID, VOID, toStringImpl$lambda(_this__u8e3s4));
+  }
+  function hashCodeImpl(_this__u8e3s4, typeParams) {
+    var result = getStringHashCode(_this__u8e3s4.get_serialName_u2rqhk_k$());
+    result = imul(31, result) + contentHashCode(typeParams) | 0;
+    var elementDescriptors = get_elementDescriptors(_this__u8e3s4);
+    // Inline function 'kotlinx.serialization.internal.elementsHashCodeBy' call
+    // Inline function 'kotlin.collections.fold' call
+    var accumulator = 1;
+    var _iterator__ex2g4s = elementDescriptors.iterator_jk1svi_k$();
+    while (_iterator__ex2g4s.hasNext_bitz1p_k$()) {
+      var element = _iterator__ex2g4s.next_20eer_k$();
+      var hash = accumulator;
+      var tmp = imul(31, hash);
+      // Inline function 'kotlin.hashCode' call
+      var tmp0_safe_receiver = element.get_serialName_u2rqhk_k$();
+      var tmp1_elvis_lhs = tmp0_safe_receiver == null ? null : hashCode(tmp0_safe_receiver);
+      accumulator = tmp + (tmp1_elvis_lhs == null ? 0 : tmp1_elvis_lhs) | 0;
+    }
+    var namesHash = accumulator;
+    // Inline function 'kotlinx.serialization.internal.elementsHashCodeBy' call
+    // Inline function 'kotlin.collections.fold' call
+    var accumulator_0 = 1;
+    var _iterator__ex2g4s_0 = elementDescriptors.iterator_jk1svi_k$();
+    while (_iterator__ex2g4s_0.hasNext_bitz1p_k$()) {
+      var element_0 = _iterator__ex2g4s_0.next_20eer_k$();
+      var hash_0 = accumulator_0;
+      var tmp_0 = imul(31, hash_0);
+      // Inline function 'kotlin.hashCode' call
+      var tmp0_safe_receiver_0 = element_0.get_kind_wop7ml_k$();
+      var tmp1_elvis_lhs_0 = tmp0_safe_receiver_0 == null ? null : hashCode(tmp0_safe_receiver_0);
+      accumulator_0 = tmp_0 + (tmp1_elvis_lhs_0 == null ? 0 : tmp1_elvis_lhs_0) | 0;
+    }
+    var kindHash = accumulator_0;
+    result = imul(31, result) + namesHash | 0;
+    result = imul(31, result) + kindHash | 0;
+    return result;
+  }
   function toStringImpl$lambda($this_toStringImpl) {
     return function (i) {
       return $this_toStringImpl.getElementName_u4sqmf_k$(i) + ': ' + $this_toStringImpl.getElementDescriptor_ncda77_k$(i).get_serialName_u2rqhk_k$();
@@ -4064,9 +4064,9 @@
     return EMPTY_SERIALIZER_ARRAY;
   }
   var EMPTY_SERIALIZER_ARRAY;
-  function GeneratedSerializer() {
-  }
   function SerializerFactory() {
+  }
+  function GeneratedSerializer() {
   }
   var properties_initialized_PluginHelperInterfaces_kt_ap8in1;
   function _init_properties_PluginHelperInterfaces_kt__xgvzfp() {
@@ -5115,161 +5115,27 @@
     return BUILTIN_SERIALIZERS;
   }
   var BUILTIN_SERIALIZERS;
-  function StringSerializer() {
-    StringSerializer_instance = this;
-    this.descriptor_1 = new PrimitiveSerialDescriptor_0('kotlin.String', STRING_getInstance());
+  function DoubleSerializer() {
+    DoubleSerializer_instance = this;
+    this.descriptor_1 = new PrimitiveSerialDescriptor_0('kotlin.Double', DOUBLE_getInstance());
   }
-  protoOf(StringSerializer).get_descriptor_wjt6a0_k$ = function () {
+  protoOf(DoubleSerializer).get_descriptor_wjt6a0_k$ = function () {
     return this.descriptor_1;
   };
-  protoOf(StringSerializer).serialize_jnz9c3_k$ = function (encoder, value) {
-    return encoder.encodeString_424b5v_k$(value);
+  protoOf(DoubleSerializer).serialize_sc6aif_k$ = function (encoder, value) {
+    return encoder.encodeDouble_n270q9_k$(value);
   };
-  protoOf(StringSerializer).serialize_5ase3y_k$ = function (encoder, value) {
-    return this.serialize_jnz9c3_k$(encoder, (!(value == null) ? typeof value === 'string' : false) ? value : THROW_CCE());
+  protoOf(DoubleSerializer).serialize_5ase3y_k$ = function (encoder, value) {
+    return this.serialize_sc6aif_k$(encoder, (!(value == null) ? typeof value === 'number' : false) ? value : THROW_CCE());
   };
-  protoOf(StringSerializer).deserialize_sy6x50_k$ = function (decoder) {
-    return decoder.decodeString_x3hxsx_k$();
+  protoOf(DoubleSerializer).deserialize_sy6x50_k$ = function (decoder) {
+    return decoder.decodeDouble_ur8l0f_k$();
   };
-  var StringSerializer_instance;
-  function StringSerializer_getInstance() {
-    if (StringSerializer_instance == null)
-      new StringSerializer();
-    return StringSerializer_instance;
-  }
-  function PrimitiveDescriptorSafe(serialName, kind) {
-    _init_properties_Primitives_kt__k0eto4();
-    checkNameIsNotAPrimitive(serialName);
-    return new PrimitiveSerialDescriptor_0(serialName, kind);
-  }
-  function error_0($this) {
-    throw IllegalStateException_init_$Create$('Primitive descriptor ' + $this.serialName_1 + ' does not have elements');
-  }
-  function PrimitiveSerialDescriptor_0(serialName, kind) {
-    this.serialName_1 = serialName;
-    this.kind_1 = kind;
-  }
-  protoOf(PrimitiveSerialDescriptor_0).get_serialName_u2rqhk_k$ = function () {
-    return this.serialName_1;
-  };
-  protoOf(PrimitiveSerialDescriptor_0).get_kind_wop7ml_k$ = function () {
-    return this.kind_1;
-  };
-  protoOf(PrimitiveSerialDescriptor_0).get_elementsCount_288r0x_k$ = function () {
-    return 0;
-  };
-  protoOf(PrimitiveSerialDescriptor_0).getElementName_u4sqmf_k$ = function (index) {
-    error_0(this);
-  };
-  protoOf(PrimitiveSerialDescriptor_0).getElementIndex_utfbym_k$ = function (name) {
-    error_0(this);
-  };
-  protoOf(PrimitiveSerialDescriptor_0).isElementOptional_heqq56_k$ = function (index) {
-    error_0(this);
-  };
-  protoOf(PrimitiveSerialDescriptor_0).getElementDescriptor_ncda77_k$ = function (index) {
-    error_0(this);
-  };
-  protoOf(PrimitiveSerialDescriptor_0).getElementAnnotations_omrjs6_k$ = function (index) {
-    error_0(this);
-  };
-  protoOf(PrimitiveSerialDescriptor_0).toString = function () {
-    return 'PrimitiveDescriptor(' + this.serialName_1 + ')';
-  };
-  protoOf(PrimitiveSerialDescriptor_0).equals = function (other) {
-    if (this === other)
-      return true;
-    if (!(other instanceof PrimitiveSerialDescriptor_0))
-      return false;
-    if (this.serialName_1 === other.serialName_1 && equals(this.kind_1, other.kind_1))
-      return true;
-    return false;
-  };
-  protoOf(PrimitiveSerialDescriptor_0).hashCode = function () {
-    return getStringHashCode(this.serialName_1) + imul(31, this.kind_1.hashCode()) | 0;
-  };
-  function checkNameIsNotAPrimitive(serialName) {
-    _init_properties_Primitives_kt__k0eto4();
-    var values = get_BUILTIN_SERIALIZERS().get_values_ksazhn_k$();
-    var _iterator__ex2g4s = values.iterator_jk1svi_k$();
-    while (_iterator__ex2g4s.hasNext_bitz1p_k$()) {
-      var primitive = _iterator__ex2g4s.next_20eer_k$();
-      var primitiveName = primitive.get_descriptor_wjt6a0_k$().get_serialName_u2rqhk_k$();
-      if (serialName === primitiveName) {
-        throw IllegalArgumentException_init_$Create$(trimIndent('\n                The name of serial descriptor should uniquely identify associated serializer.\n                For serial name ' + serialName + ' there already exists ' + getKClassFromExpression(primitive).get_simpleName_r6f8py_k$() + '.\n                Please refer to SerialDescriptor documentation for additional information.\n            '));
-      }
-    }
-  }
-  function builtinSerializerOrNull(_this__u8e3s4) {
-    _init_properties_Primitives_kt__k0eto4();
-    var tmp = get_BUILTIN_SERIALIZERS().get_wei43m_k$(_this__u8e3s4);
-    return (tmp == null ? true : isInterface(tmp, KSerializer)) ? tmp : THROW_CCE();
-  }
-  function IntSerializer() {
-    IntSerializer_instance = this;
-    this.descriptor_1 = new PrimitiveSerialDescriptor_0('kotlin.Int', INT_getInstance());
-  }
-  protoOf(IntSerializer).get_descriptor_wjt6a0_k$ = function () {
-    return this.descriptor_1;
-  };
-  protoOf(IntSerializer).serialize_iz3ntn_k$ = function (encoder, value) {
-    return encoder.encodeInt_y5zi3z_k$(value);
-  };
-  protoOf(IntSerializer).serialize_5ase3y_k$ = function (encoder, value) {
-    return this.serialize_iz3ntn_k$(encoder, (!(value == null) ? typeof value === 'number' : false) ? value : THROW_CCE());
-  };
-  protoOf(IntSerializer).deserialize_sy6x50_k$ = function (decoder) {
-    return decoder.decodeInt_8iq8f5_k$();
-  };
-  var IntSerializer_instance;
-  function IntSerializer_getInstance() {
-    if (IntSerializer_instance == null)
-      new IntSerializer();
-    return IntSerializer_instance;
-  }
-  function LongSerializer() {
-    LongSerializer_instance = this;
-    this.descriptor_1 = new PrimitiveSerialDescriptor_0('kotlin.Long', LONG_getInstance());
-  }
-  protoOf(LongSerializer).get_descriptor_wjt6a0_k$ = function () {
-    return this.descriptor_1;
-  };
-  protoOf(LongSerializer).serialize_d531zj_k$ = function (encoder, value) {
-    return encoder.encodeLong_3didw_k$(value);
-  };
-  protoOf(LongSerializer).serialize_5ase3y_k$ = function (encoder, value) {
-    return this.serialize_d531zj_k$(encoder, value instanceof Long ? value : THROW_CCE());
-  };
-  protoOf(LongSerializer).deserialize_sy6x50_k$ = function (decoder) {
-    return decoder.decodeLong_jzt186_k$();
-  };
-  var LongSerializer_instance;
-  function LongSerializer_getInstance() {
-    if (LongSerializer_instance == null)
-      new LongSerializer();
-    return LongSerializer_instance;
-  }
-  function ByteSerializer() {
-    ByteSerializer_instance = this;
-    this.descriptor_1 = new PrimitiveSerialDescriptor_0('kotlin.Byte', BYTE_getInstance());
-  }
-  protoOf(ByteSerializer).get_descriptor_wjt6a0_k$ = function () {
-    return this.descriptor_1;
-  };
-  protoOf(ByteSerializer).serialize_bqouor_k$ = function (encoder, value) {
-    return encoder.encodeByte_6txfee_k$(value);
-  };
-  protoOf(ByteSerializer).serialize_5ase3y_k$ = function (encoder, value) {
-    return this.serialize_bqouor_k$(encoder, (!(value == null) ? typeof value === 'number' : false) ? value : THROW_CCE());
-  };
-  protoOf(ByteSerializer).deserialize_sy6x50_k$ = function (decoder) {
-    return decoder.decodeByte_jzz7je_k$();
-  };
-  var ByteSerializer_instance;
-  function ByteSerializer_getInstance() {
-    if (ByteSerializer_instance == null)
-      new ByteSerializer();
-    return ByteSerializer_instance;
+  var DoubleSerializer_instance;
+  function DoubleSerializer_getInstance() {
+    if (DoubleSerializer_instance == null)
+      new DoubleSerializer();
+    return DoubleSerializer_instance;
   }
   function ShortSerializer() {
     ShortSerializer_instance = this;
@@ -5318,71 +5184,54 @@
       new CharSerializer();
     return CharSerializer_instance;
   }
-  function DoubleSerializer() {
-    DoubleSerializer_instance = this;
-    this.descriptor_1 = new PrimitiveSerialDescriptor_0('kotlin.Double', DOUBLE_getInstance());
+  function PrimitiveDescriptorSafe(serialName, kind) {
+    _init_properties_Primitives_kt__k0eto4();
+    checkNameIsNotAPrimitive(serialName);
+    return new PrimitiveSerialDescriptor_0(serialName, kind);
   }
-  protoOf(DoubleSerializer).get_descriptor_wjt6a0_k$ = function () {
+  function LongSerializer() {
+    LongSerializer_instance = this;
+    this.descriptor_1 = new PrimitiveSerialDescriptor_0('kotlin.Long', LONG_getInstance());
+  }
+  protoOf(LongSerializer).get_descriptor_wjt6a0_k$ = function () {
     return this.descriptor_1;
   };
-  protoOf(DoubleSerializer).serialize_sc6aif_k$ = function (encoder, value) {
-    return encoder.encodeDouble_n270q9_k$(value);
+  protoOf(LongSerializer).serialize_d531zj_k$ = function (encoder, value) {
+    return encoder.encodeLong_3didw_k$(value);
   };
-  protoOf(DoubleSerializer).serialize_5ase3y_k$ = function (encoder, value) {
-    return this.serialize_sc6aif_k$(encoder, (!(value == null) ? typeof value === 'number' : false) ? value : THROW_CCE());
+  protoOf(LongSerializer).serialize_5ase3y_k$ = function (encoder, value) {
+    return this.serialize_d531zj_k$(encoder, value instanceof Long ? value : THROW_CCE());
   };
-  protoOf(DoubleSerializer).deserialize_sy6x50_k$ = function (decoder) {
-    return decoder.decodeDouble_ur8l0f_k$();
+  protoOf(LongSerializer).deserialize_sy6x50_k$ = function (decoder) {
+    return decoder.decodeLong_jzt186_k$();
   };
-  var DoubleSerializer_instance;
-  function DoubleSerializer_getInstance() {
-    if (DoubleSerializer_instance == null)
-      new DoubleSerializer();
-    return DoubleSerializer_instance;
+  var LongSerializer_instance;
+  function LongSerializer_getInstance() {
+    if (LongSerializer_instance == null)
+      new LongSerializer();
+    return LongSerializer_instance;
   }
-  function FloatSerializer() {
-    FloatSerializer_instance = this;
-    this.descriptor_1 = new PrimitiveSerialDescriptor_0('kotlin.Float', FLOAT_getInstance());
+  function ByteSerializer() {
+    ByteSerializer_instance = this;
+    this.descriptor_1 = new PrimitiveSerialDescriptor_0('kotlin.Byte', BYTE_getInstance());
   }
-  protoOf(FloatSerializer).get_descriptor_wjt6a0_k$ = function () {
+  protoOf(ByteSerializer).get_descriptor_wjt6a0_k$ = function () {
     return this.descriptor_1;
   };
-  protoOf(FloatSerializer).serialize_ttziez_k$ = function (encoder, value) {
-    return encoder.encodeFloat_b8b85a_k$(value);
+  protoOf(ByteSerializer).serialize_bqouor_k$ = function (encoder, value) {
+    return encoder.encodeByte_6txfee_k$(value);
   };
-  protoOf(FloatSerializer).serialize_5ase3y_k$ = function (encoder, value) {
-    return this.serialize_ttziez_k$(encoder, (!(value == null) ? typeof value === 'number' : false) ? value : THROW_CCE());
+  protoOf(ByteSerializer).serialize_5ase3y_k$ = function (encoder, value) {
+    return this.serialize_bqouor_k$(encoder, (!(value == null) ? typeof value === 'number' : false) ? value : THROW_CCE());
   };
-  protoOf(FloatSerializer).deserialize_sy6x50_k$ = function (decoder) {
-    return decoder.decodeFloat_jcnrwu_k$();
+  protoOf(ByteSerializer).deserialize_sy6x50_k$ = function (decoder) {
+    return decoder.decodeByte_jzz7je_k$();
   };
-  var FloatSerializer_instance;
-  function FloatSerializer_getInstance() {
-    if (FloatSerializer_instance == null)
-      new FloatSerializer();
-    return FloatSerializer_instance;
-  }
-  function BooleanSerializer() {
-    BooleanSerializer_instance = this;
-    this.descriptor_1 = new PrimitiveSerialDescriptor_0('kotlin.Boolean', BOOLEAN_getInstance());
-  }
-  protoOf(BooleanSerializer).get_descriptor_wjt6a0_k$ = function () {
-    return this.descriptor_1;
-  };
-  protoOf(BooleanSerializer).serialize_ky3y8o_k$ = function (encoder, value) {
-    return encoder.encodeBoolean_tu2e59_k$(value);
-  };
-  protoOf(BooleanSerializer).serialize_5ase3y_k$ = function (encoder, value) {
-    return this.serialize_ky3y8o_k$(encoder, (!(value == null) ? typeof value === 'boolean' : false) ? value : THROW_CCE());
-  };
-  protoOf(BooleanSerializer).deserialize_sy6x50_k$ = function (decoder) {
-    return decoder.decodeBoolean_m0aca_k$();
-  };
-  var BooleanSerializer_instance;
-  function BooleanSerializer_getInstance() {
-    if (BooleanSerializer_instance == null)
-      new BooleanSerializer();
-    return BooleanSerializer_instance;
+  var ByteSerializer_instance;
+  function ByteSerializer_getInstance() {
+    if (ByteSerializer_instance == null)
+      new ByteSerializer();
+    return ByteSerializer_instance;
   }
   function UnitSerializer() {
     UnitSerializer_instance = this;
@@ -5409,6 +5258,157 @@
     if (UnitSerializer_instance == null)
       new UnitSerializer();
     return UnitSerializer_instance;
+  }
+  function error_0($this) {
+    throw IllegalStateException_init_$Create$('Primitive descriptor ' + $this.serialName_1 + ' does not have elements');
+  }
+  function PrimitiveSerialDescriptor_0(serialName, kind) {
+    this.serialName_1 = serialName;
+    this.kind_1 = kind;
+  }
+  protoOf(PrimitiveSerialDescriptor_0).get_serialName_u2rqhk_k$ = function () {
+    return this.serialName_1;
+  };
+  protoOf(PrimitiveSerialDescriptor_0).get_kind_wop7ml_k$ = function () {
+    return this.kind_1;
+  };
+  protoOf(PrimitiveSerialDescriptor_0).get_elementsCount_288r0x_k$ = function () {
+    return 0;
+  };
+  protoOf(PrimitiveSerialDescriptor_0).getElementName_u4sqmf_k$ = function (index) {
+    error_0(this);
+  };
+  protoOf(PrimitiveSerialDescriptor_0).getElementIndex_utfbym_k$ = function (name) {
+    error_0(this);
+  };
+  protoOf(PrimitiveSerialDescriptor_0).isElementOptional_heqq56_k$ = function (index) {
+    error_0(this);
+  };
+  protoOf(PrimitiveSerialDescriptor_0).getElementDescriptor_ncda77_k$ = function (index) {
+    error_0(this);
+  };
+  protoOf(PrimitiveSerialDescriptor_0).getElementAnnotations_omrjs6_k$ = function (index) {
+    error_0(this);
+  };
+  protoOf(PrimitiveSerialDescriptor_0).toString = function () {
+    return 'PrimitiveDescriptor(' + this.serialName_1 + ')';
+  };
+  protoOf(PrimitiveSerialDescriptor_0).equals = function (other) {
+    if (this === other)
+      return true;
+    if (!(other instanceof PrimitiveSerialDescriptor_0))
+      return false;
+    if (this.serialName_1 === other.serialName_1 && equals(this.kind_1, other.kind_1))
+      return true;
+    return false;
+  };
+  protoOf(PrimitiveSerialDescriptor_0).hashCode = function () {
+    return getStringHashCode(this.serialName_1) + imul(31, this.kind_1.hashCode()) | 0;
+  };
+  function StringSerializer() {
+    StringSerializer_instance = this;
+    this.descriptor_1 = new PrimitiveSerialDescriptor_0('kotlin.String', STRING_getInstance());
+  }
+  protoOf(StringSerializer).get_descriptor_wjt6a0_k$ = function () {
+    return this.descriptor_1;
+  };
+  protoOf(StringSerializer).serialize_jnz9c3_k$ = function (encoder, value) {
+    return encoder.encodeString_424b5v_k$(value);
+  };
+  protoOf(StringSerializer).serialize_5ase3y_k$ = function (encoder, value) {
+    return this.serialize_jnz9c3_k$(encoder, (!(value == null) ? typeof value === 'string' : false) ? value : THROW_CCE());
+  };
+  protoOf(StringSerializer).deserialize_sy6x50_k$ = function (decoder) {
+    return decoder.decodeString_x3hxsx_k$();
+  };
+  var StringSerializer_instance;
+  function StringSerializer_getInstance() {
+    if (StringSerializer_instance == null)
+      new StringSerializer();
+    return StringSerializer_instance;
+  }
+  function builtinSerializerOrNull(_this__u8e3s4) {
+    _init_properties_Primitives_kt__k0eto4();
+    var tmp = get_BUILTIN_SERIALIZERS().get_wei43m_k$(_this__u8e3s4);
+    return (tmp == null ? true : isInterface(tmp, KSerializer)) ? tmp : THROW_CCE();
+  }
+  function BooleanSerializer() {
+    BooleanSerializer_instance = this;
+    this.descriptor_1 = new PrimitiveSerialDescriptor_0('kotlin.Boolean', BOOLEAN_getInstance());
+  }
+  protoOf(BooleanSerializer).get_descriptor_wjt6a0_k$ = function () {
+    return this.descriptor_1;
+  };
+  protoOf(BooleanSerializer).serialize_ky3y8o_k$ = function (encoder, value) {
+    return encoder.encodeBoolean_tu2e59_k$(value);
+  };
+  protoOf(BooleanSerializer).serialize_5ase3y_k$ = function (encoder, value) {
+    return this.serialize_ky3y8o_k$(encoder, (!(value == null) ? typeof value === 'boolean' : false) ? value : THROW_CCE());
+  };
+  protoOf(BooleanSerializer).deserialize_sy6x50_k$ = function (decoder) {
+    return decoder.decodeBoolean_m0aca_k$();
+  };
+  var BooleanSerializer_instance;
+  function BooleanSerializer_getInstance() {
+    if (BooleanSerializer_instance == null)
+      new BooleanSerializer();
+    return BooleanSerializer_instance;
+  }
+  function IntSerializer() {
+    IntSerializer_instance = this;
+    this.descriptor_1 = new PrimitiveSerialDescriptor_0('kotlin.Int', INT_getInstance());
+  }
+  protoOf(IntSerializer).get_descriptor_wjt6a0_k$ = function () {
+    return this.descriptor_1;
+  };
+  protoOf(IntSerializer).serialize_iz3ntn_k$ = function (encoder, value) {
+    return encoder.encodeInt_y5zi3z_k$(value);
+  };
+  protoOf(IntSerializer).serialize_5ase3y_k$ = function (encoder, value) {
+    return this.serialize_iz3ntn_k$(encoder, (!(value == null) ? typeof value === 'number' : false) ? value : THROW_CCE());
+  };
+  protoOf(IntSerializer).deserialize_sy6x50_k$ = function (decoder) {
+    return decoder.decodeInt_8iq8f5_k$();
+  };
+  var IntSerializer_instance;
+  function IntSerializer_getInstance() {
+    if (IntSerializer_instance == null)
+      new IntSerializer();
+    return IntSerializer_instance;
+  }
+  function FloatSerializer() {
+    FloatSerializer_instance = this;
+    this.descriptor_1 = new PrimitiveSerialDescriptor_0('kotlin.Float', FLOAT_getInstance());
+  }
+  protoOf(FloatSerializer).get_descriptor_wjt6a0_k$ = function () {
+    return this.descriptor_1;
+  };
+  protoOf(FloatSerializer).serialize_ttziez_k$ = function (encoder, value) {
+    return encoder.encodeFloat_b8b85a_k$(value);
+  };
+  protoOf(FloatSerializer).serialize_5ase3y_k$ = function (encoder, value) {
+    return this.serialize_ttziez_k$(encoder, (!(value == null) ? typeof value === 'number' : false) ? value : THROW_CCE());
+  };
+  protoOf(FloatSerializer).deserialize_sy6x50_k$ = function (decoder) {
+    return decoder.decodeFloat_jcnrwu_k$();
+  };
+  var FloatSerializer_instance;
+  function FloatSerializer_getInstance() {
+    if (FloatSerializer_instance == null)
+      new FloatSerializer();
+    return FloatSerializer_instance;
+  }
+  function checkNameIsNotAPrimitive(serialName) {
+    _init_properties_Primitives_kt__k0eto4();
+    var values = get_BUILTIN_SERIALIZERS().get_values_ksazhn_k$();
+    var _iterator__ex2g4s = values.iterator_jk1svi_k$();
+    while (_iterator__ex2g4s.hasNext_bitz1p_k$()) {
+      var primitive = _iterator__ex2g4s.next_20eer_k$();
+      var primitiveName = primitive.get_descriptor_wjt6a0_k$().get_serialName_u2rqhk_k$();
+      if (serialName === primitiveName) {
+        throw IllegalArgumentException_init_$Create$(trimIndent('\n                The name of serial descriptor should uniquely identify associated serializer.\n                For serial name ' + serialName + ' there already exists ' + getKClassFromExpression(primitive).get_simpleName_r6f8py_k$() + '.\n                Please refer to SerialDescriptor documentation for additional information.\n            '));
+      }
+    }
   }
   var properties_initialized_Primitives_kt_6dpii6;
   function _init_properties_Primitives_kt__k0eto4() {

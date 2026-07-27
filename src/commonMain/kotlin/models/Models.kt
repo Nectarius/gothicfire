@@ -13,3 +13,6 @@ data class Discussion(val id: String, val userId: String, val authorName: String
 
 @Serializable
 data class UserSession(val id: String, val email: String, val name: String)
+
+@Serializable
+data class TwitterPkceSession(val codeVerifier: String, val state: String)

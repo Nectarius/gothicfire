@@ -152,10 +152,10 @@
   initMetadataForClass(JsonRpcResponse, 'JsonRpcResponse', JsonRpcResponse, VOID, VOID, VOID, VOID, makeAssociatedObjectMapES5([SerializableWith, $serializer_getInstance_0]));
   initMetadataForCompanion(Companion_1);
   initMetadataForClass(HttpMethod, 'HttpMethod', VOID, Enum);
+  initMetadataForClass(SecurityException, 'SecurityException', VOID, Exception);
   initMetadataForClass(ServiceException, 'ServiceException', VOID, Exception);
   initMetadataForCompanion(Companion_2, VOID, [SerializerFactory]);
   initMetadataForClass(AbstractServiceException, 'AbstractServiceException', VOID, Exception, VOID, VOID, VOID, makeAssociatedObjectMapES5([SerializableWith, Companion_getInstance_3]));
-  initMetadataForClass(SecurityException, 'SecurityException', VOID, Exception);
   initMetadataForCompanion(Companion_3);
   initMetadataForObject($serializer_1, '$serializer', VOID, VOID, [GeneratedSerializer]);
   initMetadataForClass(RemoteFilter, 'RemoteFilter', VOID, VOID, VOID, VOID, VOID, makeAssociatedObjectMapES5([SerializableWith, $serializer_getInstance_1]));
@@ -732,6 +732,10 @@
   function HttpMethod(name, ordinal) {
     Enum.call(this, name, ordinal);
   }
+  function SecurityException(message) {
+    Exception_init_$Init$(message, this);
+    captureStack(this, SecurityException);
+  }
   function ServiceException(message) {
     Exception_init_$Init$(message, this);
     captureStack(this, ServiceException);
@@ -778,10 +782,6 @@
     Companion_getInstance_3();
     Exception_init_$Init$('AbstractServiceException', this);
     captureStack(this, AbstractServiceException);
-  }
-  function SecurityException(message) {
-    Exception_init_$Init$(message, this);
-    captureStack(this, SecurityException);
   }
   function Companion_3() {
     Companion_instance_3 = this;

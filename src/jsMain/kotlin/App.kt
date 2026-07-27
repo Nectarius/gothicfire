@@ -81,6 +81,9 @@ class App : Application() {
                         a(href = "/login", className = "btn btn-primary text-none") {
                             textNode("Login with Google")
                         }
+                        a(href = "/auth/twitter", className = "btn btn-primary text-none") {
+                            textNode("Login with X/Twitter")
+                        }
                     }
                 }
             }

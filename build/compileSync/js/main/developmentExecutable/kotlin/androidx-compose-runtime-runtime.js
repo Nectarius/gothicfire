@@ -49,9 +49,6 @@
   var THROW_CCE = kotlin_kotlin.$_$.cj;
   var Annotation = kotlin_kotlin.$_$.gi;
   var getStringHashCode = kotlin_kotlin.$_$.pd;
-  var THROW_IAE = kotlin_kotlin.$_$.dj;
-  var enumEntries = kotlin_kotlin.$_$.sb;
-  var Enum = kotlin_kotlin.$_$.pi;
   var emptyList = kotlin_kotlin.$_$.y7;
   var ArrayList_init_$Create$ = kotlin_kotlin.$_$.d3;
   var invert = kotlin_kotlin.$_$.ic;
@@ -68,6 +65,9 @@
   var IllegalStateException_init_$Init$ = kotlin_kotlin.$_$.m4;
   var captureStack = kotlin_kotlin.$_$.yc;
   var defineProp = kotlin_kotlin.$_$.hd;
+  var THROW_IAE = kotlin_kotlin.$_$.dj;
+  var enumEntries = kotlin_kotlin.$_$.sb;
+  var Enum = kotlin_kotlin.$_$.pi;
   var toString = kotlin_kotlin.$_$.xe;
   var plus_1 = kotlin_kotlin.$_$.i9;
   var isArray = kotlin_kotlin.$_$.yd;
@@ -329,10 +329,6 @@
   initMetadataForClass(ComposeCompilerApi, 'ComposeCompilerApi', VOID, VOID, [Annotation]);
   initMetadataForInterface(ComposeNodeLifecycleCallback, 'ComposeNodeLifecycleCallback');
   initMetadataForObject(ComposeRuntimeFlags, 'ComposeRuntimeFlags');
-  initMetadataForInterface(CompositionTracer, 'CompositionTracer');
-  initMetadataForInterface(ScopeUpdateScope, 'ScopeUpdateScope');
-  initMetadataForClass(Composer$Companion$Empty$1);
-  initMetadataForCompanion(Companion_0);
   function get_compoundKeyHash() {
     return this.get_compositeKeyHashCode_60ds64_k$().hashCode();
   }
@@ -364,13 +360,17 @@
     return this.changed_ga7h3f_k$(value);
   }
   initMetadataForInterface(Composer, 'Composer');
-  initMetadataForClass(InvalidationResult, 'InvalidationResult', VOID, Enum);
+  initMetadataForClass(InternalComposer, 'InternalComposer', VOID, VOID, [Composer]);
   initMetadataForClass(ProvidedValue, 'ProvidedValue');
+  initMetadataForClass(Composer$Companion$Empty$1);
+  initMetadataForCompanion(Companion_0);
   initMetadataForInterface(RememberObserverHolder, 'RememberObserverHolder');
   initMetadataForClass(ComposeRuntimeError, 'ComposeRuntimeError', VOID, IllegalStateException);
-  initMetadataForClass(InternalComposer, 'InternalComposer', VOID, VOID, [Composer]);
-  initMetadataForInterface(ReusableRememberObserverHolder, 'ReusableRememberObserverHolder', VOID, VOID, [RememberObserverHolder]);
+  initMetadataForInterface(ScopeUpdateScope, 'ScopeUpdateScope');
+  initMetadataForClass(InvalidationResult, 'InvalidationResult', VOID, Enum);
   initMetadataForClass(Updater, 'Updater');
+  initMetadataForInterface(ReusableRememberObserverHolder, 'ReusableRememberObserverHolder', VOID, VOID, [RememberObserverHolder]);
+  initMetadataForInterface(CompositionTracer, 'CompositionTracer');
   initMetadataForInterface(RecomposeScopeOwner, 'RecomposeScopeOwner');
   initMetadataForClass(extractMovableContentAtCurrent$movableContentRecomposeScopeOwner$1, VOID, VOID, VOID, [RecomposeScopeOwner]);
   initMetadataForInterface(CompositionServiceKey, 'CompositionServiceKey');
@@ -503,7 +503,6 @@
   initMetadataForInterface(SnapshotMutationPolicy, 'SnapshotMutationPolicy');
   initMetadataForObject(StructuralEqualityPolicy, 'StructuralEqualityPolicy', VOID, VOID, [SnapshotMutationPolicy]);
   initMetadataForObject(ReferentialEqualityPolicy, 'ReferentialEqualityPolicy', VOID, VOID, [SnapshotMutationPolicy]);
-  initMetadataForInterface(MutableState, 'MutableState', VOID, VOID, [State_0]);
   initMetadataForClass(StateRecord, 'StateRecord');
   initMetadataForClass(StateStateRecord, 'StateStateRecord', VOID, StateRecord);
   function mergeRecords(previous, current, applied) {
@@ -511,6 +510,7 @@
   }
   initMetadataForInterface(StateObject, 'StateObject');
   initMetadataForClass(StateObjectImpl, 'StateObjectImpl', VOID, VOID, [StateObject]);
+  initMetadataForInterface(MutableState, 'MutableState', VOID, VOID, [State_0]);
   initMetadataForInterface(SnapshotMutableState, 'SnapshotMutableState', VOID, VOID, [MutableState]);
   initMetadataForClass(SnapshotMutableStateImpl, 'SnapshotMutableStateImpl', VOID, StateObjectImpl, [SnapshotMutableState]);
   initMetadataForClass(IntStack, 'IntStack', IntStack);
@@ -1364,81 +1364,11 @@
   var androidx_compose_runtime_ProvidedValue$stable;
   var androidx_compose_runtime_InternalComposer$stable;
   var androidx_compose_runtime_ComposeRuntimeError$stable;
-  function CompositionTracer() {
+  function sourceInformation(composer, sourceInformation) {
+    _init_properties_Composer_kt__bmp4g0();
+    composer.sourceInformation_x808w7_k$(sourceInformation);
   }
-  function ScopeUpdateScope() {
-  }
-  function Composer$Companion$Empty$1() {
-  }
-  protoOf(Composer$Companion$Empty$1).toString = function () {
-    return 'Empty';
-  };
-  function Companion_0() {
-    Companion_instance_0 = this;
-    var tmp = this;
-    tmp.Empty_1 = new Composer$Companion$Empty$1();
-  }
-  protoOf(Companion_0).get_Empty_i9b85g_k$ = function () {
-    return this.Empty_1;
-  };
-  protoOf(Companion_0).setTracer_cox5y7_k$ = function (tracer) {
-    set_compositionTracer(tracer);
-  };
-  protoOf(Companion_0).setDiagnosticStackTraceMode_ykmmwa_k$ = function (mode) {
-    set_composeStackTraceMode(mode);
-  };
-  protoOf(Companion_0).setDiagnosticStackTraceEnabled_opxcee_k$ = function (enabled) {
-    set_composeStackTraceMode(enabled ? Companion_getInstance_22().get_SourceInformation_mn9zd9_k$() : Companion_getInstance_22().get_None_13o76c_k$());
-  };
-  var Companion_instance_0;
-  function Companion_getInstance_1() {
-    if (Companion_instance_0 == null)
-      new Companion_0();
-    return Companion_instance_0;
-  }
-  function Composer() {
-  }
-  var InvalidationResult_IGNORED_instance;
-  var InvalidationResult_SCHEDULED_instance;
-  var InvalidationResult_DEFERRED_instance;
-  var InvalidationResult_IMMINENT_instance;
-  function values() {
-    return [InvalidationResult_IGNORED_getInstance(), InvalidationResult_SCHEDULED_getInstance(), InvalidationResult_DEFERRED_getInstance(), InvalidationResult_IMMINENT_getInstance()];
-  }
-  function valueOf(value) {
-    switch (value) {
-      case 'IGNORED':
-        return InvalidationResult_IGNORED_getInstance();
-      case 'SCHEDULED':
-        return InvalidationResult_SCHEDULED_getInstance();
-      case 'DEFERRED':
-        return InvalidationResult_DEFERRED_getInstance();
-      case 'IMMINENT':
-        return InvalidationResult_IMMINENT_getInstance();
-      default:
-        InvalidationResult_initEntries();
-        THROW_IAE('No enum constant androidx.compose.runtime.InvalidationResult.' + value);
-        break;
-    }
-  }
-  function get_entries() {
-    if ($ENTRIES == null)
-      $ENTRIES = enumEntries(values());
-    return $ENTRIES;
-  }
-  var InvalidationResult_entriesInitialized;
-  function InvalidationResult_initEntries() {
-    if (InvalidationResult_entriesInitialized)
-      return Unit_getInstance();
-    InvalidationResult_entriesInitialized = true;
-    InvalidationResult_IGNORED_instance = new InvalidationResult('IGNORED', 0);
-    InvalidationResult_SCHEDULED_instance = new InvalidationResult('SCHEDULED', 1);
-    InvalidationResult_DEFERRED_instance = new InvalidationResult('DEFERRED', 2);
-    InvalidationResult_IMMINENT_instance = new InvalidationResult('IMMINENT', 3);
-  }
-  var $ENTRIES;
-  function InvalidationResult(name, ordinal) {
-    Enum.call(this, name, ordinal);
+  function InternalComposer() {
   }
   function _get_explicitNull__mmdtxs($this) {
     return $this.explicitNull_1;
@@ -1501,13 +1431,37 @@
     this.canOverride_1 = false;
     return this;
   };
-  function runtimeCheck(value, lazyMessage) {
-    _init_properties_Composer_kt__bmp4g0();
-    if (!value) {
-      composeImmediateRuntimeError(lazyMessage());
-    }
+  function Composer$Companion$Empty$1() {
   }
-  function runtimeCheck_0(value) {
+  protoOf(Composer$Companion$Empty$1).toString = function () {
+    return 'Empty';
+  };
+  function Companion_0() {
+    Companion_instance_0 = this;
+    var tmp = this;
+    tmp.Empty_1 = new Composer$Companion$Empty$1();
+  }
+  protoOf(Companion_0).get_Empty_i9b85g_k$ = function () {
+    return this.Empty_1;
+  };
+  protoOf(Companion_0).setTracer_cox5y7_k$ = function (tracer) {
+    set_compositionTracer(tracer);
+  };
+  protoOf(Companion_0).setDiagnosticStackTraceMode_ykmmwa_k$ = function (mode) {
+    set_composeStackTraceMode(mode);
+  };
+  protoOf(Companion_0).setDiagnosticStackTraceEnabled_opxcee_k$ = function (enabled) {
+    set_composeStackTraceMode(enabled ? Companion_getInstance_22().get_SourceInformation_mn9zd9_k$() : Companion_getInstance_22().get_None_13o76c_k$());
+  };
+  var Companion_instance_0;
+  function Companion_getInstance_1() {
+    if (Companion_instance_0 == null)
+      new Companion_0();
+    return Companion_instance_0;
+  }
+  function Composer() {
+  }
+  function runtimeCheck(value) {
     _init_properties_Composer_kt__bmp4g0();
     // Inline function 'androidx.compose.runtime.runtimeCheck' call
     if (!value) {
@@ -1516,13 +1470,15 @@
     }
     return Unit_getInstance();
   }
-  function RememberObserverHolder() {
-  }
-  function removeCurrentGroup(_this__u8e3s4, rememberManager) {
+  function debugRuntimeCheck(value, lazyMessage) {
     _init_properties_Composer_kt__bmp4g0();
-    var tmp = _this__u8e3s4.get_currentGroup_sgvyz3_k$();
-    _this__u8e3s4.forAllDataInRememberOrder_fy52g4_k$(tmp, removeCurrentGroup$lambda(rememberManager));
-    _this__u8e3s4.removeGroup_5800px_k$();
+    if (false && !value) {
+      composeImmediateRuntimeError(lazyMessage());
+    }
+  }
+  function composeRuntimeError(message) {
+    _init_properties_Composer_kt__bmp4g0();
+    throw new ComposeRuntimeError('Compose Runtime internal error. Unexpected or incorrect use of the Compose ' + ('internal runtime API (' + message + '). Please report to Google or use ') + 'https://goo.gle/compose-feedback');
   }
   function extractMovableContentAtCurrent(composition, reference, slots, applier) {
     _init_properties_Composer_kt__bmp4g0();
@@ -1740,28 +1696,7 @@
     }
     return state;
   }
-  function debugRuntimeCheck(value) {
-    _init_properties_Composer_kt__bmp4g0();
-    // Inline function 'androidx.compose.runtime.debugRuntimeCheck' call
-    if (false && !value) {
-      var tmp$ret$1 = 'Check failed';
-      composeImmediateRuntimeError(tmp$ret$1);
-    }
-    return Unit_getInstance();
-  }
-  function debugRuntimeCheck_0(value, lazyMessage) {
-    _init_properties_Composer_kt__bmp4g0();
-    if (false && !value) {
-      composeImmediateRuntimeError(lazyMessage());
-    }
-  }
-  function composeRuntimeError(message) {
-    _init_properties_Composer_kt__bmp4g0();
-    throw new ComposeRuntimeError('Compose Runtime internal error. Unexpected or incorrect use of the Compose ' + ('internal runtime API (' + message + '). Please report to Google or use ') + 'https://goo.gle/compose-feedback');
-  }
-  function composeImmediateRuntimeError(message) {
-    _init_properties_Composer_kt__bmp4g0();
-    throw new ComposeRuntimeError('Compose Runtime internal error. Unexpected or incorrect use of the Compose ' + ('internal runtime API (' + message + '). Please report to Google or use ') + 'https://goo.gle/compose-feedback');
+  function RememberObserverHolder() {
   }
   function ComposeRuntimeError(message) {
     IllegalStateException_init_$Init$(this);
@@ -1772,20 +1707,6 @@
   protoOf(ComposeRuntimeError).get_message_h23axq_k$ = function () {
     return this.message_1;
   };
-  function InternalComposer() {
-  }
-  function ReusableRememberObserverHolder() {
-  }
-  function sourceInformation(composer, sourceInformation) {
-    _init_properties_Composer_kt__bmp4g0();
-    composer.sourceInformation_x808w7_k$(sourceInformation);
-  }
-  function isTraceInProgress() {
-    _init_properties_Composer_kt__bmp4g0();
-    // Inline function 'kotlin.let' call
-    var it = get_compositionTracer();
-    return !(it == null) && it.isTraceInProgress_jok3xv_k$();
-  }
   function traceEventStart(key, dirty1, dirty2, info) {
     _init_properties_Composer_kt__bmp4g0();
     var tmp0_safe_receiver = get_compositionTracer();
@@ -1795,27 +1716,63 @@
       tmp0_safe_receiver.traceEventStart_roky1r_k$(key, dirty1, dirty2, info);
     }
   }
-  function sourceInformationMarkerStart(composer, key, sourceInformation) {
+  function runtimeCheck_0(value, lazyMessage) {
     _init_properties_Composer_kt__bmp4g0();
-    composer.sourceInformationMarkerStart_cs2ebb_k$(key, sourceInformation);
-  }
-  function cache(_this__u8e3s4, invalid, block) {
-    _init_properties_Composer_kt__bmp4g0();
-    // Inline function 'kotlin.let' call
-    var it = _this__u8e3s4.rememberedValue_4dg93v_k$();
-    var tmp;
-    if (invalid || it === Companion_getInstance_1().Empty_1) {
-      var value = block();
-      _this__u8e3s4.updateRememberedValue_l1wh71_k$(value);
-      tmp = value;
-    } else {
-      tmp = it;
+    if (!value) {
+      composeImmediateRuntimeError(lazyMessage());
     }
-    return tmp;
+  }
+  function ScopeUpdateScope() {
+  }
+  function composeImmediateRuntimeError(message) {
+    _init_properties_Composer_kt__bmp4g0();
+    throw new ComposeRuntimeError('Compose Runtime internal error. Unexpected or incorrect use of the Compose ' + ('internal runtime API (' + message + '). Please report to Google or use ') + 'https://goo.gle/compose-feedback');
   }
   function sourceInformationMarkerEnd(composer) {
     _init_properties_Composer_kt__bmp4g0();
     composer.sourceInformationMarkerEnd_ay99y8_k$();
+  }
+  var InvalidationResult_IGNORED_instance;
+  var InvalidationResult_SCHEDULED_instance;
+  var InvalidationResult_DEFERRED_instance;
+  var InvalidationResult_IMMINENT_instance;
+  function values() {
+    return [InvalidationResult_IGNORED_getInstance(), InvalidationResult_SCHEDULED_getInstance(), InvalidationResult_DEFERRED_getInstance(), InvalidationResult_IMMINENT_getInstance()];
+  }
+  function valueOf(value) {
+    switch (value) {
+      case 'IGNORED':
+        return InvalidationResult_IGNORED_getInstance();
+      case 'SCHEDULED':
+        return InvalidationResult_SCHEDULED_getInstance();
+      case 'DEFERRED':
+        return InvalidationResult_DEFERRED_getInstance();
+      case 'IMMINENT':
+        return InvalidationResult_IMMINENT_getInstance();
+      default:
+        InvalidationResult_initEntries();
+        THROW_IAE('No enum constant androidx.compose.runtime.InvalidationResult.' + value);
+        break;
+    }
+  }
+  function get_entries() {
+    if ($ENTRIES == null)
+      $ENTRIES = enumEntries(values());
+    return $ENTRIES;
+  }
+  var InvalidationResult_entriesInitialized;
+  function InvalidationResult_initEntries() {
+    if (InvalidationResult_entriesInitialized)
+      return Unit_getInstance();
+    InvalidationResult_entriesInitialized = true;
+    InvalidationResult_IGNORED_instance = new InvalidationResult('IGNORED', 0);
+    InvalidationResult_SCHEDULED_instance = new InvalidationResult('SCHEDULED', 1);
+    InvalidationResult_DEFERRED_instance = new InvalidationResult('DEFERRED', 2);
+    InvalidationResult_IMMINENT_instance = new InvalidationResult('IMMINENT', 3);
+  }
+  var $ENTRIES;
+  function InvalidationResult(name, ordinal) {
+    Enum.call(this, name, ordinal);
   }
   function traceEventEnd() {
     _init_properties_Composer_kt__bmp4g0();
@@ -1825,6 +1782,12 @@
     else {
       tmp0_safe_receiver.traceEventEnd_7tfg52_k$();
     }
+  }
+  function isTraceInProgress() {
+    _init_properties_Composer_kt__bmp4g0();
+    // Inline function 'kotlin.let' call
+    var it = get_compositionTracer();
+    return !(it == null) && it.isTraceInProgress_jok3xv_k$();
   }
   function _Updater___init__impl__rbfxm8(composer) {
     return composer;
@@ -1927,25 +1890,42 @@
   protoOf(Updater).equals = function (other) {
     return Updater__equals_impl_pu56kb(this.composer_1, other);
   };
-  function removeCurrentGroup$lambda($rememberManager) {
-    return function (_unused_var__etf5q3, slot) {
-      var tmp;
-      if (!(slot == null) ? isInterface(slot, ComposeNodeLifecycleCallback) : false) {
-        $rememberManager.releasing_nz7zuh_k$(slot);
-        tmp = Unit_getInstance();
-      }
-      var tmp_0;
-      if (!(slot == null) ? isInterface(slot, RememberObserverHolder) : false) {
-        $rememberManager.forgetting_cv97ou_k$(slot);
-        tmp_0 = Unit_getInstance();
-      }
-      var tmp_1;
-      if (slot instanceof RecomposeScopeImpl) {
-        slot.release_wu5yyf_k$();
-        tmp_1 = Unit_getInstance();
-      }
-      return Unit_getInstance();
-    };
+  function removeCurrentGroup(_this__u8e3s4, rememberManager) {
+    _init_properties_Composer_kt__bmp4g0();
+    var tmp = _this__u8e3s4.get_currentGroup_sgvyz3_k$();
+    _this__u8e3s4.forAllDataInRememberOrder_fy52g4_k$(tmp, removeCurrentGroup$lambda(rememberManager));
+    _this__u8e3s4.removeGroup_5800px_k$();
+  }
+  function ReusableRememberObserverHolder() {
+  }
+  function debugRuntimeCheck_0(value) {
+    _init_properties_Composer_kt__bmp4g0();
+    // Inline function 'androidx.compose.runtime.debugRuntimeCheck' call
+    if (false && !value) {
+      var tmp$ret$1 = 'Check failed';
+      composeImmediateRuntimeError(tmp$ret$1);
+    }
+    return Unit_getInstance();
+  }
+  function sourceInformationMarkerStart(composer, key, sourceInformation) {
+    _init_properties_Composer_kt__bmp4g0();
+    composer.sourceInformationMarkerStart_cs2ebb_k$(key, sourceInformation);
+  }
+  function cache(_this__u8e3s4, invalid, block) {
+    _init_properties_Composer_kt__bmp4g0();
+    // Inline function 'kotlin.let' call
+    var it = _this__u8e3s4.rememberedValue_4dg93v_k$();
+    var tmp;
+    if (invalid || it === Companion_getInstance_1().Empty_1) {
+      var value = block();
+      _this__u8e3s4.updateRememberedValue_l1wh71_k$(value);
+      tmp = value;
+    } else {
+      tmp = it;
+    }
+    return tmp;
+  }
+  function CompositionTracer() {
   }
   function extractMovableContentAtCurrent$movableContentRecomposeScopeOwner$1($composition, $reference) {
     this.$composition_1 = $composition;
@@ -1967,6 +1947,26 @@
   };
   protoOf(extractMovableContentAtCurrent$movableContentRecomposeScopeOwner$1).recordReadOf_1u1d8w_k$ = function (value) {
   };
+  function removeCurrentGroup$lambda($rememberManager) {
+    return function (_unused_var__etf5q3, slot) {
+      var tmp;
+      if (!(slot == null) ? isInterface(slot, ComposeNodeLifecycleCallback) : false) {
+        $rememberManager.releasing_nz7zuh_k$(slot);
+        tmp = Unit_getInstance();
+      }
+      var tmp_0;
+      if (!(slot == null) ? isInterface(slot, RememberObserverHolder) : false) {
+        $rememberManager.forgetting_cv97ou_k$(slot);
+        tmp_0 = Unit_getInstance();
+      }
+      var tmp_1;
+      if (slot instanceof RecomposeScopeImpl) {
+        slot.release_wu5yyf_k$();
+        tmp_1 = Unit_getInstance();
+      }
+      return Unit_getInstance();
+    };
+  }
   function InvalidationResult_IGNORED_getInstance() {
     InvalidationResult_initEntries();
     return InvalidationResult_IGNORED_instance;
@@ -19649,20 +19649,6 @@
     return ReferentialEqualityPolicy_instance;
   }
   var androidx_compose_runtime_SnapshotMutableStateImpl$stable;
-  function State_0() {
-  }
-  function MutableState() {
-  }
-  function mutableStateOf(value, policy) {
-    policy = policy === VOID ? structuralEqualityPolicy() : policy;
-    return createSnapshotMutableState(value, policy);
-  }
-  function getValue(_this__u8e3s4, thisObj, property) {
-    return _this__u8e3s4.get_value_j01efc_k$();
-  }
-  function setValue(_this__u8e3s4, thisObj, property, value) {
-    _this__u8e3s4.set_value_v1vabv_k$(value);
-  }
   function _set_next__9r2xms($this, _set____db54di) {
     $this.next_1 = _set____db54di;
   }
@@ -19778,11 +19764,25 @@
     var this_0 = this.next_1;
     return current(this_0).value_1;
   };
-  function mutableStateListOf() {
-    return SnapshotStateList_init_$Create$();
+  function getValue(_this__u8e3s4, thisObj, property) {
+    return _this__u8e3s4.get_value_j01efc_k$();
+  }
+  function setValue(_this__u8e3s4, thisObj, property, value) {
+    _this__u8e3s4.set_value_v1vabv_k$(value);
+  }
+  function MutableState() {
+  }
+  function State_0() {
+  }
+  function mutableStateOf(value, policy) {
+    policy = policy === VOID ? structuralEqualityPolicy() : policy;
+    return createSnapshotMutableState(value, policy);
   }
   function mutableStateMapOf() {
     return new SnapshotStateMap();
+  }
+  function mutableStateListOf() {
+    return SnapshotStateList_init_$Create$();
   }
   var androidx_compose_runtime_UnboxedIntState$stable;
   var androidx_compose_runtime_UnboxedLongState$stable;
@@ -59578,9 +59578,6 @@
   protoOf(BroadcastFrameClock).fold_j2vaxd_k$ = fold;
   protoOf(BroadcastFrameClock).minusKey_9i5ggf_k$ = minusKey;
   protoOf(BroadcastFrameClock).plus_s13ygv_k$ = plus;
-  defineProp(protoOf(ComposeRuntimeError), 'message', function () {
-    return this.get_message_h23axq_k$();
-  });
   protoOf(InternalComposer).get_compoundKeyHash_afdblz_k$ = get_compoundKeyHash;
   protoOf(InternalComposer).changed_jpyyrz_k$ = changed;
   protoOf(InternalComposer).changed_ldy5dl_k$ = changed_0;
@@ -59591,6 +59588,9 @@
   protoOf(InternalComposer).changed_j54hty_k$ = changed_5;
   protoOf(InternalComposer).changed_qyxff6_k$ = changed_6;
   protoOf(InternalComposer).changedInstance_s1wkiy_k$ = changedInstance;
+  defineProp(protoOf(ComposeRuntimeError), 'message', function () {
+    return this.get_message_h23axq_k$();
+  });
   protoOf(RecordingApplier).onBeginChanges_yqtnrd_k$ = onBeginChanges;
   protoOf(RecordingApplier).onEndChanges_k5kb87_k$ = onEndChanges;
   defineProp(protoOf(ComposePausableCompositionException), 'message', function () {

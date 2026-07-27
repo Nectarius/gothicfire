@@ -105,12 +105,12 @@
   var SuspendFunction1 = kotlin_kotlin.$_$.ob;
   var Long = kotlin_kotlin.$_$.vi;
   var CoroutineDispatcher = kotlin_org_jetbrains_kotlinx_kotlinx_coroutines_core.$_$.r;
-  var mutableStateListOf = kotlin_androidx_compose_runtime_runtime.$_$.n;
-  var initMetadataForCompanion = kotlin_kotlin.$_$.sd;
-  var toString = kotlin_kotlin.$_$.xe;
   var Recomposer = kotlin_androidx_compose_runtime_runtime.$_$.i;
   var CoroutineStart_UNDISPATCHED_getInstance = kotlin_org_jetbrains_kotlinx_kotlinx_coroutines_core.$_$.d;
   var Composition = kotlin_androidx_compose_runtime_runtime.$_$.d;
+  var mutableStateListOf = kotlin_androidx_compose_runtime_runtime.$_$.n;
+  var initMetadataForCompanion = kotlin_kotlin.$_$.sd;
+  var toString = kotlin_kotlin.$_$.xe;
   var StringBuilder_init_$Create$ = kotlin_kotlin.$_$.x3;
   var initMetadataForInterface = kotlin_kotlin.$_$.vd;
   var lazy = kotlin_kotlin.$_$.ak;
@@ -3475,6 +3475,18 @@
   }
   var defaultMonotonicFrameClock;
   var dev_kilua_compose_Root$stable;
+  function rootComposable(root, monotonicFrameClock, content) {
+    _init_properties_Root_kt__ywqgle();
+    GlobalSnapshotManager_getInstance().ensureStarted_v31jmb_k$();
+    var coroutineContext = monotonicFrameClock.plus_s13ygv_k$(new PromiseDispatcher());
+    var recomposer = new Recomposer(coroutineContext);
+    var tmp = CoroutineScope_0(coroutineContext);
+    var tmp_0 = CoroutineStart_UNDISPATCHED_getInstance();
+    launch(tmp, VOID, tmp_0, rootComposable$slambda_0(recomposer, null));
+    var composition = Composition(new ComponentApplier(root), recomposer);
+    composition.setContent_fpn0d7_k$(ComposableLambda$invoke$ref_35(composableLambdaInstance(978356575, true, rootComposable$lambda(content, root))));
+    return composition;
+  }
   function _get_composition__nfuip3($this) {
     return $this.composition_1;
   }
@@ -3823,18 +3835,6 @@
     if (ComposableSingletons$RootKt_instance == null)
       new ComposableSingletons$RootKt();
     return ComposableSingletons$RootKt_instance;
-  }
-  function rootComposable(root, monotonicFrameClock, content) {
-    _init_properties_Root_kt__ywqgle();
-    GlobalSnapshotManager_getInstance().ensureStarted_v31jmb_k$();
-    var coroutineContext = monotonicFrameClock.plus_s13ygv_k$(new PromiseDispatcher());
-    var recomposer = new Recomposer(coroutineContext);
-    var tmp = CoroutineScope_0(coroutineContext);
-    var tmp_0 = CoroutineStart_UNDISPATCHED_getInstance();
-    launch(tmp, VOID, tmp_0, rootComposable$slambda_0(recomposer, null));
-    var composition = Composition(new ComponentApplier(root), recomposer);
-    composition.setContent_fpn0d7_k$(ComposableLambda$invoke$ref_35(composableLambdaInstance(978356575, true, rootComposable$lambda(content, root))));
-    return composition;
   }
   function root_0(element, clearSsrContent, renderConfig, content) {
     clearSsrContent = clearSsrContent === VOID ? true : clearSsrContent;
@@ -19574,6 +19574,8 @@
       dev_kilua_html_CssSize$stable = 0;
     }
   }
+  function II() {
+  }
   function INav() {
   }
   function IDiv() {
@@ -19587,8 +19589,6 @@
   function IP() {
   }
   function IH2() {
-  }
-  function II() {
   }
   var dev_kilua_html_Iframe$stable;
   var dev_kilua_html_Img$stable;
@@ -23030,67 +23030,6 @@
   }
   var dev_kilua_html_Td$stable;
   var dev_kilua_html_TextNode$stable;
-  function textNode(_this__u8e3s4, data, $composer, $changed) {
-    var $composer_0 = $composer;
-    $composer_0 = $composer_0.startRestartGroup_lebv1i_k$(527241197);
-    sourceInformation($composer_0, 'C(textNode)86@2795L56,87@2856L94:TextNode.kt#ekshbs');
-    var $dirty = $changed;
-    if (($changed & 6) === 0)
-      $dirty = $dirty | ((($changed & 8) === 0 ? $composer_0.changed_ga7h3f_k$(_this__u8e3s4) : $composer_0.changedInstance_s1wkiy_k$(_this__u8e3s4)) ? 4 : 2);
-    if (($changed & 48) === 0)
-      $dirty = $dirty | ($composer_0.changed_ga7h3f_k$(data) ? 32 : 16);
-    if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
-      if (isTraceInProgress()) {
-        traceEventStart(527241197, $dirty, -1, 'dev.kilua.html.textNode (TextNode.kt:85)');
-      }
-      sourceInformationMarkerStart($composer_0, -127348635, 'CC(remember):TextNode.kt#9igjgp');
-      // Inline function 'androidx.compose.runtime.cache' call
-      var this_0 = $composer_0;
-      // Inline function 'kotlin.let' call
-      var it = this_0.rememberedValue_4dg93v_k$();
-      var tmp;
-      if (false || it === Companion_getInstance().get_Empty_i9b85g_k$()) {
-        var value = new TextNode(data, _this__u8e3s4.get_renderConfig_95ovk1_k$());
-        this_0.updateRememberedValue_l1wh71_k$(value);
-        tmp = value;
-      } else {
-        tmp = it;
-      }
-      var tmp0_group = tmp;
-      sourceInformationMarkerEnd($composer_0);
-      var component = tmp0_group;
-      // Inline function 'dev.kilua.compose.ComponentNode' call
-      var $composer_1 = $composer_0;
-      sourceInformationMarkerStart($composer_1, 2004014339, 'CC(ComponentNode)P(!1,2)52@2152L24:ComponentNode.kt#8fjbmj');
-      var factory = textNode$lambda(component);
-      $composer_1.startNode_htvs8k_k$();
-      if ($composer_1.get_inserting_25mlsw_k$()) {
-        $composer_1.createNode_ahrd54_k$(factory);
-      } else {
-        $composer_1.useNode_io5s9l_k$();
-      }
-      var $this$ComponentNode = _Updater___init__impl__rbfxm8($composer_1);
-      Updater__set_impl_v7kwss($this$ComponentNode, data, textNode$lambda_0);
-      $composer_1.startReplaceableGroup_ip860b_k$(2058660585);
-      var $composer_2 = $composer_1;
-      sourceInformationMarkerStart($composer_2, -254145951, 'C:TextNode.kt#ekshbs');
-      sourceInformationMarkerEnd($composer_2);
-      $composer_1.endReplaceableGroup_ern0ak_k$();
-      $composer_1.endNode_3m0yfn_k$();
-      sourceInformationMarkerEnd($composer_1);
-      if (isTraceInProgress()) {
-        traceEventEnd();
-      }
-    } else {
-      $composer_0.skipToGroupEnd_lh3zi2_k$();
-    }
-    var tmp1_safe_receiver = $composer_0.endRestartGroup_yxpjv9_k$();
-    if (tmp1_safe_receiver == null)
-      null;
-    else {
-      tmp1_safe_receiver.updateScope_t8jcf_k$(textNode$lambda_1(_this__u8e3s4, data, $changed));
-    }
-  }
   function TextNode$text$delegate$lambda($renderConfig, this$0) {
     return function () {
       var tmp;
@@ -23294,6 +23233,67 @@
   protoOf(TextNode).renderToStringBuilder_ur49vx_k$ = function (builder) {
     builder.append_22ad7x_k$(replace(replace(replace(replace(replace(this.get_data_wokkxf_k$(), '&', '&amp;'), '<', '&lt;'), '>', '&gt;'), '"', '&quot;'), "'", '&#039;'));
   };
+  function textNode(_this__u8e3s4, data, $composer, $changed) {
+    var $composer_0 = $composer;
+    $composer_0 = $composer_0.startRestartGroup_lebv1i_k$(527241197);
+    sourceInformation($composer_0, 'C(textNode)86@2795L56,87@2856L94:TextNode.kt#ekshbs');
+    var $dirty = $changed;
+    if (($changed & 6) === 0)
+      $dirty = $dirty | ((($changed & 8) === 0 ? $composer_0.changed_ga7h3f_k$(_this__u8e3s4) : $composer_0.changedInstance_s1wkiy_k$(_this__u8e3s4)) ? 4 : 2);
+    if (($changed & 48) === 0)
+      $dirty = $dirty | ($composer_0.changed_ga7h3f_k$(data) ? 32 : 16);
+    if ($composer_0.shouldExecute_4fplh_k$(!(($dirty & 19) === 18), $dirty & 1)) {
+      if (isTraceInProgress()) {
+        traceEventStart(527241197, $dirty, -1, 'dev.kilua.html.textNode (TextNode.kt:85)');
+      }
+      sourceInformationMarkerStart($composer_0, -127348635, 'CC(remember):TextNode.kt#9igjgp');
+      // Inline function 'androidx.compose.runtime.cache' call
+      var this_0 = $composer_0;
+      // Inline function 'kotlin.let' call
+      var it = this_0.rememberedValue_4dg93v_k$();
+      var tmp;
+      if (false || it === Companion_getInstance().get_Empty_i9b85g_k$()) {
+        var value = new TextNode(data, _this__u8e3s4.get_renderConfig_95ovk1_k$());
+        this_0.updateRememberedValue_l1wh71_k$(value);
+        tmp = value;
+      } else {
+        tmp = it;
+      }
+      var tmp0_group = tmp;
+      sourceInformationMarkerEnd($composer_0);
+      var component = tmp0_group;
+      // Inline function 'dev.kilua.compose.ComponentNode' call
+      var $composer_1 = $composer_0;
+      sourceInformationMarkerStart($composer_1, 2004014339, 'CC(ComponentNode)P(!1,2)52@2152L24:ComponentNode.kt#8fjbmj');
+      var factory = textNode$lambda(component);
+      $composer_1.startNode_htvs8k_k$();
+      if ($composer_1.get_inserting_25mlsw_k$()) {
+        $composer_1.createNode_ahrd54_k$(factory);
+      } else {
+        $composer_1.useNode_io5s9l_k$();
+      }
+      var $this$ComponentNode = _Updater___init__impl__rbfxm8($composer_1);
+      Updater__set_impl_v7kwss($this$ComponentNode, data, textNode$lambda_0);
+      $composer_1.startReplaceableGroup_ip860b_k$(2058660585);
+      var $composer_2 = $composer_1;
+      sourceInformationMarkerStart($composer_2, -254145951, 'C:TextNode.kt#ekshbs');
+      sourceInformationMarkerEnd($composer_2);
+      $composer_1.endReplaceableGroup_ern0ak_k$();
+      $composer_1.endNode_3m0yfn_k$();
+      sourceInformationMarkerEnd($composer_1);
+      if (isTraceInProgress()) {
+        traceEventEnd();
+      }
+    } else {
+      $composer_0.skipToGroupEnd_lh3zi2_k$();
+    }
+    var tmp1_safe_receiver = $composer_0.endRestartGroup_yxpjv9_k$();
+    if (tmp1_safe_receiver == null)
+      null;
+    else {
+      tmp1_safe_receiver.updateScope_t8jcf_k$(textNode$lambda_1(_this__u8e3s4, data, $changed));
+    }
+  }
   function textNode$lambda($componentInScope) {
     return function () {
       return $componentInScope;
