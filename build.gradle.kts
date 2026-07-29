@@ -25,6 +25,7 @@ kotlin {
             implementation(libs.kilua.rpc.core)
             implementation(libs.kilua.rpc.ktor)
             implementation("dev.kilua:kilua-rpc-annotations:0.0.45")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
         }
         jvmMain.dependencies {
             implementation("org.jetbrains.compose.runtime:runtime:1.7.0")
@@ -38,6 +39,7 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.mongodb.kotlin.sync)
             implementation(libs.logback)
+            implementation("io.ktor:ktor-server-websockets-jvm:3.5.1")
         }
         jsMain.dependencies {
             implementation(libs.kilua.core)

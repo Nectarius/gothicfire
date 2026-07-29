@@ -58,3 +58,6 @@ out/
 # Kotlin & Gradle directories
 .kotlin/
 .gradle/
+venv/
+build/
+

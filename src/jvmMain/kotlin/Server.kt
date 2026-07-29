@@ -16,6 +16,9 @@ import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
+import io.ktor.server.websocket.*
+import game.gameSocket
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -73,6 +76,13 @@ fun Application.module() {
             cookie.path = "/"
             cookie.maxAgeInSeconds = 600 // 10 minutes
         }
+    }
+    
+    install(WebSockets) {
+        pingPeriod = 15.seconds
+        timeout = 15.seconds
+        maxFrameSize = Long.MAX_VALUE
+        masking = false
     }
 
     val httpClient = HttpClient(CIO)
@@ -233,6 +243,8 @@ fun Application.module() {
         }
 
         applyRoutes(rpc.AppServiceManager)
+        
+        gameSocket()
     }
 
     // Define kilua RPC endpoint

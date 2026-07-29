@@ -116,3 +116,268 @@ input:focus, textarea:focus {
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1.5rem;
 }
+
+/* Strategic Map Components */
+.strategic-map-container {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border: 2px solid var(--border);
+}
+
+.strategic-map-image {
+    width: 100%;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.strategic-map-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+}
+
+.sector-cell {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.sector-cell:hover {
+    background-color: rgba(139, 92, 246, 0.3);
+    border-color: rgba(139, 92, 246, 0.8);
+}
+
+.sector-label {
+    font-size: 2rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.5);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+}
+
+.territory-node {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    background-color: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    z-index: 5;
+}
+
+.territory-node:hover {
+    background-color: rgba(139, 92, 246, 0.6);
+    border-color: rgba(139, 92, 246, 1);
+}
+
+.territory-node-selected {
+    border: 3px solid #fbbf24;
+    background-color: rgba(251, 191, 36, 0.5);
+}
+
+.territory-node-valid-move {
+    background-color: rgba(34, 197, 94, 0.5);
+    border: 2px dashed #22c55e;
+}
+
+.territory-node-valid-move:hover {
+    background-color: rgba(34, 197, 94, 0.8);
+}
+
+.territory-node-valid-place {
+    background-color: rgba(139, 92, 246, 0.4);
+    border: 2px dashed rgba(139, 92, 246, 0.8);
+}
+
+.territory-node-valid-place:hover {
+    background-color: rgba(139, 92, 246, 0.7);
+}
+
+.territory-label {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 1);
+    pointer-events: none;
+}
+
+.unit-marker {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background: radial-gradient(circle, #ff3366, #990033);
+    border: 2px solid white;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 15px #ff3366;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.unit-marker-p1 {
+    background: radial-gradient(circle, #ff3366, #990033);
+    box-shadow: 0 0 15px #ff3366;
+}
+
+.unit-marker-p2 {
+    background: radial-gradient(circle, #38bdf8, #0369a1);
+    box-shadow: 0 0 15px #38bdf8;
+}
+
+.unit-marker-selected {
+    animation: pulse 2s infinite;
+    border: 3px solid #fbbf24; /* yellow selected border */
+}
+
+.war-map-layout {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.character-panel {
+    flex: 0 0 320px;
+    padding: 1.5rem;
+    position: sticky;
+    top: 5rem;
+}
+
+.turn-hud {
+    padding: 1rem 1.5rem;
+    background: linear-gradient(90deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+}
+
+.stat-input {
+    width: 60px;
+    text-align: center;
+}
+
+.char-card {
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.char-card-clickable {
+    cursor: pointer;
+    border: 1px dashed rgba(139, 92, 246, 0.4);
+}
+
+.char-card-clickable:hover {
+    border-color: var(--primary);
+    background: rgba(139, 92, 246, 0.15);
+}
+
+.char-card-selected {
+    border: 2px solid #fbbf24 !important;
+    background: rgba(251, 191, 36, 0.15) !important;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.3);
+}
+
+.char-card-acted {
+    opacity: 0.5;
+}
+
+.sector-cell-selected {
+    border: 3px solid #fbbf24;
+    background-color: rgba(251, 191, 36, 0.2);
+}
+
+.sector-cell-valid-move {
+    background-color: rgba(34, 197, 94, 0.3);
+    border: 2px dashed #22c55e;
+}
+
+.sector-cell-valid-move:hover {
+    background-color: rgba(34, 197, 94, 0.5);
+}
+
+.sector-cell-valid-place {
+    background-color: rgba(139, 92, 246, 0.2);
+    border: 2px dashed rgba(139, 92, 246, 0.6);
+}
+
+.sector-cell-valid-place:hover {
+    background-color: rgba(139, 92, 246, 0.4);
+}
+
+.unit-marker-acted {
+    opacity: 0.5;
+    filter: grayscale(0.5);
+}
+
+.turn-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+
+.turn-active {
+    background-color: #22c55e;
+    box-shadow: 0 0 10px #22c55e;
+}
+
+.turn-waiting {
+    background-color: #ef4444;
+    box-shadow: 0 0 10px #ef4444;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 51, 102, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 51, 102, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 51, 102, 0);
+    }
+}
+
+.lobby-container {
+    max-width: 500px;
+    margin: 4rem auto;
+}
+
+.lobby-spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(139, 92, 246, 0.2);
+    border-top: 4px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.lobby-status {
+    animation: fadePulse 2s infinite;
+}
+
+@keyframes fadePulse {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}

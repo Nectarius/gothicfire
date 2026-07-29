@@ -13,6 +13,12 @@ import rpc.AppService
 import models.Note
 import models.Discussion
 import models.UserSession
+import models.GameState
+import components.CharacterPanel
+import components.TurnHud
+import components.StrategicMap
+import components.GameLobby
+import game.GameWebSocket
 import kotlinx.coroutines.launch
 
 class App : Application() {
@@ -50,7 +56,24 @@ class App : Application() {
             var currentUser: UserSession? by remember { mutableStateOf(null) }
             var notes by remember { mutableStateOf(emptyList<Note>()) }
             var discussions by remember { mutableStateOf(emptyList<Discussion>()) }
-            var currentTab by remember { mutableStateOf("notes") } // "notes" or "discussions"
+            var currentTab by remember { mutableStateOf("map") } // "notes", "discussions", or "map"
+            
+            var gameState by remember { mutableStateOf<GameState?>(null) }
+            var yourPlayerId by remember { mutableStateOf("") }
+            var wsError by remember { mutableStateOf("") }
+            
+            val ws = remember {
+                GameWebSocket(
+                    onStateUpdated = { newState, playerId ->
+                        gameState = newState
+                        yourPlayerId = playerId
+                        wsError = ""
+                    },
+                    onError = { err ->
+                        wsError = err
+                    }
+                )
+            }
             
             // Fetch initial state
             scope.launch {
@@ -106,6 +129,9 @@ class App : Application() {
                         button("Public Discussion", className = "btn ${if (currentTab == "discussions") "btn-primary" else "glass"}") {
                             onClick { currentTab = "discussions" }
                         }
+                        button("War Map", className = "btn ${if (currentTab == "map") "btn-primary" else "glass"}") {
+                            onClick { currentTab = "map" }
+                        }
                     }
                     
                     if (currentTab == "notes") {
@@ -159,7 +185,7 @@ class App : Application() {
                                 }
                             }
                         }
-                    } else {
+                    } else if (currentTab == "discussions") {
                         // Discussions Tab
                         div {
                             div(className = "glass card mb-2") {
@@ -201,6 +227,37 @@ class App : Application() {
                                         }
                                     }
                                 }
+                            }
+                        }
+                    } else if (currentTab == "map") {
+                        // War Map Tab
+                        if (wsError.isNotBlank()) {
+                            div(className = "glass card text-center p-4") {
+                                h3(className = "text-red m-0") { textNode("Connection Error") }
+                                p { textNode(wsError) }
+                                button("Reconnect", className = "btn btn-primary mt-1") {
+                                    onClick {
+                                        wsError = ""
+                                        gameState = null
+                                    }
+                                }
+                            }
+                        } else if (gameState == null || gameState!!.status == models.GameStatus.LOBBY) {
+                            GameLobby(ws = ws, gameState = gameState, yourPlayerId = yourPlayerId)
+                        } else {
+                            TurnHud(playerId = yourPlayerId, gameState = gameState, sendAction = { ws.sendAction(it) })
+                            
+                            div(className = "war-map-layout") {
+                                CharacterPanel(
+                                    playerId = yourPlayerId, 
+                                    gameState = gameState, 
+                                    sendAction = { ws.sendAction(it) }
+                                )
+                                StrategicMap(
+                                    playerId = yourPlayerId, 
+                                    gameState = gameState, 
+                                    sendAction = { ws.sendAction(it) }
+                                )
                             }
                         }
                     }
