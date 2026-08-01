@@ -61,3 +61,8 @@ out/
 venv/
 build/
 
+# Local Gradle configuration
+local.properties
+
+# Kotlin JS
+kotlin-js-store/
