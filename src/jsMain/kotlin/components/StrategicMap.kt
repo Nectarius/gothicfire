@@ -6,6 +6,7 @@ import dev.kilua.core.IComponent
 import dev.kilua.html.*
 import models.GameState
 import models.isAdjacentSector
+import models.isCharacterVisibleToPlayer
 import models.GameAction
 import models.MapData
 import models.Team
@@ -48,7 +49,7 @@ fun IComponent.StrategicMap(
                 // Valid move target if active character is placed, alive, hasn't acted, it's my turn, and target is adjacent and (empty or enemy)
                 val isValidMoveTarget = isMyTurn && activeChar != null && !activeChar.hasActedThisTurn && !activeChar.isDead &&
                     activeChar.currentSector != null && (sectorOccupiedBy == null || isEnemySector) &&
-                    isAdjacentSector(activeChar.currentSector!!, sector)
+                    isAdjacentSector(activeChar.currentSector, sector)
                 
                 // Valid placement target if active character is unplaced, alive, hasn't acted, it's my turn, and target is empty or enemy
                 val isValidPlacementTarget = isMyTurn && activeChar != null && !activeChar.hasActedThisTurn && !activeChar.isDead &&
@@ -133,6 +134,7 @@ fun IComponent.StrategicMap(
         if (gameState != null) {
             for (char in gameState.characters) {
                 if (char.isDead) continue
+                if (!isCharacterVisibleToPlayer(char, playerId, gameState)) continue
                 val sector = char.currentSector ?: continue
                 val territory = MapData[sector]
                 if (territory != null) {

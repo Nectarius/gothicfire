@@ -9,41 +9,58 @@ import models.*
 import java.util.UUID
 
 
-class GameSession {
+class GameSession(var gameState: GameState = GameState()) {
     private val mutex = Mutex()
-    var gameState = GameState()
     
     // WebSockets connected to this session
     val connections = mutableMapOf<String, DefaultWebSocketSession>()
     
-    suspend fun joinTeam(playerId: String, playerName: String, team: Team, session: DefaultWebSocketSession) {
+    suspend fun joinTeam(incomingPlayerId: String, playerName: String, team: Team, session: DefaultWebSocketSession): String? {
+        var effectivePlayerId = incomingPlayerId
+        var success = false
+        
         mutex.withLock {
-            if (gameState.status != GameStatus.LOBBY) {
-                return@withLock
+            if (gameState.status == GameStatus.IN_PROGRESS) {
+                // If game is already in progress, allow reconnecting matching player
+                val existingPlayer = gameState.players.find { it.name.equals(playerName, ignoreCase = true) && it.team == team }
+                    ?: gameState.players.find { it.team == team }
+                    ?: gameState.players.find { it.id == incomingPlayerId }
+                
+                if (existingPlayer != null) {
+                    effectivePlayerId = existingPlayer.id
+                    connections[effectivePlayerId] = session
+                    success = true
+                    println("🔌 [GameSession] Reconnected player '${existingPlayer.name}' (id=$effectivePlayerId) to active game.")
+                } else {
+                    connections[incomingPlayerId] = session
+                    broadcastError(incomingPlayerId, "Game is currently in progress.")
+                    connections.remove(incomingPlayerId)
+                    return@withLock
+                }
+            } else {
+                val teamCount = gameState.players.count { it.team == team }
+                if (teamCount >= 5) {
+                    connections[incomingPlayerId] = session
+                    broadcastError(incomingPlayerId, "Team $team is full.")
+                    connections.remove(incomingPlayerId)
+                    return@withLock
+                }
+                
+                // If player already exists, they might be rejoining, otherwise add them
+                if (gameState.players.none { it.id == incomingPlayerId }) {
+                    val newPlayer = Player(id = incomingPlayerId, name = playerName, team = team)
+                    gameState = gameState.copy(players = gameState.players + newPlayer)
+                }
+                connections[incomingPlayerId] = session
+                success = true
             }
-            
-            val teamCount = gameState.players.count { it.team == team }
-            if (teamCount >= 5) {
-                // Return an error for this player (but session is not added to connections yet, so we just add it to broadcast error)
-                connections[playerId] = session
-                return@withLock
-            }
-            
-            // If player already exists, they might be rejoining, otherwise add them
-            if (gameState.players.none { it.id == playerId }) {
-                val newPlayer = Player(id = playerId, name = playerName, team = team)
-                gameState = gameState.copy(players = gameState.players + newPlayer)
-            }
-            connections[playerId] = session
         }
         
-        // Broadcast error if team was full (handled by checking if player was actually added)
-        if (gameState.players.none { it.id == playerId }) {
-            broadcastError(playerId, "Team $team is full.")
-            connections.remove(playerId)
-        } else {
+        if (success) {
             broadcastState()
+            return effectivePlayerId
         }
+        return null
     }
     
     suspend fun leave(playerId: String) {
@@ -523,7 +540,6 @@ class GameSession {
                 territories = updatedTerritories,
                 characters = newChars
             )
-            
             checkTurnEnd()
         }
         broadcastState()
@@ -590,6 +606,11 @@ class GameSession {
     }
     
     private fun checkTurnEnd() {
+        if (gameState.status == GameStatus.GAME_OVER) {
+            db.GameRepository.saveGameState(state = gameState, trigger = "GAME_OVER")
+            return
+        }
+
         // Find all living characters on the board that belong to the active team
         val activeTeamPlayerIds = gameState.players.filter { it.team == gameState.activeTeamTurn }.map { it.id }.toSet()
         val activeTeamChars = gameState.characters.filter { it.playerId in activeTeamPlayerIds && !it.isDead }
@@ -649,6 +670,9 @@ class GameSession {
             
             if (gameState.currentTurn > gameState.maxTurns) {
                 gameState = gameState.copy(status = GameStatus.GAME_OVER)
+                db.GameRepository.saveGameState(state = gameState, trigger = "GAME_OVER")
+            } else {
+                db.GameRepository.saveGameState(state = gameState, trigger = "TURN_END")
             }
         }
     }
@@ -667,7 +691,15 @@ class GameSession {
     suspend fun broadcastState() {
         val json = Json { encodeDefaults = true }
         connections.forEach { (playerId, session) ->
-            val event = GameEvent.GameStateUpdated(gameState, playerId)
+            val playerGameState = if (gameState.status == GameStatus.IN_PROGRESS) {
+                val visibleChars = gameState.characters.filter { char ->
+                    isCharacterVisibleToPlayer(char, playerId, gameState)
+                }
+                gameState.copy(characters = visibleChars)
+            } else {
+                gameState
+            }
+            val event = GameEvent.GameStateUpdated(playerGameState, playerId)
             val eventStr = json.encodeToString<GameEvent>(event)
             try {
                 session.send(Frame.Text(eventStr))

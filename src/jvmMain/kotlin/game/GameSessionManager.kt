@@ -1,29 +1,50 @@
 package game
 
+import db.GameRepository
 import io.ktor.websocket.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import models.Team
 import models.GameStatus
+import models.Team
 import java.util.UUID
 
 object GameSessionManager {
     private val mutex = Mutex()
-    private var globalSession = GameSession()
+    private var globalSession = initializeSession()
+    
+    private fun initializeSession(): GameSession {
+        return try {
+            val saved = GameRepository.loadActiveGame()
+            if (saved != null && saved.status == GameStatus.IN_PROGRESS) {
+                println("🎮 [GameSessionManager] Restored active in-progress game from database.")
+                GameSession(saved)
+            } else {
+                GameSession()
+            }
+        } catch (e: Exception) {
+            println("⚠️ [GameSessionManager] Could not restore game from DB: ${e.message}")
+            GameSession()
+        }
+    }
     
     // Map of WebSocket session to its GameSession and playerId
     val connectionToGame = mutableMapOf<DefaultWebSocketSession, Pair<GameSession, String>>()
 
     suspend fun joinTeam(playerName: String, team: Team, wsSession: DefaultWebSocketSession) {
-        val playerId = UUID.randomUUID().toString()
+        val incomingId = UUID.randomUUID().toString()
         val gameToJoin = mutex.withLock {
             if (globalSession.gameState.status == GameStatus.GAME_OVER) {
                 globalSession = GameSession()
             }
-            connectionToGame[wsSession] = Pair(globalSession, playerId)
             globalSession
         }
-        gameToJoin.joinTeam(playerId, playerName, team, wsSession)
+        
+        val effectivePlayerId = gameToJoin.joinTeam(incomingId, playerName, team, wsSession)
+        if (effectivePlayerId != null) {
+            mutex.withLock {
+                connectionToGame[wsSession] = Pair(gameToJoin, effectivePlayerId)
+            }
+        }
     }
     
     suspend fun disconnect(wsSession: DefaultWebSocketSession) {
@@ -34,3 +55,4 @@ object GameSessionManager {
         game.leave(playerId)
     }
 }
+
