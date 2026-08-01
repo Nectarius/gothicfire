@@ -1,6 +1,6 @@
 package models
 
-data class Territory(val id: String, val x: Int, val y: Int, val adjacentIds: List<String>, val isCastle: Boolean = false, val name: String? = null, val protection: Int = 0, val owningTeam: Team? = null)
+data class Territory(val id: String, val x: Int, val y: Int, val adjacentIds: List<String>, val isCastle: Boolean = false, val name: String? = null, val protection: Int = 0)
 
 val MapData = mapOf(
     "0" to Territory("0", 893, 897, listOf("1", "40")),
@@ -16,14 +16,14 @@ val MapData = mapOf(
     "10" to Territory("10", 703, 739, listOf("4", "8", "9", "11", "12", "40")),
     "11" to Territory("11", 565, 711, listOf("7", "9", "10", "13", "14", "40")),
     "12" to Territory("12", 721, 684, listOf("10", "13", "16", "40")),
-    "13" to Territory("13", 652, 650, listOf("11", "12", "14", "15", "16", "17", "40"), isCastle = true, name = "Castles Blackhood", protection = 25, owningTeam = Team.RED),
+    "13" to Territory("13", 652, 650, listOf("11", "12", "14", "15", "16", "17", "40"), isCastle = true, name = "Castles Blackhood", protection = 25),
     "14" to Territory("14", 529, 622, listOf("11", "13", "17", "20", "40")),
     "15" to Territory("15", 691, 582, listOf("13", "16", "17", "19", "24", "25", "40")),
     "16" to Territory("16", 777, 587, listOf("12", "13", "15", "18", "19", "40")),
     "17" to Territory("17", 564, 572, listOf("13", "14", "15", "20", "24", "40")),
     "18" to Territory("18", 820, 527, listOf("16", "19", "26", "27", "40")),
     "19" to Territory("19", 722, 512, listOf("15", "16", "18", "25", "26", "33", "40")),
-    "20" to Territory("20", 463, 519, listOf("14", "17", "23", "24", "28", "40"), isCastle = true, name = "Castles Blackwood", protection = 27, owningTeam = Team.BLUE),
+    "20" to Territory("20", 463, 519, listOf("14", "17", "23", "24", "28", "40"), isCastle = true, name = "Castles Blackwood", protection = 27),
     "21" to Territory("21", 315, 507, listOf("22", "23", "40")),
     "22" to Territory("22", 235, 516, listOf("21", "40")),
     "23" to Territory("23", 385, 513, listOf("20", "21", "40")),

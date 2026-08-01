@@ -4,6 +4,7 @@ import androidx.compose.runtime.*
 import dev.kilua.compose.ComponentNode
 import dev.kilua.core.IComponent
 import dev.kilua.form.text.text
+import dev.kilua.form.select.*
 import dev.kilua.html.*
 import game.GameWebSocket
 import models.GameAction
@@ -99,10 +100,49 @@ fun IComponent.GameLobby(
                 }
             } else {
                 h3(className = "mb-1 text-primary") { textNode("Ready up!") }
-                val readyText = if (myPlayer.isReady) "Unready" else "Ready"
-                button(readyText, className = "btn ${if (myPlayer.isReady) "bg-red-light text-red" else "btn-primary"} mb-2") {
-                    onClick {
-                        ws.sendAction(GameAction.ToggleReady)
+                
+                if (!myPlayer.isReady) {
+                    val myTeamCastle = gameState?.teamCastles?.get(myPlayer.team)
+                    if (myTeamCastle == null) {
+                        val availableCastles = listOf("13" to "Castles Blackhood", "20" to "Castles Blackwood")
+                            .filter { it.first !in (gameState?.teamCastles?.values ?: emptyList()) }
+                        
+                        if (availableCastles.size == 1) {
+                            button("Ready", className = "btn btn-primary mb-2") {
+                                onClick {
+                                    ws.sendAction(GameAction.SelectCastleAndReady(availableCastles.first().first))
+                                }
+                            }
+                        } else if (availableCastles.size > 1) {
+                            var selectedCastle by remember { mutableStateOf(availableCastles.first().first) }
+                            
+                            div(className = "d-flex flex-col items-center gap-1 mb-2") {
+                                p(className = "text-sm text-gray m-0") { textNode("Choose your Team's Castle:") }
+                                select(className = "stat-input w-full max-w-xs text-center") {
+                                    for (c in availableCastles) {
+                                        option(value = c.first, label = c.second)
+                                    }
+                                    onChange { selectedCastle = this.value ?: availableCastles.first().first }
+                                }
+                                button("Select & Ready", className = "btn btn-primary mt-1") {
+                                    onClick {
+                                        ws.sendAction(GameAction.SelectCastleAndReady(selectedCastle))
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        button("Ready", className = "btn btn-primary mb-2") {
+                            onClick {
+                                ws.sendAction(GameAction.ToggleReady)
+                            }
+                        }
+                    }
+                } else {
+                    button("Unready", className = "btn bg-red-light text-red mb-2") {
+                        onClick {
+                            ws.sendAction(GameAction.ToggleReady)
+                        }
                     }
                 }
             }
@@ -112,7 +152,10 @@ fun IComponent.GameLobby(
         div(className = "d-flex justify-between gap-20 mt-2") {
             // RED TEAM
             div(className = "glass flex-col items-center p-2 w-full") {
+                val redCastleId = gameState?.teamCastles?.get(Team.RED)
+                val redCastleName = if (redCastleId == "13") "Castles Blackhood" else if (redCastleId == "20") "Castles Blackwood" else "No base chosen"
                 h3(className = "text-red m-0 mb-1") { textNode("RED TEAM") }
+                p(className = "text-xs text-gray mt-0 mb-1") { textNode("Base: $redCastleName") }
                 val redPlayers = gameState?.players?.filter { it.team == Team.RED } ?: emptyList()
                 for (p in redPlayers) {
                     val pChar = gameState?.characters?.find { it.playerId == p.id }
@@ -129,7 +172,10 @@ fun IComponent.GameLobby(
             
             // BLUE TEAM
             div(className = "glass flex-col items-center p-2 w-full") {
+                val blueCastleId = gameState?.teamCastles?.get(Team.BLUE)
+                val blueCastleName = if (blueCastleId == "13") "Castles Blackhood" else if (blueCastleId == "20") "Castles Blackwood" else "No base chosen"
                 h3(className = "text-blue m-0 mb-1") { textNode("BLUE TEAM") }
+                p(className = "text-xs text-gray mt-0 mb-1") { textNode("Base: $blueCastleName") }
                 val bluePlayers = gameState?.players?.filter { it.team == Team.BLUE } ?: emptyList()
                 for (p in bluePlayers) {
                     val pChar = gameState?.characters?.find { it.playerId == p.id }

@@ -15,6 +15,8 @@ enum class GameStatus {
     GAME_OVER
 }
 
+
+
 @Serializable
 data class Character(
     val id: String,
@@ -44,5 +46,6 @@ data class GameState(
     val activeTeamTurn: Team = Team.RED,
     val currentTurn: Int = 1,
     val maxTurns: Int = 20,
-    val winningTeam: Team? = null
+    val winningTeam: Team? = null,
+    val teamCastles: Map<Team, String> = emptyMap()
 )

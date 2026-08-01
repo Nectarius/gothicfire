@@ -21,6 +21,9 @@ sealed class GameAction {
     
     @Serializable
     data class MoveCharacter(val targetSector: String) : GameAction()
+    
+    @Serializable
+    data class SelectCastleAndReady(val castleId: String) : GameAction()
 }
 
 @Serializable
