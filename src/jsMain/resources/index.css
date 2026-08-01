@@ -244,30 +244,36 @@ input:focus, textarea:focus {
 
 .unit-marker {
     position: absolute;
-    width: 24px;
-    height: 24px;
-    background: radial-gradient(circle, #ff3366, #990033);
-    border: 2px solid white;
-    border-radius: 50%;
+    width: 40px;
+    height: 40px;
     transform: translate(-50%, -50%);
-    box-shadow: 0 0 15px #ff3366;
     pointer-events: none;
     z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
 }
 
-.unit-marker-p1 {
-    background: radial-gradient(circle, #ff3366, #990033);
-    box-shadow: 0 0 15px #ff3366;
+.unit-marker-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
 }
 
-.unit-marker-p2 {
-    background: radial-gradient(circle, #38bdf8, #0369a1);
-    box-shadow: 0 0 15px #38bdf8;
+.unit-marker-p1 .unit-marker-img {
+    filter: drop-shadow(0 0 6px #ff3366) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
 }
 
-.unit-marker-selected {
+.unit-marker-p2 .unit-marker-img {
+    filter: drop-shadow(0 0 6px #38bdf8) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+.unit-marker-selected .unit-marker-img {
     animation: pulse 2s infinite;
-    border: 3px solid #fbbf24; /* yellow selected border */
+    filter: drop-shadow(0 0 10px #fbbf24) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.9));
 }
 
 .war-map-layout {
@@ -434,3 +440,176 @@ input:focus, textarea:focus {
     50% { transform: scale(1.3); opacity: 1; }
     100% { transform: scale(1); opacity: 0.8; }
 }
+
+.territory-node-owned-red {
+    border: 2px solid #ef4444 !important;
+    background-color: rgba(239, 68, 68, 0.4) !important;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.7);
+}
+
+.territory-node-owned-blue {
+    border: 2px solid #3b82f6 !important;
+    background-color: rgba(59, 130, 246, 0.4) !important;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.7);
+}
+
+.territory-res-pill {
+    position: absolute;
+    bottom: -18px;
+    display: flex;
+    gap: 3px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: rgba(15, 23, 42, 0.9);
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 6;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.res-tag {
+    color: #fbbf24;
+}
+
+.territory-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    animation: fadeIn 0.15s ease-out;
+}
+
+.territory-modal-card {
+    width: 90%;
+    max-width: 440px;
+    border-radius: 12px;
+    padding: 1.5rem;
+    background: rgba(30, 41, 59, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8);
+}
+
+.territory-modal-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+.btn-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 1.25rem;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.btn-modal-close:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.owner-banner {
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.owner-banner-red {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
+}
+
+.owner-banner-blue {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.5);
+    color: #93c5fd;
+}
+
+.owner-banner-neutral {
+    background: rgba(148, 163, 184, 0.15);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    color: #94a3b8;
+}
+
+.territory-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.stat-box {
+    background: rgba(15, 23, 42, 0.6);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #cbd5e1;
+}
+
+.stat-value {
+    font-size: 1.1rem;
+}
+
+.btn-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.unit-marker-army-badge {
+    position: absolute;
+    bottom: -6px;
+    right: -8px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #0f172a;
+    font-weight: 800;
+    font-size: 0.7rem;
+    padding: 1px 5px;
+    border-radius: 9999px;
+    border: 1.5px solid #ffffff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.7);
+    z-index: 10;
+    line-height: 1;
+}
+
+.recruitment-section {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.btn-xs {
+    padding: 3px 6px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+}
+
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    border-radius: 6px;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+

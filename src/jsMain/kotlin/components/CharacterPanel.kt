@@ -51,6 +51,43 @@ fun IComponent.CharacterPanel(
                     span { textNode("AGI: ${myCharacter.agility}") }
                     span { textNode("WIS: ${myCharacter.wisdom}") }
                 }
+                div(className = "d-flex gap-1 text-sm mt-05 text-primary font-600") {
+                    span { textNode("🌾 Food: ${myCharacter.food}") }
+                    span { textNode("🪙 Gold: ${myCharacter.gold}") }
+                }
+                div(className = "d-flex justify-between items-center text-sm mt-05") {
+                    span(className = "font-600 text-warning") { textNode("⚔️ Army: ${myCharacter.soldiers}/100") }
+                    if (myCharacter.soldiers > 0) {
+                        span(className = "text-xs text-dark-gray") {
+                            textNode("Upkeep: ${myCharacter.soldiers * 5}🌾 & ${myCharacter.soldiers}🪙/turn")
+                        }
+                    }
+                }
+                
+                if (!myCharacter.isDead && myCharacter.soldiers < 100 && myCharacter.gold >= 10) {
+                    div(className = "d-flex gap-05 mt-05 flex-wrap") {
+                        val maxAffordable = kotlin.math.min(100 - myCharacter.soldiers, myCharacter.gold / 10)
+                        for (count in listOf(1, 5, 10)) {
+                            val cost = count * 10
+                            if (myCharacter.gold >= cost && myCharacter.soldiers + count <= 100) {
+                                button("+$count Men", className = "btn btn-xs btn-outline flex-1") {
+                                    title("Recruit $count soldiers for $cost gold")
+                                    onClick {
+                                        sendAction(GameAction.HireSoldiers(count))
+                                    }
+                                }
+                            }
+                        }
+                        if (maxAffordable > 0) {
+                            button("Max ($maxAffordable)", className = "btn btn-xs btn-primary flex-1") {
+                                title("Recruit $maxAffordable soldiers for ${maxAffordable * 10} gold")
+                                onClick {
+                                    sendAction(GameAction.HireSoldiers(maxAffordable))
+                                }
+                            }
+                        }
+                    }
+                }
             }
         } else {
             p(className = "text-sm text-dark-gray") { textNode("You haven't created a character.") }

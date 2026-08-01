@@ -27,7 +27,10 @@ data class Character(
     val wisdom: Int,
     val currentSector: String? = null,
     val hasActedThisTurn: Boolean = false,
-    val isDead: Boolean = false
+    val isDead: Boolean = false,
+    val food: Int = 0,
+    val gold: Int = 0,
+    val soldiers: Int = 0
 )
 
 @Serializable
@@ -39,6 +42,17 @@ data class Player(
 )
 
 @Serializable
+data class TerritoryState(
+    val sectorId: String,
+    val ownerPlayerId: String? = null,
+    val ownerTeam: Team? = null,
+    val cultivation: Int = 10,
+    val protection: Int = 10,
+    val food: Int = 0,
+    val gold: Int = 0
+)
+
+@Serializable
 data class GameState(
     val status: GameStatus = GameStatus.LOBBY,
     val players: List<Player> = emptyList(),
@@ -47,5 +61,7 @@ data class GameState(
     val currentTurn: Int = 1,
     val maxTurns: Int = 20,
     val winningTeam: Team? = null,
-    val teamCastles: Map<Team, String> = emptyMap()
+    val teamCastles: Map<Team, String> = emptyMap(),
+    val territories: Map<String, TerritoryState> = emptyMap()
 )
+

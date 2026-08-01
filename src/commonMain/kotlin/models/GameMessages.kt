@@ -24,6 +24,15 @@ sealed class GameAction {
     
     @Serializable
     data class SelectCastleAndReady(val castleId: String) : GameAction()
+    
+    @Serializable
+    data class UpgradeTerritory(val sectorId: String, val upgradeType: String) : GameAction()
+    
+    @Serializable
+    data class CollectResources(val sectorId: String) : GameAction()
+    
+    @Serializable
+    data class HireSoldiers(val count: Int) : GameAction()
 }
 
 @Serializable

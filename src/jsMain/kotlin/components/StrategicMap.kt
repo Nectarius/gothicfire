@@ -18,6 +18,7 @@ fun IComponent.StrategicMap(
     sendAction: (GameAction) -> Unit
 ) {
     var selectedBoardCharacterId by remember { mutableStateOf<String?>(null) }
+    var openedTerritoryId by remember { mutableStateOf<String?>(null) }
     
     val myPlayer = gameState?.players?.find { it.id == playerId }
     val myCharacter = gameState?.characters?.find { it.playerId == playerId }
@@ -30,11 +31,12 @@ fun IComponent.StrategicMap(
         // The Territory Nodes Overlay
         div(className = "strategic-map-grid") {
             for ((sector, territory) in MapData) {
+                val terrState = gameState?.territories?.get(sector)
+                val terrOwnerTeam = terrState?.ownerTeam ?: terrState?.ownerPlayerId?.let { opId -> gameState?.players?.find { it.id == opId }?.team }
                 
                 val sectorOccupiedBy = gameState?.characters?.find { it.currentSector == sector }
                 val isSectorSelected = myCharacter != null && myCharacter.currentSector == sector && selectedBoardCharacterId == myCharacter.id
                 
-                val myPlayer = gameState?.players?.find { it.id == playerId }
                 val occupantPlayer = sectorOccupiedBy?.let { occ -> gameState?.players?.find { it.id == occ.playerId } }
                 val isEnemySector = occupantPlayer != null && occupantPlayer.team != myPlayer?.team
                 
@@ -49,6 +51,8 @@ fun IComponent.StrategicMap(
                 val topPerc = (territory.y / 1095.0) * 100
 
                 val cellClasses = mutableListOf("territory-node")
+                if (terrOwnerTeam == Team.RED) cellClasses.add("territory-node-owned-red")
+                if (terrOwnerTeam == Team.BLUE) cellClasses.add("territory-node-owned-blue")
                 if (isSectorSelected) cellClasses.add("territory-node-selected")
                 if (isValidMoveTarget) cellClasses.add("territory-node-valid-move")
                 if (isValidPlacementTarget) cellClasses.add("territory-node-valid-place")
@@ -74,6 +78,13 @@ fun IComponent.StrategicMap(
                         }
                     }
                     
+                    if (terrState != null && (terrState.food > 0 || terrState.gold > 0)) {
+                        div(className = "territory-res-pill") {
+                            if (terrState.food > 0) span(className = "res-tag") { textNode("🌾${terrState.food}") }
+                            if (terrState.gold > 0) span(className = "res-tag") { textNode("🪙${terrState.gold}") }
+                        }
+                    }
+                    
                     if (activeFight?.sectorId == sector) {
                         div(className = "fight-overlay") {
                             textNode("⚔️")
@@ -82,33 +93,35 @@ fun IComponent.StrategicMap(
 
                     // Handle clicks
                     onClick {
-                        if (gameState == null || myPlayer == null || myCharacter == null || !isMyTurn) return@onClick
+                        if (gameState == null || myPlayer == null || myCharacter == null) return@onClick
                         
                         // Priority 1: Unplaced character wants to place
-                        if (myCharacter.currentSector == null) {
+                        if (myCharacter.currentSector == null && isMyTurn) {
                             if (isValidPlacementTarget) {
                                 sendAction(GameAction.PlaceCharacter(sector))
                             }
                             return@onClick
                         }
                         
-                        // Priority 2: Click on my own placed character to select it
-                        if (sectorOccupiedBy?.id == myCharacter.id) {
-                            if (!myCharacter.hasActedThisTurn) {
-                                selectedBoardCharacterId = myCharacter.id
-                            }
-                            return@onClick
-                        }
-                        
-                        // Priority 3: Character selected, click valid adjacent space to move
+                        // Priority 2: Character selected and clicks valid move target
                         if (isValidMoveTarget) {
                             sendAction(GameAction.MoveCharacter(sector))
                             selectedBoardCharacterId = null
                             return@onClick
                         }
                         
-                        // Clicked somewhere invalid or empty
+                        // Priority 3: Click on my own placed character to select it and open card
+                        if (sectorOccupiedBy?.id == myCharacter.id) {
+                            if (!myCharacter.hasActedThisTurn) {
+                                selectedBoardCharacterId = myCharacter.id
+                            }
+                            openedTerritoryId = sector
+                            return@onClick
+                        }
+                        
+                        // Priority 4: Click on any territory to open management/scout card
                         selectedBoardCharacterId = null
+                        openedTerritoryId = sector
                     }
                 }
             }
@@ -133,10 +146,28 @@ fun IComponent.StrategicMap(
                     div(className = "unit-marker $markerClass $selectedClass $actedClass") {
                         style("left", "$leftPerc%")
                         style("top", "$topPerc%")
-                        title("${char.name} (STR:${char.strength} AGI:${char.agility} WIS:${char.wisdom})${if (char.hasActedThisTurn) " [ACTED]" else ""}")
+                        title("${char.name} (STR:${char.strength} AGI:${char.agility} WIS:${char.wisdom} | Army: ⚔️${char.soldiers} | Bag: 🌾${char.food} 🪙${char.gold})${if (char.hasActedThisTurn) " [ACTED]" else ""}")
+                        img(src = "/knight_icon.png?v=4", alt = "Knight", className = "unit-marker-img")
+                        if (char.soldiers > 0) {
+                            span(className = "unit-marker-army-badge") {
+                                textNode("${char.soldiers}")
+                            }
+                        }
                     }
                 }
             }
         }
+        
+        // Render TerritoryCard modal if a territory is inspected
+        if (openedTerritoryId != null) {
+            TerritoryCard(
+                sectorId = openedTerritoryId!!,
+                playerId = playerId,
+                gameState = gameState,
+                onClose = { openedTerritoryId = null },
+                sendAction = sendAction
+            )
+        }
     }
 }
+

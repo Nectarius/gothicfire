@@ -35,6 +35,9 @@ fun Route.gameSocket() {
                             is GameAction.PlaceCharacter -> game.placeCharacter(playerId, action.targetSector)
                             is GameAction.MoveCharacter -> game.moveCharacter(playerId, action.targetSector)
                             is GameAction.SelectCastleAndReady -> game.selectCastleAndReady(playerId, action.castleId)
+                            is GameAction.UpgradeTerritory -> game.upgradeTerritory(playerId, action.sectorId, action.upgradeType)
+                            is GameAction.CollectResources -> game.collectResources(playerId, action.sectorId)
+                            is GameAction.HireSoldiers -> game.hireSoldiers(playerId, action.count)
                             is GameAction.JoinTeam -> {} // Handled above
                         }
                     } catch (e: Exception) {

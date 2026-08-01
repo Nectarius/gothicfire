@@ -109,7 +109,23 @@ class GameSession {
             }
             
             // All good, start
-            gameState = gameState.copy(status = GameStatus.IN_PROGRESS, activeTeamTurn = Team.RED, currentTurn = 1)
+            val initialTerritories = MapData.mapValues { (sectorId, territory) ->
+                TerritoryState(
+                    sectorId = sectorId,
+                    ownerPlayerId = null,
+                    ownerTeam = null,
+                    cultivation = 10,
+                    protection = if (territory.isCastle) territory.protection else 10,
+                    food = 0,
+                    gold = 0
+                )
+            }
+            gameState = gameState.copy(
+                status = GameStatus.IN_PROGRESS,
+                activeTeamTurn = Team.RED,
+                currentTurn = 1,
+                territories = initialTerritories
+            )
         }
         
         val hasRed = gameState.players.any { it.team == Team.RED }
@@ -151,6 +167,44 @@ class GameSession {
         }
     }
     
+    data class CaptureResult(
+        val updatedTerritories: Map<String, TerritoryState>,
+        val lootedFood: Int,
+        val lootedGold: Int
+    )
+
+    private fun handleCaptureTerritory(territories: Map<String, TerritoryState>, sectorId: String, player: Player): CaptureResult {
+        val currentTerr = territories[sectorId] ?: TerritoryState(
+            sectorId = sectorId,
+            cultivation = 10,
+            protection = MapData[sectorId]?.protection ?: 10
+        )
+        val wasOwnedByAnother = currentTerr.ownerPlayerId != null && currentTerr.ownerPlayerId != player.id
+        val (lootedFood, lootedGold) = if (wasOwnedByAnother) {
+            (currentTerr.food / 2) to (currentTerr.gold / 2)
+        } else {
+            0 to 0
+        }
+        
+        val updatedTerr = if (currentTerr.ownerPlayerId != player.id) {
+            currentTerr.copy(
+                ownerPlayerId = player.id,
+                ownerTeam = player.team,
+                cultivation = if (currentTerr.cultivation > 10) 10 else currentTerr.cultivation,
+                protection = if (currentTerr.protection > 10) 10 else currentTerr.protection,
+                food = 0,
+                gold = 0
+            )
+        } else {
+            currentTerr
+        }
+        return CaptureResult(
+            updatedTerritories = territories + (sectorId to updatedTerr),
+            lootedFood = lootedFood,
+            lootedGold = lootedGold
+        )
+    }
+
     suspend fun placeCharacter(playerId: String, targetSector: String) {
         mutex.withLock {
             if (gameState.status != GameStatus.IN_PROGRESS) return
@@ -172,10 +226,10 @@ class GameSession {
             if (charToPlace.currentSector != null) return // Already on the board
             if (charToPlace.hasActedThisTurn) return
             
+            var newTerritories = gameState.territories
             if (occupant != null) {
                 // It's a fight!
-                val territory = MapData[targetSector]
-                val protection = territory?.protection ?: 0
+                val protection = gameState.territories[targetSector]?.protection ?: (MapData[targetSector]?.protection ?: 0)
                 val winner = calculateFightResult(charToPlace, occupant, protection)
                 val loserId = if (winner.id == charToPlace.id) occupant.id else charToPlace.id
                 
@@ -183,11 +237,25 @@ class GameSession {
                 val fightEvent = GameEvent.FightOccurred(targetSector, winner.id, loserId)
                 broadcastEvent(fightEvent)
                 
+                var lootedFood = 0
+                var lootedGold = 0
+                if (winner.id == charToPlace.id) {
+                    val captureRes = handleCaptureTerritory(newTerritories, targetSector, player)
+                    newTerritories = captureRes.updatedTerritories
+                    lootedFood = captureRes.lootedFood
+                    lootedGold = captureRes.lootedGold
+                }
+                
                 val newChars = gameState.characters.map {
                     when (it.id) {
                         charToPlace.id -> {
                             if (winner.id == charToPlace.id) {
-                                it.copy(currentSector = targetSector, hasActedThisTurn = true)
+                                it.copy(
+                                    currentSector = targetSector,
+                                    hasActedThisTurn = true,
+                                    food = it.food + lootedFood,
+                                    gold = it.gold + lootedGold
+                                )
                             } else {
                                 it.copy(currentSector = null, hasActedThisTurn = true, isDead = true)
                             }
@@ -202,7 +270,8 @@ class GameSession {
                         else -> it
                     }
                 }
-                gameState = gameState.copy(characters = newChars)
+                
+                gameState = gameState.copy(characters = newChars, territories = newTerritories)
                 
                 val redPlayerIds = gameState.players.filter { it.team == Team.RED }.map { it.id }.toSet()
                 val bluePlayerIds = gameState.players.filter { it.team == Team.BLUE }.map { it.id }.toSet()
@@ -221,10 +290,20 @@ class GameSession {
                     gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = Team.BLUE)
                 }
             } else {
+                val captureRes = handleCaptureTerritory(newTerritories, targetSector, player)
+                newTerritories = captureRes.updatedTerritories
+                
                 val newChars = gameState.characters.map {
-                    if (it.playerId == playerId) it.copy(currentSector = targetSector, hasActedThisTurn = true) else it
+                    if (it.playerId == playerId) {
+                        it.copy(
+                            currentSector = targetSector,
+                            hasActedThisTurn = true,
+                            food = it.food + captureRes.lootedFood,
+                            gold = it.gold + captureRes.lootedGold
+                        )
+                    } else it
                 }
-                gameState = gameState.copy(characters = newChars)
+                gameState = gameState.copy(characters = newChars, territories = newTerritories)
                 
                 val castleOwner = gameState.teamCastles.entries.find { it.value == targetSector }?.key
                 val isCastleCaptured = castleOwner != null && castleOwner != player.team
@@ -255,14 +334,15 @@ class GameSession {
             if (!isAdjacentSector(charToMove.currentSector!!, targetSector)) return
             
             val occupant = gameState.characters.find { it.currentSector == targetSector }
+            var newTerritories = gameState.territories
+            
             if (occupant != null) {
                 // If the occupant is on the same team, invalid move
                 val occupantPlayer = gameState.players.find { it.id == occupant.playerId }
                 if (occupantPlayer?.team == player.team) return
                 
                 // Otherwise, it's a fight!
-                val territory = MapData[targetSector]
-                val protection = territory?.protection ?: 0
+                val protection = gameState.territories[targetSector]?.protection ?: (MapData[targetSector]?.protection ?: 0)
                 val winner = calculateFightResult(charToMove, occupant, protection)
                 val loserId = if (winner.id == charToMove.id) occupant.id else charToMove.id
                 
@@ -270,11 +350,25 @@ class GameSession {
                 val fightEvent = GameEvent.FightOccurred(targetSector, winner.id, loserId)
                 broadcastEvent(fightEvent)
                 
+                var lootedFood = 0
+                var lootedGold = 0
+                if (winner.id == charToMove.id) {
+                    val captureRes = handleCaptureTerritory(newTerritories, targetSector, player)
+                    newTerritories = captureRes.updatedTerritories
+                    lootedFood = captureRes.lootedFood
+                    lootedGold = captureRes.lootedGold
+                }
+                
                 val newChars = gameState.characters.map {
                     when (it.id) {
                         charToMove.id -> {
                             if (winner.id == charToMove.id) {
-                                it.copy(currentSector = targetSector, hasActedThisTurn = true)
+                                it.copy(
+                                    currentSector = targetSector,
+                                    hasActedThisTurn = true,
+                                    food = it.food + lootedFood,
+                                    gold = it.gold + lootedGold
+                                )
                             } else {
                                 it.copy(currentSector = null, hasActedThisTurn = true, isDead = true)
                             }
@@ -289,7 +383,8 @@ class GameSession {
                         else -> it
                     }
                 }
-                gameState = gameState.copy(characters = newChars)
+                
+                gameState = gameState.copy(characters = newChars, territories = newTerritories)
                 
                 val redPlayerIds = gameState.players.filter { it.team == Team.RED }.map { it.id }.toSet()
                 val bluePlayerIds = gameState.players.filter { it.team == Team.BLUE }.map { it.id }.toSet()
@@ -308,10 +403,20 @@ class GameSession {
                     gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = Team.BLUE)
                 }
             } else {
+                val captureRes = handleCaptureTerritory(newTerritories, targetSector, player)
+                newTerritories = captureRes.updatedTerritories
+                
                 val newChars = gameState.characters.map {
-                    if (it.playerId == playerId) it.copy(currentSector = targetSector, hasActedThisTurn = true) else it
+                    if (it.playerId == playerId) {
+                        it.copy(
+                            currentSector = targetSector,
+                            hasActedThisTurn = true,
+                            food = it.food + captureRes.lootedFood,
+                            gold = it.gold + captureRes.lootedGold
+                        )
+                    } else it
                 }
-                gameState = gameState.copy(characters = newChars)
+                gameState = gameState.copy(characters = newChars, territories = newTerritories)
                 
                 val castleOwner = gameState.teamCastles.entries.find { it.value == targetSector }?.key
                 val isCastleCaptured = castleOwner != null && castleOwner != player.team
@@ -323,15 +428,100 @@ class GameSession {
         }
         broadcastState()
     }
+
+    suspend fun upgradeTerritory(playerId: String, sectorId: String, upgradeType: String) {
+        mutex.withLock {
+            if (gameState.status != GameStatus.IN_PROGRESS) return
+            val player = gameState.players.find { it.id == playerId } ?: return
+            if (gameState.activeTeamTurn != player.team) return
+            
+            val char = gameState.characters.find { it.playerId == playerId } ?: return
+            if (char.hasActedThisTurn || char.isDead) return
+            
+            val territory = gameState.territories[sectorId] ?: return
+            if (territory.ownerPlayerId != playerId) return // Only owner can upgrade
+            
+            val updatedTerritories = gameState.territories.toMutableMap()
+            val newTerritory = when (upgradeType.uppercase()) {
+                "CULTIVATION" -> territory.copy(cultivation = territory.cultivation + 2)
+                "PROTECTION" -> territory.copy(protection = territory.protection + 2)
+                else -> territory
+            }
+            updatedTerritories[sectorId] = newTerritory
+            
+            val newChars = gameState.characters.map {
+                if (it.id == char.id) it.copy(hasActedThisTurn = true) else it
+            }
+            
+            gameState = gameState.copy(
+                territories = updatedTerritories,
+                characters = newChars
+            )
+            
+            checkTurnEnd()
+        }
+        broadcastState()
+    }
+    
+    suspend fun collectResources(playerId: String, sectorId: String) {
+        mutex.withLock {
+            if (gameState.status != GameStatus.IN_PROGRESS) return
+            val player = gameState.players.find { it.id == playerId } ?: return
+            
+            val char = gameState.characters.find { it.playerId == playerId } ?: return
+            if (char.isDead) return
+            if (char.currentSector != sectorId) return // Player must have character at location
+            
+            val territory = gameState.territories[sectorId] ?: return
+            if (territory.ownerPlayerId != playerId) return // Only owner can collect
+            
+            val foodToCollect = territory.food
+            val goldToCollect = territory.gold
+            if (foodToCollect == 0 && goldToCollect == 0) return
+            
+            val updatedTerritories = gameState.territories.toMutableMap()
+            updatedTerritories[sectorId] = territory.copy(food = 0, gold = 0)
+            
+            val newChars = gameState.characters.map {
+                if (it.id == char.id) it.copy(food = it.food + foodToCollect, gold = it.gold + goldToCollect) else it
+            }
+            
+            gameState = gameState.copy(
+                territories = updatedTerritories,
+                characters = newChars
+            )
+        }
+        broadcastState()
+    }
+    
+    suspend fun hireSoldiers(playerId: String, count: Int) {
+        mutex.withLock {
+            if (gameState.status != GameStatus.IN_PROGRESS) return
+            if (count !in 1..100) return
+            
+            val char = gameState.characters.find { it.playerId == playerId } ?: return
+            if (char.isDead) return
+            if (char.soldiers + count > 100) return
+            
+            val cost = count * 10
+            if (char.gold < cost) return
+            
+            val newChars = gameState.characters.map {
+                if (it.id == char.id) {
+                    it.copy(gold = it.gold - cost, soldiers = it.soldiers + count)
+                } else {
+                    it
+                }
+            }
+            
+            gameState = gameState.copy(characters = newChars)
+        }
+        broadcastState()
+    }
     
     private fun checkTurnEnd() {
         // Find all characters on the board that belong to the active team
         val activeTeamPlayerIds = gameState.players.filter { it.team == gameState.activeTeamTurn }.map { it.id }.toSet()
-        val activeTeamCharsOnBoard = gameState.characters.filter { it.playerId in activeTeamPlayerIds && it.currentSector != null }
-        
-        // If there are no characters on the board for this team, or all of them have acted, end turn
-        // Wait, if they haven't placed their character, they should be able to place it.
-        // So we just check ALL characters belonging to the team.
         val activeTeamChars = gameState.characters.filter { it.playerId in activeTeamPlayerIds }
         
         if (activeTeamChars.isNotEmpty() && activeTeamChars.all { it.hasActedThisTurn }) {
@@ -339,12 +529,52 @@ class GameSession {
             val newTeamTurn = if (gameState.activeTeamTurn == Team.RED) Team.BLUE else Team.RED
             val newTurnCount = if (gameState.activeTeamTurn == Team.BLUE) gameState.currentTurn + 1 else gameState.currentTurn
             
-            val resetChars = gameState.characters.map { it.copy(hasActedThisTurn = false) }
+            // Process upkeep and reset character actions
+            val updatedChars = gameState.characters.map { char ->
+                if (!char.isDead && char.soldiers > 0) {
+                    val foodNeeded = char.soldiers * 5
+                    val goldNeeded = char.soldiers * 1
+                    
+                    val (newFood, foodLoss) = if (char.food >= foodNeeded) {
+                        (char.food - foodNeeded) to 0
+                    } else {
+                        val loss = kotlin.math.max(1, kotlin.math.ceil(char.soldiers * 0.10).toInt())
+                        0 to loss
+                    }
+                    
+                    val (newGold, goldLoss) = if (char.gold >= goldNeeded) {
+                        (char.gold - goldNeeded) to 0
+                    } else {
+                        val loss = kotlin.math.max(1, kotlin.math.ceil(char.soldiers * 0.05).toInt())
+                        0 to loss
+                    }
+                    
+                    val remainingSoldiers = kotlin.math.max(0, char.soldiers - foodLoss - goldLoss)
+                    char.copy(
+                        food = newFood,
+                        gold = newGold,
+                        soldiers = remainingSoldiers,
+                        hasActedThisTurn = false
+                    )
+                } else {
+                    char.copy(hasActedThisTurn = false)
+                }
+            }
+            
+            // Produce food and gold for all owned territories
+            val updatedTerritories = gameState.territories.mapValues { (_, terr) ->
+                if (terr.ownerPlayerId != null) {
+                    terr.copy(food = terr.food + 1, gold = terr.gold + 1)
+                } else {
+                    terr
+                }
+            }
             
             gameState = gameState.copy(
                 activeTeamTurn = newTeamTurn,
                 currentTurn = newTurnCount,
-                characters = resetChars
+                characters = updatedChars,
+                territories = updatedTerritories
             )
             
             if (gameState.currentTurn > gameState.maxTurns) {
