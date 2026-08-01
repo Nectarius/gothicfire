@@ -14,6 +14,7 @@ import models.Team
 fun IComponent.StrategicMap(
     playerId: String,
     gameState: GameState?,
+    activeFight: models.GameEvent.FightOccurred? = null,
     sendAction: (GameAction) -> Unit
 ) {
     var selectedBoardCharacterId by remember { mutableStateOf<String?>(null) }
@@ -33,12 +34,16 @@ fun IComponent.StrategicMap(
                 val sectorOccupiedBy = gameState?.characters?.find { it.currentSector == sector }
                 val isSectorSelected = myCharacter != null && myCharacter.currentSector == sector && selectedBoardCharacterId == myCharacter.id
                 
-                // Valid move target if I have my character selected, it's my turn, and it's empty and adjacent
-                val isValidMoveTarget = isMyTurn && selectedBoardCharacterId == myCharacter?.id && myCharacter?.currentSector != null &&
-                    sectorOccupiedBy == null && isAdjacentSector(myCharacter.currentSector!!, sector)
+                val myPlayer = gameState?.players?.find { it.id == playerId }
+                val occupantPlayer = sectorOccupiedBy?.let { occ -> gameState?.players?.find { it.id == occ.playerId } }
+                val isEnemySector = occupantPlayer != null && occupantPlayer.team != myPlayer?.team
                 
-                // Valid placement target if it's my turn, my character is unplaced, and sector is empty
-                val isValidPlacementTarget = isMyTurn && myCharacter != null && myCharacter.currentSector == null && sectorOccupiedBy == null
+                // Valid move target if I have my character selected, it's my turn, and it's empty or enemy and adjacent
+                val isValidMoveTarget = isMyTurn && selectedBoardCharacterId == myCharacter?.id && myCharacter?.currentSector != null &&
+                    (sectorOccupiedBy == null || isEnemySector) && isAdjacentSector(myCharacter.currentSector!!, sector)
+                
+                // Valid placement target if it's my turn, my character is unplaced, and sector is empty or enemy
+                val isValidPlacementTarget = isMyTurn && myCharacter != null && myCharacter.currentSector == null && (sectorOccupiedBy == null || isEnemySector)
 
                 val leftPerc = (territory.x / 1205.0) * 100
                 val topPerc = (territory.y / 1095.0) * 100
@@ -47,6 +52,7 @@ fun IComponent.StrategicMap(
                 if (isSectorSelected) cellClasses.add("territory-node-selected")
                 if (isValidMoveTarget) cellClasses.add("territory-node-valid-move")
                 if (isValidPlacementTarget) cellClasses.add("territory-node-valid-place")
+                if (activeFight?.sectorId == sector) cellClasses.add("territory-node-fight")
 
                 div(className = cellClasses.joinToString(" ")) {
                     style("left", "$leftPerc%")
@@ -54,8 +60,24 @@ fun IComponent.StrategicMap(
                     style("position", "absolute")
                     style("transform", "translate(-50%, -50%)")
                     
-                    span(className = "territory-label") {
-                        textNode(sector)
+                    if (territory.isCastle) {
+                        img(src = "/Castle_icon.png", alt = "Castle", className = "territory-castle-icon")
+                    } else {
+                        span(className = "territory-label") {
+                            textNode(sector)
+                        }
+                    }
+
+                    if (territory.name != null) {
+                        div(className = "territory-name-label") {
+                            textNode(territory.name)
+                        }
+                    }
+                    
+                    if (activeFight?.sectorId == sector) {
+                        div(className = "fight-overlay") {
+                            textNode("⚔️")
+                        }
                     }
 
                     // Handle clicks
@@ -64,7 +86,7 @@ fun IComponent.StrategicMap(
                         
                         // Priority 1: Unplaced character wants to place
                         if (myCharacter.currentSector == null) {
-                            if (sectorOccupiedBy == null) {
+                            if (isValidPlacementTarget) {
                                 sendAction(GameAction.PlaceCharacter(sector))
                             }
                             return@onClick
@@ -78,12 +100,10 @@ fun IComponent.StrategicMap(
                             return@onClick
                         }
                         
-                        // Priority 3: Character selected, click empty adjacent space to move
-                        if (selectedBoardCharacterId == myCharacter.id && sectorOccupiedBy == null) {
-                            if (isAdjacentSector(myCharacter.currentSector!!, sector)) {
-                                sendAction(GameAction.MoveCharacter(sector))
-                                selectedBoardCharacterId = null
-                            }
+                        // Priority 3: Character selected, click valid adjacent space to move
+                        if (isValidMoveTarget) {
+                            sendAction(GameAction.MoveCharacter(sector))
+                            selectedBoardCharacterId = null
                             return@onClick
                         }
                         

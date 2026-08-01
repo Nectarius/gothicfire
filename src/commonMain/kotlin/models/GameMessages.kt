@@ -33,4 +33,7 @@ sealed class GameEvent {
     
     @Serializable
     data class Error(val message: String) : GameEvent()
+    
+    @Serializable
+    data class FightOccurred(val sectorId: String, val winnerId: String, val loserId: String) : GameEvent()
 }

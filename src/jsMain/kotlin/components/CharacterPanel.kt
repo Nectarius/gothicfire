@@ -26,15 +26,19 @@ fun IComponent.CharacterPanel(
             val hasActed = myCharacter.hasActedThisTurn
             
             val cardClasses = mutableListOf("char-card", "glass")
-            if (hasActed) cardClasses.add("char-card-acted")
-            if (isUnplaced && isMyTurn && !hasActed) cardClasses.add("char-card-clickable")
+            if (hasActed || myCharacter.isDead) cardClasses.add("char-card-acted")
+            if (isUnplaced && isMyTurn && !hasActed && !myCharacter.isDead) cardClasses.add("char-card-clickable")
             
             div(className = cardClasses.joinToString(" ")) {
                 div(className = "d-flex justify-between items-center") {
-                    span(className = "font-600 text-primary") { textNode(myCharacter.name) }
-                    span(className = "text-sm ${if (hasActed) "text-red" else "text-dark-gray"}") { 
+                    span(className = "font-600 ${if (myCharacter.isDead) "text-red" else "text-primary"}") { 
+                        textNode(myCharacter.name)
+                        if (myCharacter.isDead) textNode(" 💀")
+                    }
+                    span(className = "text-sm ${if (hasActed || myCharacter.isDead) "text-red" else "text-dark-gray"}") { 
                         textNode(
                             when {
+                                myCharacter.isDead -> "Defeated"
                                 hasActed && isUnplaced -> "Acted"
                                 myCharacter.currentSector != null -> "At Sector ${myCharacter.currentSector}"
                                 else -> "Unplaced (Click map to place)"

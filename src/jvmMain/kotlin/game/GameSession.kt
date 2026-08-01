@@ -140,18 +140,75 @@ class GameSession {
             // Validate target sector is on the map
             if (!MapData.containsKey(targetSector)) return
             
-            // Validate target sector is empty
-            val isSectorOccupied = gameState.characters.any { it.currentSector == targetSector }
-            if (isSectorOccupied) return
+            // Validate target sector is empty or occupied by enemy
+            val occupant = gameState.characters.find { it.currentSector == targetSector }
+            if (occupant != null) {
+                val occupantPlayer = gameState.players.find { it.id == occupant.playerId }
+                if (occupantPlayer?.team == player.team) return
+            }
             
             val charToPlace = gameState.characters.find { it.playerId == playerId } ?: return
             if (charToPlace.currentSector != null) return // Already on the board
             if (charToPlace.hasActedThisTurn) return
             
-            val newChars = gameState.characters.map {
-                if (it.playerId == playerId) it.copy(currentSector = targetSector, hasActedThisTurn = true) else it
+            if (occupant != null) {
+                // It's a fight!
+                val territory = MapData[targetSector]
+                val protection = territory?.protection ?: 0
+                val winner = calculateFightResult(charToPlace, occupant, protection)
+                val loserId = if (winner.id == charToPlace.id) occupant.id else charToPlace.id
+                
+                // Broadcast fight event
+                val fightEvent = GameEvent.FightOccurred(targetSector, winner.id, loserId)
+                broadcastEvent(fightEvent)
+                
+                val newChars = gameState.characters.map {
+                    when (it.id) {
+                        charToPlace.id -> {
+                            if (winner.id == charToPlace.id) {
+                                it.copy(currentSector = targetSector, hasActedThisTurn = true)
+                            } else {
+                                it.copy(currentSector = null, hasActedThisTurn = true, isDead = true)
+                            }
+                        }
+                        occupant.id -> {
+                            if (winner.id == occupant.id) {
+                                it // stays where it is
+                            } else {
+                                it.copy(currentSector = null, isDead = true)
+                            }
+                        }
+                        else -> it
+                    }
+                }
+                gameState = gameState.copy(characters = newChars)
+                
+                val redPlayerIds = gameState.players.filter { it.team == Team.RED }.map { it.id }.toSet()
+                val bluePlayerIds = gameState.players.filter { it.team == Team.BLUE }.map { it.id }.toSet()
+                
+                val allRedDead = redPlayerIds.isNotEmpty() && gameState.characters.filter { it.playerId in redPlayerIds }.all { it.isDead }
+                val allBlueDead = bluePlayerIds.isNotEmpty() && gameState.characters.filter { it.playerId in bluePlayerIds }.all { it.isDead }
+                
+                val isCastleCapturedByAttacker = winner.id == charToPlace.id && territory?.isCastle == true && territory.owningTeam != null && territory.owningTeam != player.team
+                
+                if (isCastleCapturedByAttacker || allBlueDead) {
+                    gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = Team.RED)
+                } else if (allRedDead) {
+                    gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = Team.BLUE)
+                }
+            } else {
+                val newChars = gameState.characters.map {
+                    if (it.playerId == playerId) it.copy(currentSector = targetSector, hasActedThisTurn = true) else it
+                }
+                gameState = gameState.copy(characters = newChars)
+                
+                val territory = MapData[targetSector]
+                val isCastleCaptured = territory?.isCastle == true && territory.owningTeam != null && territory.owningTeam != player.team
+                if (isCastleCaptured) {
+                    gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = player.team)
+                }
             }
-            gameState = gameState.copy(characters = newChars)
+            
             checkTurnEnd()
         }
         broadcastState()
@@ -167,20 +224,74 @@ class GameSession {
             // Validate target sector is on the map
             if (!MapData.containsKey(targetSector)) return
             
-            // Validate target sector is empty
-            val isSectorOccupied = gameState.characters.any { it.currentSector == targetSector }
-            if (isSectorOccupied) return
-            
             val charToMove = gameState.characters.find { it.playerId == playerId } ?: return
             if (charToMove.currentSector == null) return
             if (charToMove.hasActedThisTurn) return
             
             if (!isAdjacentSector(charToMove.currentSector!!, targetSector)) return
             
-            val newChars = gameState.characters.map {
-                if (it.playerId == playerId) it.copy(currentSector = targetSector, hasActedThisTurn = true) else it
+            val occupant = gameState.characters.find { it.currentSector == targetSector }
+            if (occupant != null) {
+                // If the occupant is on the same team, invalid move
+                val occupantPlayer = gameState.players.find { it.id == occupant.playerId }
+                if (occupantPlayer?.team == player.team) return
+                
+                // Otherwise, it's a fight!
+                val territory = MapData[targetSector]
+                val protection = territory?.protection ?: 0
+                val winner = calculateFightResult(charToMove, occupant, protection)
+                val loserId = if (winner.id == charToMove.id) occupant.id else charToMove.id
+                
+                // Broadcast fight event
+                val fightEvent = GameEvent.FightOccurred(targetSector, winner.id, loserId)
+                broadcastEvent(fightEvent)
+                
+                val newChars = gameState.characters.map {
+                    when (it.id) {
+                        charToMove.id -> {
+                            if (winner.id == charToMove.id) {
+                                it.copy(currentSector = targetSector, hasActedThisTurn = true)
+                            } else {
+                                it.copy(currentSector = null, hasActedThisTurn = true, isDead = true)
+                            }
+                        }
+                        occupant.id -> {
+                            if (winner.id == occupant.id) {
+                                it // stays where it is
+                            } else {
+                                it.copy(currentSector = null, isDead = true)
+                            }
+                        }
+                        else -> it
+                    }
+                }
+                gameState = gameState.copy(characters = newChars)
+                
+                val redPlayerIds = gameState.players.filter { it.team == Team.RED }.map { it.id }.toSet()
+                val bluePlayerIds = gameState.players.filter { it.team == Team.BLUE }.map { it.id }.toSet()
+                
+                val allRedDead = redPlayerIds.isNotEmpty() && gameState.characters.filter { it.playerId in redPlayerIds }.all { it.isDead }
+                val allBlueDead = bluePlayerIds.isNotEmpty() && gameState.characters.filter { it.playerId in bluePlayerIds }.all { it.isDead }
+                
+                val isCastleCapturedByAttacker = winner.id == charToMove.id && territory?.isCastle == true && territory.owningTeam != null && territory.owningTeam != player.team
+                
+                if (isCastleCapturedByAttacker || allBlueDead) {
+                    gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = Team.RED)
+                } else if (allRedDead) {
+                    gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = Team.BLUE)
+                }
+            } else {
+                val newChars = gameState.characters.map {
+                    if (it.playerId == playerId) it.copy(currentSector = targetSector, hasActedThisTurn = true) else it
+                }
+                gameState = gameState.copy(characters = newChars)
+                
+                val territory = MapData[targetSector]
+                val isCastleCaptured = territory?.isCastle == true && territory.owningTeam != null && territory.owningTeam != player.team
+                if (isCastleCaptured) {
+                    gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = player.team)
+                }
             }
-            gameState = gameState.copy(characters = newChars)
             checkTurnEnd()
         }
         broadcastState()
@@ -235,6 +346,18 @@ class GameSession {
                 session.send(Frame.Text(eventStr))
             } catch (e: Exception) {
                 println("Error broadcasting to $playerId: ${e.message}")
+            }
+        }
+    }
+    
+    suspend fun broadcastEvent(event: GameEvent) {
+        val json = Json { encodeDefaults = true }
+        val eventStr = json.encodeToString<GameEvent>(event)
+        connections.forEach { (playerId, session) ->
+            try {
+                session.send(Frame.Text(eventStr))
+            } catch (e: Exception) {
+                println("Error broadcasting event to $playerId: ${e.message}")
             }
         }
     }

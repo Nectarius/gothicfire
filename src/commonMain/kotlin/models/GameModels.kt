@@ -24,7 +24,8 @@ data class Character(
     val agility: Int,
     val wisdom: Int,
     val currentSector: String? = null,
-    val hasActedThisTurn: Boolean = false
+    val hasActedThisTurn: Boolean = false,
+    val isDead: Boolean = false
 )
 
 @Serializable
@@ -42,5 +43,6 @@ data class GameState(
     val characters: List<Character> = emptyList(),
     val activeTeamTurn: Team = Team.RED,
     val currentTurn: Int = 1,
-    val maxTurns: Int = 20
+    val maxTurns: Int = 20,
+    val winningTeam: Team? = null
 )

@@ -31,7 +31,8 @@ fun IComponent.TurnHud(
         
         div(className = "text-center") {
             if (gameState.status == GameStatus.GAME_OVER) {
-                h3(className = "m-0 text-red") { textNode("Game Over!") }
+                val winningTeamName = gameState.winningTeam?.name ?: "Nobody"
+                h3(className = "m-0 text-red") { textNode("Game Over! $winningTeamName Wins!") }
             } else {
                 p(className = "m-0 text-md") { 
                     if (isMyTurn) {

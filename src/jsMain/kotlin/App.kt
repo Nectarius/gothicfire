@@ -20,6 +20,8 @@ import components.StrategicMap
 import components.GameLobby
 import game.GameWebSocket
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import models.GameEvent
 
 class App : Application() {
     private val appService = getService<AppService>()
@@ -61,6 +63,7 @@ class App : Application() {
             var gameState by remember { mutableStateOf<GameState?>(null) }
             var yourPlayerId by remember { mutableStateOf("") }
             var wsError by remember { mutableStateOf("") }
+            var activeFight by remember { mutableStateOf<GameEvent.FightOccurred?>(null) }
             
             val ws = remember {
                 GameWebSocket(
@@ -71,6 +74,15 @@ class App : Application() {
                     },
                     onError = { err ->
                         wsError = err
+                    },
+                    onFightOccurred = { fightEvent ->
+                        activeFight = fightEvent
+                        scope.launch {
+                            delay(2500)
+                            if (activeFight == fightEvent) {
+                                activeFight = null
+                            }
+                        }
                     }
                 )
             }
@@ -256,6 +268,7 @@ class App : Application() {
                                 StrategicMap(
                                     playerId = yourPlayerId, 
                                     gameState = gameState, 
+                                    activeFight = activeFight,
                                     sendAction = { ws.sendAction(it) }
                                 )
                             }

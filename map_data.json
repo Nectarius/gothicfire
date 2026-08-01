@@ -169,6 +169,9 @@
     },
     {
         "id": 13,
+        "name": "Castles Blackhood",
+        "isCastle": true,
+        "protection": 25,
         "centroid": [
             652,
             650
@@ -275,6 +278,9 @@
     },
     {
         "id": 20,
+        "name": "Castles Blackwood",
+        "isCastle": true,
+        "protection": 27,
         "centroid": [
             463,
             519

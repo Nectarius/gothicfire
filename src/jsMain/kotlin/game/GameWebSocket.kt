@@ -9,7 +9,8 @@ import org.w3c.dom.MessageEvent
 
 class GameWebSocket(
     private val onStateUpdated: (GameState, String) -> Unit,
-    private val onError: (String) -> Unit
+    private val onError: (String) -> Unit,
+    private val onFightOccurred: (GameEvent.FightOccurred) -> Unit = {}
 ) {
     private var ws: WebSocket? = null
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
@@ -36,6 +37,7 @@ class GameWebSocket(
                     is GameEvent.GameStateUpdated -> onStateUpdated(gameEvent.gameState, gameEvent.yourPlayerId)
                     is GameEvent.Error -> onError(gameEvent.message)
                     is GameEvent.WaitingForOpponent -> {}
+                    is GameEvent.FightOccurred -> onFightOccurred(gameEvent)
                 }
             } catch (e: Exception) {
                 console.error("Failed to parse event: $data", e)
