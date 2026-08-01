@@ -1,0 +1,58 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gothicfire:latest
+    container_name: gothicfire-app
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-8080}:8080"
+      - "${HTTPS_PORT:-443}:443"
+    environment:
+      - APP_MODE=${APP_MODE:-DEV}
+      - PORT=${PORT:-}
+      - TLS_CERT_FILE=${TLS_CERT_FILE:-kornelian.com.pem}
+      - TLS_KEY_FILE=${TLS_KEY_FILE:-kornelian.com.key}
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
+      - MONGODB_DB=${MONGODB_DB:-gothicfire}
+      # OAuth configurations:
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - TWITTER_CLIENT_ID=${TWITTER_CLIENT_ID:-}
+      - TWITTER_CLIENT_SECRET=${TWITTER_CLIENT_SECRET:-}
+    volumes:
+      - ./kornelian.com.pem:/app/kornelian.com.pem:ro
+      - ./kornelian.com.key:/app/kornelian.com.key:ro
+      - ./cert.pem:/app/cert.pem:ro
+      - ./key.pem:/app/key.pem:ro
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - gothicfire-network
+
+  mongo:
+    image: mongo:7.0
+    container_name: gothicfire-mongo
+    restart: unless-stopped
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - gothicfire-network
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  gothicfire-network:
+    driver: bridge

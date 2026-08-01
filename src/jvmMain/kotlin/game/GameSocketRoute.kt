@@ -8,6 +8,10 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import models.*
 
+import org.slf4j.LoggerFactory
+
+private val logger = LoggerFactory.getLogger("GameSocketRoute")
+
 fun Route.gameSocket() {
     val json = Json { ignoreUnknownKeys = true }
     
@@ -42,7 +46,7 @@ fun Route.gameSocket() {
                             is GameAction.JoinTeam -> {} // Handled above
                         }
                     } catch (e: Exception) {
-                        println("Error parsing action: ${e.message}")
+                        logger.error("Error parsing action: {}", e.message, e)
                     }
                 }
             }

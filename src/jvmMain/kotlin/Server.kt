@@ -34,6 +34,9 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.Base64
 
+import config.TlsHelper
+import org.slf4j.LoggerFactory
+
 fun generateCodeVerifier(): String {
     val secureRandom = SecureRandom()
     val codeVerifier = ByteArray(32)
@@ -50,11 +53,41 @@ fun generateCodeChallenge(codeVerifier: String): String {
 }
 
 fun main() {
-    embeddedServer(Netty, port = 8081, host = "0.0.0.0", module = Application::module)
-        .start(wait = true)
+    val logger = LoggerFactory.getLogger("Server")
+    val isDev = (EnvConfig["APP_MODE"] ?: "PROD").equals("DEV", ignoreCase = true)
+
+    embeddedServer(
+        factory = Netty,
+        configure = {
+            if (isDev) {
+                val devPort = EnvConfig["PORT"]?.toIntOrNull() ?: 8080
+                connector {
+                    host = "0.0.0.0"
+                    port = devPort
+                }
+                logger.info("🚀 [Server] Running in DEV mode on http://localhost:$devPort (Addr: :$devPort)")
+            } else {
+                val prodPort = EnvConfig["PORT"]?.toIntOrNull() ?: 443
+                val keyStore = TlsHelper.loadKeyStoreFromPem()
+                sslConnector(
+                    keyStore = keyStore,
+                    keyAlias = "kornelian_key",
+                    keyStorePassword = { "changeit".toCharArray() },
+                    privateKeyPassword = { "changeit".toCharArray() }
+                ) {
+                    host = "0.0.0.0"
+                    port = prodPort
+                }
+                logger.info("🔒 [Server] Running in PROD mode with TLS on https://kornelian.com:$prodPort (Addr: :$prodPort)")
+            }
+        },
+        module = Application::module
+    ).start(wait = true)
 }
 
 fun Application.module() {
+    val isDev = (EnvConfig["APP_MODE"] ?: "PROD").equals("DEV", ignoreCase = true)
+
     install(CORS) {
         allowMethod(HttpMethod.Options)
         allowMethod(HttpMethod.Put)
@@ -71,10 +104,20 @@ fun Application.module() {
         cookie<UserSession>("USER_SESSION") {
             cookie.path = "/"
             cookie.maxAgeInSeconds = 3600 * 24 * 7 // 1 week
+            cookie.httpOnly = true
+            if (!isDev) {
+                cookie.domain = "kornelian.com"
+                cookie.secure = true
+            }
         }
         cookie<TwitterPkceSession>("TWITTER_PKCE_SESSION") {
             cookie.path = "/"
             cookie.maxAgeInSeconds = 600 // 10 minutes
+            cookie.httpOnly = true
+            if (!isDev) {
+                cookie.domain = "kornelian.com"
+                cookie.secure = true
+            }
         }
     }
     
@@ -89,7 +132,13 @@ fun Application.module() {
 
     install(Authentication) {
         oauth("auth-oauth-google") {
-            urlProvider = { "http://localhost:5120/auth/google/callback" }
+            urlProvider = {
+                if (isDev) {
+                    EnvConfig["GOOGLE_REDIRECT_URI"] ?: "http://localhost:8080/auth/google/callback"
+                } else {
+                    EnvConfig["GOOGLE_REDIRECT_URI"] ?: "https://kornelian.com/auth/google/callback?provider=google"
+                }
+            }
             providerLookup = {
                 OAuthServerSettings.OAuth2ServerSettings(
                     name = "google",
@@ -98,7 +147,7 @@ fun Application.module() {
                     requestMethod = HttpMethod.Post,
                     clientId = EnvConfig["GOOGLE_CLIENT_ID"] ?: "dummy_client_id",
                     clientSecret = EnvConfig["GOOGLE_CLIENT_SECRET"] ?: "dummy_client_secret",
-                    defaultScopes = listOf("https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email")
+                    defaultScopes = listOf("email", "profile")
                 )
             }
             client = httpClient
@@ -138,19 +187,22 @@ fun Application.module() {
                         }
                         //localhost:5120/auth/google/callback
                         call.sessions.set(UserSession(id, email, name))
-                        call.respondRedirect("/")
+                        val redirectUrl = if (isDev) (EnvConfig["DEV_FRONTEND_URL"] ?: "http://localhost:5120/") else "/"
+                        call.respondRedirect(redirectUrl)
                     } else {
                         call.respondText("Failed to retrieve user info", status = HttpStatusCode.InternalServerError)
                     }
                 } else {
-                    call.respondRedirect("/")
+                    val redirectUrl = if (isDev) (EnvConfig["DEV_FRONTEND_URL"] ?: "http://localhost:5120/") else "/"
+                    call.respondRedirect(redirectUrl)
                 }
             }
         }
 
         get("/logout") {
             call.sessions.clear<UserSession>()
-            call.respondRedirect("/")
+            val redirectUrl = if (isDev) (EnvConfig["DEV_FRONTEND_URL"] ?: "http://localhost:5120/") else "/"
+            call.respondRedirect(redirectUrl)
         }
 
         get("/auth/twitter") {
@@ -234,7 +286,8 @@ fun Application.module() {
                         }
                         
                         call.sessions.set(UserSession(twitterId, email, name))
-                        call.respondRedirect("/")
+                        val redirectUrl = if (isDev) (EnvConfig["DEV_FRONTEND_URL"] ?: "http://localhost:5120/") else "/"
+                        call.respondRedirect(redirectUrl)
                         return@get
                     }
                 }

@@ -19,6 +19,6 @@ object EnvConfig {
     }
 
     operator fun get(key: String): String? {
-        return envVars[key] ?: System.getenv(key)
+        return System.getenv(key) ?: envVars[key]
     }
 }

@@ -6,10 +6,12 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import models.*
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 
 class GameSession(var gameState: GameState = GameState()) {
+    private val logger = LoggerFactory.getLogger(GameSession::class.java)
     private val mutex = Mutex()
     
     // WebSockets connected to this session
@@ -30,7 +32,7 @@ class GameSession(var gameState: GameState = GameState()) {
                     effectivePlayerId = existingPlayer.id
                     connections[effectivePlayerId] = session
                     success = true
-                    println("🔌 [GameSession] Reconnected player '${existingPlayer.name}' (id=$effectivePlayerId) to active game.")
+                    logger.info("Reconnected player '{}' (id={}) to active game.", existingPlayer.name, effectivePlayerId)
                 } else {
                     connections[incomingPlayerId] = session
                     broadcastError(incomingPlayerId, "Game is currently in progress.")
@@ -684,7 +686,7 @@ class GameSession(var gameState: GameState = GameState()) {
         try {
             session.send(Frame.Text(eventStr))
         } catch (e: Exception) {
-            println("Error sending to $playerId: ${e.message}")
+            logger.error("Error sending to {}: {}", playerId, e.message)
         }
     }
     
@@ -704,7 +706,7 @@ class GameSession(var gameState: GameState = GameState()) {
             try {
                 session.send(Frame.Text(eventStr))
             } catch (e: Exception) {
-                println("Error broadcasting to $playerId: ${e.message}")
+                logger.error("Error broadcasting to {}: {}", playerId, e.message)
             }
         }
     }
@@ -716,7 +718,7 @@ class GameSession(var gameState: GameState = GameState()) {
             try {
                 session.send(Frame.Text(eventStr))
             } catch (e: Exception) {
-                println("Error broadcasting event to $playerId: ${e.message}")
+                logger.error("Error broadcasting event to {}: {}", playerId, e.message)
             }
         }
     }

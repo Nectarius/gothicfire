@@ -4,11 +4,12 @@ import db.GameRepository
 import io.ktor.websocket.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import models.GameStatus
-import models.Team
+import models.*
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 object GameSessionManager {
+    private val logger = LoggerFactory.getLogger(GameSessionManager::class.java)
     private val mutex = Mutex()
     private var globalSession = initializeSession()
     
@@ -16,13 +17,13 @@ object GameSessionManager {
         return try {
             val saved = GameRepository.loadActiveGame()
             if (saved != null && saved.status == GameStatus.IN_PROGRESS) {
-                println("🎮 [GameSessionManager] Restored active in-progress game from database.")
+                logger.info("Restored active in-progress game from database.")
                 GameSession(saved)
             } else {
                 GameSession()
             }
         } catch (e: Exception) {
-            println("⚠️ [GameSessionManager] Could not restore game from DB: ${e.message}")
+            logger.warn("Could not restore game from DB: {}", e.message, e)
             GameSession()
         }
     }

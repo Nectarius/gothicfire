@@ -8,9 +8,11 @@ import kotlinx.serialization.json.Json
 import models.GameState
 import models.GameStatus
 import org.bson.Document
+import org.slf4j.LoggerFactory
 import java.util.UUID
 
 object GameRepository {
+    private val logger = LoggerFactory.getLogger(GameRepository::class.java)
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     
     private val activeGamesCollection by lazy { MongoConfig.database.getCollection("active_games") }
@@ -54,9 +56,9 @@ object GameRepository {
                     turnHistoryCollection.insertOne(historyDoc)
                 }
                 
-                println("💾 [GameRepository] Saved game state to MongoDB ($trigger): Turn ${state.currentTurn}, Status: ${state.status}, Active Team: ${state.activeTeamTurn}")
+                logger.info("Saved game state to MongoDB ({}): Turn {}, Status: {}, Active Team: {}", trigger, state.currentTurn, state.status, state.activeTeamTurn)
             } catch (e: Exception) {
-                println("❌ [GameRepository] Failed to save game state: ${e.message}")
+                logger.error("Failed to save game state: {}", e.message, e)
             }
         }
     }
@@ -66,10 +68,10 @@ object GameRepository {
             val doc = activeGamesCollection.find(Filters.eq("id", gameId)).firstOrNull() ?: return null
             val stateJson = doc.getString("gameStateJson") ?: return null
             val loadedState = json.decodeFromString<GameState>(stateJson)
-            println("🔄 [GameRepository] Successfully restored active game from MongoDB: Turn ${loadedState.currentTurn}, Status: ${loadedState.status}, Active Team: ${loadedState.activeTeamTurn}")
+            logger.info("Successfully restored active game from MongoDB: Turn {}, Status: {}, Active Team: {}", loadedState.currentTurn, loadedState.status, loadedState.activeTeamTurn)
             loadedState
         } catch (e: Exception) {
-            println("❌ [GameRepository] Error restoring active game: ${e.message}")
+            logger.error("Error restoring active game: {}", e.message, e)
             null
         }
     }
@@ -77,9 +79,9 @@ object GameRepository {
     fun clearActiveGame(gameId: String = "global_game") {
         try {
             activeGamesCollection.deleteOne(Filters.eq("id", gameId))
-            println("🗑️ [GameRepository] Cleared active game from MongoDB")
+            logger.info("Cleared active game from MongoDB")
         } catch (e: Exception) {
-            println("❌ [GameRepository] Error clearing active game: ${e.message}")
+            logger.error("Error clearing active game: {}", e.message, e)
         }
     }
 }

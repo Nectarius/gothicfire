@@ -1,0 +1,25 @@
+# Git & IDE
+.git
+.gitignore
+.idea
+.kotlin
+
+# Gradle & Build caches
+.gradle
+build
+kotlin-js-store
+
+# Environment & Sensitive Credentials
+.env
+.credentials
+.twitter_credentials
+*.pem
+*.key
+
+# Python / Local helper scripts
+venv
+*.log
+fix_app.py
+search_github.py
+test.kt
+test.gradle.kts
