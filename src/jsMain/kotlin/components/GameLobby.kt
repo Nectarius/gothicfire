@@ -9,6 +9,7 @@ import dev.kilua.html.*
 import game.GameWebSocket
 import models.GameAction
 import models.GameState
+import models.PredefinedCharacters
 import models.Team
 
 @Composable
@@ -18,15 +19,10 @@ fun IComponent.GameLobby(
     yourPlayerId: String
 ) {
     var playerName by remember { mutableStateOf("") }
-    
-    // Character creation state
-    var charName by remember { mutableStateOf("") }
-    var strength by remember { mutableStateOf(5) }
-    var agility by remember { mutableStateOf(5) }
-    var wisdom by remember { mutableStateOf(5) }
+    var selectedHeroIds by remember { mutableStateOf(listOf<String>()) }
 
     val myPlayer = gameState?.players?.find { it.id == yourPlayerId }
-    val myCharacter = gameState?.characters?.find { it.playerId == yourPlayerId }
+    val myCharacters = gameState?.characters?.filter { it.playerId == yourPlayerId } ?: emptyList()
     
     div(className = "lobby-container glass p-4 text-center w-full") {
         h1(className = "m-0 mb-2") { textNode("Gothic Fire Team Battle") }
@@ -66,46 +62,84 @@ fun IComponent.GameLobby(
             }
         } else {
             // Joined a team
-            if (myCharacter == null) {
-                h3(className = "mb-1 text-primary") { textNode("Create Your Character") }
-                div(className = "d-flex flex-col items-center gap-1 mb-2 max-w-sm mx-auto") {
-                    text(value = charName, placeholder = "Character Name", className = "w-full") {
-                        onInput { charName = this.value ?: "" }
-                    }
-                    div(className = "d-flex justify-between w-full") {
-                        span { textNode("Strength") }
-                        text(value = strength.toString(), className = "stat-input") {
-                            onInput { strength = this.value?.toIntOrNull() ?: 5 }
+            if (myCharacters.size < 2) {
+                h2(className = "mb-05 text-primary") { textNode("Choose Your 2 Heroes (${selectedHeroIds.size}/2)") }
+                p(className = "text-gray text-sm mt-0 mb-2") {
+                    textNode("Select 2 iconic heroes from the Colony to lead into battle.")
+                }
+                
+                div(className = "hero-grid") {
+                    for (hero in PredefinedCharacters) {
+                        val isSelected = hero.templateId in selectedHeroIds
+                        val selectionIndex = if (isSelected) selectedHeroIds.indexOf(hero.templateId) + 1 else null
+                        
+                        div(className = "hero-card ${if (isSelected) "selected" else ""}") {
+                            if (selectionIndex != null) {
+                                span(className = "hero-selection-badge") {
+                                    textNode("HERO #$selectionIndex")
+                                }
+                            }
+                            
+                            h3(className = "m-0 text-gold text-base") { textNode(hero.name) }
+                            span(className = "text-xs text-gray mb-1") { textNode(hero.title) }
+                            
+                            div(className = "hero-stats-row") {
+                                span(className = "hero-stat-pill text-red") { textNode("STR: ${hero.strength}") }
+                                span(className = "hero-stat-pill text-blue") { textNode("AGI: ${hero.agility}") }
+                                span(className = "hero-stat-pill text-purple") { textNode("WIS: ${hero.wisdom}") }
+                            }
+                            
+                            p(className = "text-xs text-gray mt-1 mb-0") {
+                                textNode(hero.description)
+                            }
+                            
+                            onClick {
+                                selectedHeroIds = if (isSelected) {
+                                    selectedHeroIds - hero.templateId
+                                } else {
+                                    if (selectedHeroIds.size < 2) {
+                                        selectedHeroIds + hero.templateId
+                                    } else {
+                                        listOf(selectedHeroIds[1], hero.templateId)
+                                    }
+                                }
+                            }
                         }
                     }
-                    div(className = "d-flex justify-between w-full") {
-                        span { textNode("Agility") }
-                        text(value = agility.toString(), className = "stat-input") {
-                            onInput { agility = this.value?.toIntOrNull() ?: 5 }
-                        }
-                    }
-                    div(className = "d-flex justify-between w-full") {
-                        span { textNode("Wisdom") }
-                        text(value = wisdom.toString(), className = "stat-input") {
-                            onInput { wisdom = this.value?.toIntOrNull() ?: 5 }
-                        }
-                    }
-                    button("Confirm Character", className = "btn btn-primary mt-1") {
+                }
+                
+                div(className = "d-flex justify-center mt-2") {
+                    val canConfirm = selectedHeroIds.size == 2
+                    button(
+                        "Confirm Selection (${selectedHeroIds.size}/2)",
+                        className = "btn btn-primary ${if (!canConfirm) "btn-disabled" else ""}"
+                    ) {
                         onClick {
-                            if (charName.isNotBlank()) {
-                                ws.sendAction(GameAction.CreateCharacter(charName, strength, agility, wisdom))
+                            if (canConfirm) {
+                                ws.sendAction(GameAction.SelectCharacters(selectedHeroIds))
                             }
                         }
                     }
                 }
             } else {
-                h3(className = "mb-1 text-primary") { textNode("Ready up!") }
+                h3(className = "mb-1 text-primary") { textNode("Heroes Selected!") }
+                
+                div(className = "d-flex justify-center gap-1 mb-2") {
+                    for (mc in myCharacters) {
+                        div(className = "glass px-3 py-1 d-flex items-center gap-1") {
+                            span(className = "font-600 text-gold") { textNode(mc.name) }
+                            span(className = "text-xs text-gray") {
+                                textNode("⚔️ ${mc.strength} | 🏹 ${mc.agility} | 🔮 ${mc.wisdom}")
+                            }
+                        }
+                    }
+                }
                 
                 if (!myPlayer.isReady) {
-                    val myTeamCastle = gameState?.teamCastles?.get(myPlayer.team)
+                    val myTeamCastle = gameState.teamCastles[myPlayer.team]
                     if (myTeamCastle == null) {
                         val availableCastles = listOf("13" to "Castles Blackhood", "20" to "Castles Blackwood")
-                            .filter { it.first !in (gameState?.teamCastles?.values ?: emptyList()) }
+                            .filter { it.first !in gameState.teamCastles.values }
                         
                         if (availableCastles.size == 1) {
                             button("Ready", className = "btn btn-primary mb-2") {
@@ -158,9 +192,10 @@ fun IComponent.GameLobby(
                 p(className = "text-xs text-gray mt-0 mb-1") { textNode("Base: $redCastleName") }
                 val redPlayers = gameState?.players?.filter { it.team == Team.RED } ?: emptyList()
                 for (p in redPlayers) {
-                    val pChar = gameState?.characters?.find { it.playerId == p.id }
+                    val pChars = gameState?.characters?.filter { it.playerId == p.id } ?: emptyList()
+                    val heroesStr = if (pChars.isNotEmpty()) " (${pChars.joinToString(", ") { it.name }})" else ""
                     div(className = "d-flex justify-between items-center w-full mt-05") {
-                        span { textNode(p.name + if (pChar != null) " (${pChar.name})" else "") }
+                        span { textNode("${p.name}$heroesStr") }
                         if (p.isReady) {
                             span(className = "text-sm text-primary font-600") { textNode("READY") }
                         } else {
@@ -178,9 +213,10 @@ fun IComponent.GameLobby(
                 p(className = "text-xs text-gray mt-0 mb-1") { textNode("Base: $blueCastleName") }
                 val bluePlayers = gameState?.players?.filter { it.team == Team.BLUE } ?: emptyList()
                 for (p in bluePlayers) {
-                    val pChar = gameState?.characters?.find { it.playerId == p.id }
+                    val pChars = gameState?.characters?.filter { it.playerId == p.id } ?: emptyList()
+                    val heroesStr = if (pChars.isNotEmpty()) " (${pChars.joinToString(", ") { it.name }})" else ""
                     div(className = "d-flex justify-between items-center w-full mt-05") {
-                        span { textNode(p.name + if (pChar != null) " (${pChar.name})" else "") }
+                        span { textNode("${p.name}$heroesStr") }
                         if (p.isReady) {
                             span(className = "text-sm text-primary font-600") { textNode("READY") }
                         } else {
@@ -191,10 +227,10 @@ fun IComponent.GameLobby(
             }
         }
         
-        if (myPlayer != null && myPlayer.isReady) {
-            val allReady = gameState?.players?.isNotEmpty() == true && gameState.players.all { it.isReady }
-            val hasRed = gameState?.players?.any { it.team == Team.RED } == true
-            val hasBlue = gameState?.players?.any { it.team == Team.BLUE } == true
+        if (myPlayer != null && myPlayer.isReady && gameState != null) {
+            val allReady = gameState.players.isNotEmpty() && gameState.players.all { it.isReady }
+            val hasRed = gameState.players.any { it.team == Team.RED }
+            val hasBlue = gameState.players.any { it.team == Team.BLUE }
             
             if (allReady && hasRed && hasBlue) {
                 button("Start Game", className = "btn btn-primary mt-2 w-full") {
@@ -208,3 +244,4 @@ fun IComponent.GameLobby(
         }
     }
 }
+

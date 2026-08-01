@@ -162,12 +162,47 @@ class GameSession {
         }
     }
     
+    suspend fun selectCharacters(playerId: String, templateIds: List<String>) {
+        mutex.withLock {
+            if (gameState.status != GameStatus.LOBBY) return
+            
+            // Player must pick exactly 2 distinct templates
+            val distinctTemplateIds = templateIds.distinct().take(2)
+            if (distinctTemplateIds.size != 2) {
+                return@withLock
+            }
+            
+            val chosenTemplates = distinctTemplateIds.mapNotNull { id ->
+                PredefinedCharacters.find { it.templateId == id }
+            }
+            if (chosenTemplates.size != 2) {
+                return@withLock
+            }
+            
+            val otherChars = gameState.characters.filter { it.playerId != playerId }
+            val newChars = chosenTemplates.map { template ->
+                Character(
+                    id = UUID.randomUUID().toString(),
+                    playerId = playerId,
+                    name = template.name,
+                    strength = template.strength,
+                    agility = template.agility,
+                    wisdom = template.wisdom
+                )
+            }
+            
+            gameState = gameState.copy(characters = otherChars + newChars)
+        }
+        broadcastState()
+    }
+
     suspend fun createCharacter(playerId: String, name: String, strength: Int, agility: Int, wisdom: Int) {
         mutex.withLock {
             if (gameState.status != GameStatus.LOBBY) return
             
-            // Check if player already has a character
-            if (gameState.characters.any { it.playerId == playerId }) {
+            // Check if player already has 2 characters
+            val existing = gameState.characters.filter { it.playerId == playerId }
+            if (existing.size >= 2) {
                 return@withLock
             }
             
@@ -184,7 +219,7 @@ class GameSession {
         }
         
         if (gameState.characters.none { it.playerId == playerId && it.name == name }) {
-             broadcastError(playerId, "You already have a character.")
+             broadcastError(playerId, "You already have maximum characters.")
         } else {
              broadcastState()
         }
@@ -228,7 +263,7 @@ class GameSession {
         )
     }
 
-    suspend fun placeCharacter(playerId: String, targetSector: String) {
+    suspend fun placeCharacter(playerId: String, targetSector: String, characterId: String? = null) {
         mutex.withLock {
             if (gameState.status != GameStatus.IN_PROGRESS) return
             
@@ -239,15 +274,18 @@ class GameSession {
             if (!MapData.containsKey(targetSector)) return
             
             // Validate target sector is empty or occupied by enemy
-            val occupant = gameState.characters.find { it.currentSector == targetSector }
+            val occupant = gameState.characters.find { it.currentSector == targetSector && !it.isDead }
             if (occupant != null) {
                 val occupantPlayer = gameState.players.find { it.id == occupant.playerId }
                 if (occupantPlayer?.team == player.team) return
             }
             
-            val charToPlace = gameState.characters.find { it.playerId == playerId } ?: return
+            val charToPlace = (if (characterId != null) {
+                gameState.characters.find { it.id == characterId && it.playerId == playerId }
+            } else null) ?: gameState.characters.find { it.playerId == playerId && it.currentSector == null && !it.hasActedThisTurn && !it.isDead } ?: return
+            
             if (charToPlace.currentSector != null) return // Already on the board
-            if (charToPlace.hasActedThisTurn) return
+            if (charToPlace.hasActedThisTurn || charToPlace.isDead) return
             
             var newTerritories = gameState.territories
             if (occupant != null) {
@@ -317,7 +355,7 @@ class GameSession {
                 newTerritories = captureRes.updatedTerritories
                 
                 val newChars = gameState.characters.map {
-                    if (it.playerId == playerId) {
+                    if (it.id == charToPlace.id) {
                         it.copy(
                             currentSector = targetSector,
                             hasActedThisTurn = true,
@@ -340,7 +378,7 @@ class GameSession {
         broadcastState()
     }
     
-    suspend fun moveCharacter(playerId: String, targetSector: String) {
+    suspend fun moveCharacter(playerId: String, targetSector: String, characterId: String? = null) {
         mutex.withLock {
             if (gameState.status != GameStatus.IN_PROGRESS) return
             
@@ -350,17 +388,20 @@ class GameSession {
             // Validate target sector is on the map
             if (!MapData.containsKey(targetSector)) return
             
-            val charToMove = gameState.characters.find { it.playerId == playerId } ?: return
+            val charToMove = (if (characterId != null) {
+                gameState.characters.find { it.id == characterId && it.playerId == playerId }
+            } else null) ?: gameState.characters.find { it.playerId == playerId && it.currentSector != null && !it.hasActedThisTurn && !it.isDead } ?: return
+            
             if (charToMove.currentSector == null) return
-            if (charToMove.hasActedThisTurn) return
+            if (charToMove.hasActedThisTurn || charToMove.isDead) return
             
-            if (!isAdjacentSector(charToMove.currentSector!!, targetSector)) return
+            if (!isAdjacentSector(charToMove.currentSector, targetSector)) return
             
-            val occupant = gameState.characters.find { it.currentSector == targetSector }
+            val occupant = gameState.characters.find { it.currentSector == targetSector && !it.isDead }
             var newTerritories = gameState.territories
             
             if (occupant != null) {
-                // If the occupant is on the same team, invalid move
+                // If the occupant is on the same team, invalid move (cannot attack ally)
                 val occupantPlayer = gameState.players.find { it.id == occupant.playerId }
                 if (occupantPlayer?.team == player.team) return
                 
@@ -430,7 +471,7 @@ class GameSession {
                 newTerritories = captureRes.updatedTerritories
                 
                 val newChars = gameState.characters.map {
-                    if (it.playerId == playerId) {
+                    if (it.id == charToMove.id) {
                         it.copy(
                             currentSector = targetSector,
                             hasActedThisTurn = true,
@@ -452,17 +493,19 @@ class GameSession {
         broadcastState()
     }
 
-    suspend fun upgradeTerritory(playerId: String, sectorId: String, upgradeType: String) {
+    suspend fun upgradeTerritory(playerId: String, sectorId: String, upgradeType: String, characterId: String? = null) {
         mutex.withLock {
             if (gameState.status != GameStatus.IN_PROGRESS) return
             val player = gameState.players.find { it.id == playerId } ?: return
             if (gameState.activeTeamTurn != player.team) return
             
-            val char = gameState.characters.find { it.playerId == playerId } ?: return
+            val char = (if (characterId != null) {
+                gameState.characters.find { it.id == characterId && it.playerId == playerId }
+            } else null) ?: gameState.characters.find { it.playerId == playerId && !it.hasActedThisTurn && !it.isDead } ?: return
             if (char.hasActedThisTurn || char.isDead) return
             
             val territory = gameState.territories[sectorId] ?: return
-            if (territory.ownerPlayerId != playerId) return // Only owner can upgrade
+            if (territory.ownerPlayerId != playerId && territory.ownerTeam != player.team) return // Only owner or team owner can upgrade
             
             val updatedTerritories = gameState.territories.toMutableMap()
             val newTerritory = when (upgradeType.uppercase()) {
@@ -486,17 +529,19 @@ class GameSession {
         broadcastState()
     }
     
-    suspend fun collectResources(playerId: String, sectorId: String) {
+    suspend fun collectResources(playerId: String, sectorId: String, characterId: String? = null) {
         mutex.withLock {
             if (gameState.status != GameStatus.IN_PROGRESS) return
             val player = gameState.players.find { it.id == playerId } ?: return
             
-            val char = gameState.characters.find { it.playerId == playerId } ?: return
+            val char = (if (characterId != null) {
+                gameState.characters.find { it.id == characterId && it.playerId == playerId }
+            } else null) ?: gameState.characters.find { it.playerId == playerId && it.currentSector == sectorId && !it.isDead } ?: return
             if (char.isDead) return
             if (char.currentSector != sectorId) return // Player must have character at location
             
             val territory = gameState.territories[sectorId] ?: return
-            if (territory.ownerPlayerId != playerId) return // Only owner can collect
+            if (territory.ownerPlayerId != playerId && territory.ownerTeam != player.team) return // Only owner or team can collect
             
             val foodToCollect = territory.food
             val goldToCollect = territory.gold
@@ -517,12 +562,14 @@ class GameSession {
         broadcastState()
     }
     
-    suspend fun hireSoldiers(playerId: String, count: Int) {
+    suspend fun hireSoldiers(playerId: String, count: Int, characterId: String? = null) {
         mutex.withLock {
             if (gameState.status != GameStatus.IN_PROGRESS) return
             if (count !in 1..100) return
             
-            val char = gameState.characters.find { it.playerId == playerId } ?: return
+            val char = (if (characterId != null) {
+                gameState.characters.find { it.id == characterId && it.playerId == playerId }
+            } else null) ?: gameState.characters.find { it.playerId == playerId && !it.isDead } ?: return
             if (char.isDead) return
             if (char.soldiers + count > 100) return
             
@@ -543,9 +590,9 @@ class GameSession {
     }
     
     private fun checkTurnEnd() {
-        // Find all characters on the board that belong to the active team
+        // Find all living characters on the board that belong to the active team
         val activeTeamPlayerIds = gameState.players.filter { it.team == gameState.activeTeamTurn }.map { it.id }.toSet()
-        val activeTeamChars = gameState.characters.filter { it.playerId in activeTeamPlayerIds }
+        val activeTeamChars = gameState.characters.filter { it.playerId in activeTeamPlayerIds && !it.isDead }
         
         if (activeTeamChars.isNotEmpty() && activeTeamChars.all { it.hasActedThisTurn }) {
             // End turn
@@ -586,7 +633,7 @@ class GameSession {
             
             // Produce food and gold for all owned territories
             val updatedTerritories = gameState.territories.mapValues { (_, terr) ->
-                if (terr.ownerPlayerId != null) {
+                if (terr.ownerPlayerId != null || terr.ownerTeam != null) {
                     terr.copy(food = terr.food + 1, gold = terr.gold + 1)
                 } else {
                     terr

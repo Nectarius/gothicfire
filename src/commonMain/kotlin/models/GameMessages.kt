@@ -11,28 +11,31 @@ sealed class GameAction {
     data class CreateCharacter(val name: String, val strength: Int, val agility: Int, val wisdom: Int) : GameAction()
     
     @Serializable
+    data class SelectCharacters(val templateIds: List<String>) : GameAction()
+    
+    @Serializable
     data object ToggleReady : GameAction()
     
     @Serializable
     data object StartGame : GameAction()
     
     @Serializable
-    data class PlaceCharacter(val targetSector: String) : GameAction()
+    data class PlaceCharacter(val targetSector: String, val characterId: String? = null) : GameAction()
     
     @Serializable
-    data class MoveCharacter(val targetSector: String) : GameAction()
+    data class MoveCharacter(val targetSector: String, val characterId: String? = null) : GameAction()
     
     @Serializable
     data class SelectCastleAndReady(val castleId: String) : GameAction()
     
     @Serializable
-    data class UpgradeTerritory(val sectorId: String, val upgradeType: String) : GameAction()
+    data class UpgradeTerritory(val sectorId: String, val upgradeType: String, val characterId: String? = null) : GameAction()
     
     @Serializable
-    data class CollectResources(val sectorId: String) : GameAction()
+    data class CollectResources(val sectorId: String, val characterId: String? = null) : GameAction()
     
     @Serializable
-    data class HireSoldiers(val count: Int) : GameAction()
+    data class HireSoldiers(val count: Int, val characterId: String? = null) : GameAction()
 }
 
 @Serializable

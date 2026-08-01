@@ -30,14 +30,15 @@ fun Route.gameSocket() {
                         
                         when (action) {
                             is GameAction.CreateCharacter -> game.createCharacter(playerId, action.name, action.strength, action.agility, action.wisdom)
+                            is GameAction.SelectCharacters -> game.selectCharacters(playerId, action.templateIds)
                             is GameAction.ToggleReady -> game.toggleReady(playerId)
                             is GameAction.StartGame -> game.startGame(playerId)
-                            is GameAction.PlaceCharacter -> game.placeCharacter(playerId, action.targetSector)
-                            is GameAction.MoveCharacter -> game.moveCharacter(playerId, action.targetSector)
+                            is GameAction.PlaceCharacter -> game.placeCharacter(playerId, action.targetSector, action.characterId)
+                            is GameAction.MoveCharacter -> game.moveCharacter(playerId, action.targetSector, action.characterId)
                             is GameAction.SelectCastleAndReady -> game.selectCastleAndReady(playerId, action.castleId)
-                            is GameAction.UpgradeTerritory -> game.upgradeTerritory(playerId, action.sectorId, action.upgradeType)
-                            is GameAction.CollectResources -> game.collectResources(playerId, action.sectorId)
-                            is GameAction.HireSoldiers -> game.hireSoldiers(playerId, action.count)
+                            is GameAction.UpgradeTerritory -> game.upgradeTerritory(playerId, action.sectorId, action.upgradeType, action.characterId)
+                            is GameAction.CollectResources -> game.collectResources(playerId, action.sectorId, action.characterId)
+                            is GameAction.HireSoldiers -> game.hireSoldiers(playerId, action.count, action.characterId)
                             is GameAction.JoinTeam -> {} // Handled above
                         }
                     } catch (e: Exception) {

@@ -14,15 +14,20 @@ import models.Team
 fun IComponent.StrategicMap(
     playerId: String,
     gameState: GameState?,
+    selectedCharacterId: String?,
+    onSelectCharacter: (String) -> Unit,
     activeFight: models.GameEvent.FightOccurred? = null,
     sendAction: (GameAction) -> Unit
 ) {
-    var selectedBoardCharacterId by remember { mutableStateOf<String?>(null) }
     var openedTerritoryId by remember { mutableStateOf<String?>(null) }
     
     val myPlayer = gameState?.players?.find { it.id == playerId }
-    val myCharacter = gameState?.characters?.find { it.playerId == playerId }
+    val myCharacters = gameState?.characters?.filter { it.playerId == playerId } ?: emptyList()
     val isMyTurn = gameState?.activeTeamTurn == myPlayer?.team
+    
+    val activeChar = myCharacters.find { it.id == selectedCharacterId }
+        ?: myCharacters.find { !it.hasActedThisTurn && !it.isDead }
+        ?: myCharacters.firstOrNull()
 
     div(className = "strategic-map-container") {
         // The background map image
@@ -34,18 +39,20 @@ fun IComponent.StrategicMap(
                 val terrState = gameState?.territories?.get(sector)
                 val terrOwnerTeam = terrState?.ownerTeam ?: terrState?.ownerPlayerId?.let { opId -> gameState?.players?.find { it.id == opId }?.team }
                 
-                val sectorOccupiedBy = gameState?.characters?.find { it.currentSector == sector }
-                val isSectorSelected = myCharacter != null && myCharacter.currentSector == sector && selectedBoardCharacterId == myCharacter.id
+                val sectorOccupiedBy = gameState?.characters?.find { it.currentSector == sector && !it.isDead }
+                val isSectorSelected = activeChar != null && activeChar.currentSector == sector
                 
                 val occupantPlayer = sectorOccupiedBy?.let { occ -> gameState?.players?.find { it.id == occ.playerId } }
                 val isEnemySector = occupantPlayer != null && occupantPlayer.team != myPlayer?.team
                 
-                // Valid move target if I have my character selected, it's my turn, and it's empty or enemy and adjacent
-                val isValidMoveTarget = isMyTurn && selectedBoardCharacterId == myCharacter?.id && myCharacter?.currentSector != null &&
-                    (sectorOccupiedBy == null || isEnemySector) && isAdjacentSector(myCharacter.currentSector!!, sector)
+                // Valid move target if active character is placed, alive, hasn't acted, it's my turn, and target is adjacent and (empty or enemy)
+                val isValidMoveTarget = isMyTurn && activeChar != null && !activeChar.hasActedThisTurn && !activeChar.isDead &&
+                    activeChar.currentSector != null && (sectorOccupiedBy == null || isEnemySector) &&
+                    isAdjacentSector(activeChar.currentSector!!, sector)
                 
-                // Valid placement target if it's my turn, my character is unplaced, and sector is empty or enemy
-                val isValidPlacementTarget = isMyTurn && myCharacter != null && myCharacter.currentSector == null && (sectorOccupiedBy == null || isEnemySector)
+                // Valid placement target if active character is unplaced, alive, hasn't acted, it's my turn, and target is empty or enemy
+                val isValidPlacementTarget = isMyTurn && activeChar != null && !activeChar.hasActedThisTurn && !activeChar.isDead &&
+                    activeChar.currentSector == null && (sectorOccupiedBy == null || isEnemySector)
 
                 val leftPerc = (territory.x / 1205.0) * 100
                 val topPerc = (territory.y / 1095.0) * 100
@@ -93,34 +100,29 @@ fun IComponent.StrategicMap(
 
                     // Handle clicks
                     onClick {
-                        if (gameState == null || myPlayer == null || myCharacter == null) return@onClick
+                        if (gameState == null || myPlayer == null) return@onClick
                         
-                        // Priority 1: Unplaced character wants to place
-                        if (myCharacter.currentSector == null && isMyTurn) {
-                            if (isValidPlacementTarget) {
-                                sendAction(GameAction.PlaceCharacter(sector))
-                            }
+                        // Priority 1: Unplaced active character places onto board
+                        if (isValidPlacementTarget && activeChar != null) {
+                            sendAction(GameAction.PlaceCharacter(sector, activeChar.id))
                             return@onClick
                         }
                         
-                        // Priority 2: Character selected and clicks valid move target
-                        if (isValidMoveTarget) {
-                            sendAction(GameAction.MoveCharacter(sector))
-                            selectedBoardCharacterId = null
+                        // Priority 2: Move active character to valid adjacent target
+                        if (isValidMoveTarget && activeChar != null) {
+                            sendAction(GameAction.MoveCharacter(sector, activeChar.id))
                             return@onClick
                         }
                         
-                        // Priority 3: Click on my own placed character to select it and open card
-                        if (sectorOccupiedBy?.id == myCharacter.id) {
-                            if (!myCharacter.hasActedThisTurn) {
-                                selectedBoardCharacterId = myCharacter.id
-                            }
+                        // Priority 3: Click on my own character's sector
+                        val myOccChar = myCharacters.find { it.currentSector == sector && !it.isDead }
+                        if (myOccChar != null) {
+                            onSelectCharacter(myOccChar.id)
                             openedTerritoryId = sector
                             return@onClick
                         }
                         
-                        // Priority 4: Click on any territory to open management/scout card
-                        selectedBoardCharacterId = null
+                        // Priority 4: Open territory inspection modal
                         openedTerritoryId = sector
                     }
                 }
@@ -130,6 +132,7 @@ fun IComponent.StrategicMap(
         // Render Unit Markers
         if (gameState != null) {
             for (char in gameState.characters) {
+                if (char.isDead) continue
                 val sector = char.currentSector ?: continue
                 val territory = MapData[sector]
                 if (territory != null) {
@@ -138,20 +141,29 @@ fun IComponent.StrategicMap(
                     
                     val owner = gameState.players.find { it.id == char.playerId }
                     val isRed = owner?.team == Team.RED
+                    val isMine = char.playerId == playerId
+                    val isSelected = activeChar?.id == char.id
                     
                     val markerClass = if (isRed) "unit-marker-p1" else "unit-marker-p2"
-                    val selectedClass = if (selectedBoardCharacterId == char.id) "unit-marker-selected" else ""
+                    val selectedClass = if (isSelected) "unit-marker-selected" else ""
                     val actedClass = if (char.hasActedThisTurn) "unit-marker-acted" else ""
 
                     div(className = "unit-marker $markerClass $selectedClass $actedClass") {
                         style("left", "$leftPerc%")
                         style("top", "$topPerc%")
-                        title("${char.name} (STR:${char.strength} AGI:${char.agility} WIS:${char.wisdom} | Army: ⚔️${char.soldiers} | Bag: 🌾${char.food} 🪙${char.gold})${if (char.hasActedThisTurn) " [ACTED]" else ""}")
+                        title("${char.name} [${owner?.name ?: "Unknown"}] (STR:${char.strength} AGI:${char.agility} WIS:${char.wisdom} | Army: ⚔️${char.soldiers} | Bag: 🌾${char.food} 🪙${char.gold})${if (char.hasActedThisTurn) " [ACTED]" else ""}")
                         img(src = "/knight_icon.png?v=4", alt = "Knight", className = "unit-marker-img")
                         if (char.soldiers > 0) {
                             span(className = "unit-marker-army-badge") {
                                 textNode("${char.soldiers}")
                             }
+                        }
+                        
+                        onClick {
+                            if (isMine) {
+                                onSelectCharacter(char.id)
+                            }
+                            openedTerritoryId = sector
                         }
                     }
                 }
@@ -164,6 +176,7 @@ fun IComponent.StrategicMap(
                 sectorId = openedTerritoryId!!,
                 playerId = playerId,
                 gameState = gameState,
+                selectedCharacterId = activeChar?.id,
                 onClose = { openedTerritoryId = null },
                 sendAction = sendAction
             )

@@ -257,17 +257,23 @@ class App : Application() {
                         } else if (gameState == null || gameState!!.status == models.GameStatus.LOBBY) {
                             GameLobby(ws = ws, gameState = gameState, yourPlayerId = yourPlayerId)
                         } else {
+                            var selectedCharacterId by remember { mutableStateOf<String?>(null) }
+                            
                             TurnHud(playerId = yourPlayerId, gameState = gameState, sendAction = { ws.sendAction(it) })
                             
                             div(className = "war-map-layout") {
                                 CharacterPanel(
                                     playerId = yourPlayerId, 
                                     gameState = gameState, 
+                                    selectedCharacterId = selectedCharacterId,
+                                    onSelectCharacter = { selectedCharacterId = it },
                                     sendAction = { ws.sendAction(it) }
                                 )
                                 StrategicMap(
                                     playerId = yourPlayerId, 
                                     gameState = gameState, 
+                                    selectedCharacterId = selectedCharacterId,
+                                    onSelectCharacter = { selectedCharacterId = it },
                                     activeFight = activeFight,
                                     sendAction = { ws.sendAction(it) }
                                 )

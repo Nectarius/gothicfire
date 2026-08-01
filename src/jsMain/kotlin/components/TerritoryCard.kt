@@ -11,6 +11,7 @@ fun IComponent.TerritoryCard(
     sectorId: String,
     playerId: String,
     gameState: GameState?,
+    selectedCharacterId: String? = null,
     onClose: () -> Unit,
     sendAction: (GameAction) -> Unit
 ) {
@@ -24,17 +25,24 @@ fun IComponent.TerritoryCard(
     )
     
     val myPlayer = gameState.players.find { it.id == playerId }
-    val myCharacter = gameState.characters.find { it.playerId == playerId }
+    val myCharacters = gameState.characters.filter { it.playerId == playerId }
+    val charAtLocation = myCharacters.find { it.currentSector == sectorId && !it.isDead }
+    
+    val activeChar = myCharacters.find { it.id == selectedCharacterId && !it.isDead }
+        ?: charAtLocation
+        ?: myCharacters.find { !it.hasActedThisTurn && !it.isDead }
+        ?: myCharacters.firstOrNull()
+        
     val isMyTurn = gameState.activeTeamTurn == myPlayer?.team
     val isOwner = territoryState.ownerPlayerId == playerId
     
     val ownerPlayer = gameState.players.find { it.id == territoryState.ownerPlayerId }
     val ownerTeam = territoryState.ownerTeam ?: ownerPlayer?.team
+    val isTeamOwner = ownerTeam == myPlayer?.team
     
-    val canAct = isMyTurn && myCharacter != null && !myCharacter.hasActedThisTurn && !myCharacter.isDead
+    val canAct = isMyTurn && activeChar != null && !activeChar.hasActedThisTurn && !activeChar.isDead
     val hasResources = territoryState.food > 0 || territoryState.gold > 0
-    val isCharacterAtLocation = myCharacter?.currentSector == sectorId
-    val canCollect = isOwner && isCharacterAtLocation && hasResources
+    val canCollect = (isOwner || isTeamOwner) && charAtLocation != null && hasResources
 
     div(className = "territory-modal-backdrop") {
         onClick { onClose() }
@@ -94,56 +102,58 @@ fun IComponent.TerritoryCard(
             }
             
             // Actions Section
-            if (isOwner) {
+            if (isOwner || isTeamOwner) {
                 h4(className = "m-0 mb-05 text-sm text-gray") { textNode("Territory Management Actions") }
                 
                 div(className = "d-flex flex-col gap-05") {
                     div(className = "d-flex gap-1") {
                         button("🌱 Cultivate (+2)", className = "btn btn-outline flex-1 ${if (!canAct) "btn-disabled" else ""}") {
-                            title("Spends your turn to increase Cultivation by +2")
+                            val heroName = activeChar?.name ?: "Hero"
+                            title("Spends $heroName's turn to increase Cultivation by +2")
                             onClick {
-                                if (canAct) {
-                                    sendAction(GameAction.UpgradeTerritory(sectorId, "CULTIVATION"))
+                                if (canAct && activeChar != null) {
+                                    sendAction(GameAction.UpgradeTerritory(sectorId, "CULTIVATION", activeChar.id))
                                 }
                             }
                         }
                         button("🛡️ Fortify (+2)", className = "btn btn-outline flex-1 ${if (!canAct) "btn-disabled" else ""}") {
-                            title("Spends your turn to increase Protection by +2")
+                            val heroName = activeChar?.name ?: "Hero"
+                            title("Spends $heroName's turn to increase Protection by +2")
                             onClick {
-                                if (canAct) {
-                                    sendAction(GameAction.UpgradeTerritory(sectorId, "PROTECTION"))
+                                if (canAct && activeChar != null) {
+                                    sendAction(GameAction.UpgradeTerritory(sectorId, "PROTECTION", activeChar.id))
                                 }
                             }
                         }
                     }
                     
                     val collectTitle = when {
-                        !isCharacterAtLocation -> "Your knight must be at this location to collect accumulated resources"
+                        charAtLocation == null -> "One of your heroes must be at this location to collect accumulated resources"
                         !hasResources -> "No stored resources available to collect"
-                        else -> "Transfers stored Food and Gold to your character inventory"
+                        else -> "Transfers stored Food and Gold to ${charAtLocation.name}'s inventory"
                     }
                     button(
-                        if (isCharacterAtLocation) "💰 Collect All Resources (${territoryState.food}🌾, ${territoryState.gold}🪙)" 
-                        else "💰 Collect Resources (Knight Must Be Here)", 
+                        if (charAtLocation != null) "💰 Collect All Resources (${territoryState.food}🌾, ${territoryState.gold}🪙) -> ${charAtLocation.name}" 
+                        else "💰 Collect Resources (Hero Must Be Here)", 
                         className = "btn btn-primary ${if (!canCollect) "btn-disabled" else ""}"
                     ) {
                         title(collectTitle)
                         onClick {
-                            if (canCollect) {
-                                sendAction(GameAction.CollectResources(sectorId))
+                            if (canCollect && charAtLocation != null) {
+                                sendAction(GameAction.CollectResources(sectorId, charAtLocation.id))
                             }
                         }
                     }
                     
-                    if (isOwner && !isCharacterAtLocation && hasResources) {
+                    if (charAtLocation == null && hasResources) {
                         p(className = "text-xs text-warning m-0 text-center") {
-                            textNode("📍 Move your knight here to collect stored resources (${territoryState.food}🌾, ${territoryState.gold}🪙).")
+                            textNode("📍 Move a hero here to collect stored resources (${territoryState.food}🌾, ${territoryState.gold}🪙).")
                         }
                     }
                     
                     if (!canAct && isMyTurn) {
                         p(className = "text-xs text-red m-0 mt-05 text-center") {
-                            textNode("Character has already acted this turn.")
+                            textNode("${activeChar?.name ?: "Hero"} has already acted this turn.")
                         }
                     } else if (!isMyTurn) {
                         p(className = "text-xs text-dark-gray m-0 mt-05 text-center") {
@@ -153,17 +163,17 @@ fun IComponent.TerritoryCard(
                 }
             } else {
                 p(className = "text-sm text-dark-gray text-center m-0 mb-1") {
-                    textNode("Capture this territory by moving your knight into it.")
+                    textNode("Capture this territory by moving your hero into it.")
                 }
             }
             
-            // Army Recruitment Section (Available at any location for the player)
-            if (myCharacter != null && !myCharacter.isDead) {
+            // Army Recruitment Section
+            if (activeChar != null && !activeChar.isDead) {
                 div(className = "recruitment-section mt-1 pt-1") {
                     div(className = "d-flex justify-between items-center mb-05") {
-                        h4(className = "m-0 text-sm") { textNode("⚔️ Recruit Army (1-100 Men)") }
+                        h4(className = "m-0 text-sm") { textNode("⚔️ Recruit Army for ${activeChar.name}") }
                         span(className = "text-xs text-primary font-600") {
-                            textNode("Army: ${myCharacter.soldiers}/100")
+                            textNode("Army: ${activeChar.soldiers}/100 | Gold: ${activeChar.gold}🪙")
                         }
                     }
                     
@@ -171,17 +181,17 @@ fun IComponent.TerritoryCard(
                         textNode("Cost: 10🪙 per soldier | Upkeep: 5🌾 & 1🪙 per soldier/turn")
                     }
                     
-                    val maxPossible = kotlin.math.min(100 - myCharacter.soldiers, myCharacter.gold / 10)
+                    val maxPossible = kotlin.math.min(100 - activeChar.soldiers, activeChar.gold / 10)
                     
                     div(className = "d-flex gap-05 flex-wrap") {
                         for (count in listOf(1, 5, 10, 25)) {
                             val cost = count * 10
-                            val canAfford = myCharacter.gold >= cost && myCharacter.soldiers + count <= 100
+                            val canAfford = activeChar.gold >= cost && activeChar.soldiers + count <= 100
                             button("+$count (${cost}🪙)", className = "btn btn-sm btn-outline flex-1 ${if (!canAfford) "btn-disabled" else ""}") {
-                                title("Recruit $count soldiers for $cost gold")
+                                title("Recruit $count soldiers for $cost gold for ${activeChar.name}")
                                 onClick {
                                     if (canAfford) {
-                                        sendAction(GameAction.HireSoldiers(count))
+                                        sendAction(GameAction.HireSoldiers(count, activeChar.id))
                                     }
                                 }
                             }
@@ -190,21 +200,21 @@ fun IComponent.TerritoryCard(
                         if (maxPossible > 0 && maxPossible !in listOf(1, 5, 10, 25)) {
                             val maxCost = maxPossible * 10
                             button("Max +$maxPossible (${maxCost}🪙)", className = "btn btn-sm btn-primary flex-1") {
-                                title("Recruit maximum affordable ($maxPossible) soldiers for $maxCost gold")
+                                title("Recruit maximum affordable ($maxPossible) soldiers for $maxCost gold for ${activeChar.name}")
                                 onClick {
-                                    sendAction(GameAction.HireSoldiers(maxPossible))
+                                    sendAction(GameAction.HireSoldiers(maxPossible, activeChar.id))
                                 }
                             }
                         }
                     }
                     
-                    if (myCharacter.soldiers >= 100) {
+                    if (activeChar.soldiers >= 100) {
                         p(className = "text-xs text-warning m-0 mt-05 text-center") {
                             textNode("Maximum army capacity reached (100 soldiers).")
                         }
-                    } else if (myCharacter.gold < 10) {
+                    } else if (activeChar.gold < 10) {
                         p(className = "text-xs text-dark-gray m-0 mt-05 text-center") {
-                            textNode("Need at least 10 Gold in your bag to recruit soldiers.")
+                            textNode("Need at least 10 Gold in ${activeChar.name}'s bag to recruit soldiers.")
                         }
                     }
                 }
@@ -212,3 +222,4 @@ fun IComponent.TerritoryCard(
         }
     }
 }
+
