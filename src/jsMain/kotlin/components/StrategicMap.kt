@@ -65,7 +65,7 @@ fun IComponent.StrategicMap(
                     style("transform", "translate(-50%, -50%)")
                     
                     if (territory.isCastle) {
-                        img(src = "/Castle_icon.png", alt = "Castle", className = "territory-castle-icon")
+                        img(src = "/Castle_icon.png?v=2", alt = "Castle", className = "territory-castle-icon")
                     } else {
                         span(className = "territory-label") {
                             textNode(sector)

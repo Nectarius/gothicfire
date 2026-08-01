@@ -220,11 +220,12 @@ input:focus, textarea:focus {
 }
 
 .territory-castle-icon {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     object-fit: contain;
     pointer-events: none;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+    background: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 4px rgba(251, 191, 36, 0.4));
 }
 
 .territory-name-label {

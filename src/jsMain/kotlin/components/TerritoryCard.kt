@@ -46,7 +46,7 @@ fun IComponent.TerritoryCard(
             div(className = "d-flex justify-between items-center mb-1") {
                 div(className = "d-flex items-center gap-1") {
                     if (territoryDef?.isCastle == true) {
-                        img(src = "/Castle_icon.png", alt = "Castle", className = "territory-modal-icon")
+                        img(src = "/Castle_icon.png?v=2", alt = "Castle", className = "territory-modal-icon")
                     }
                     div {
                         h3(className = "m-0") {

@@ -119,12 +119,35 @@ class GameSession {
                     food = 0,
                     gold = 0
                 )
+            }.toMutableMap()
+
+            // Automatically place player characters into their team's castle
+            val updatedCharacters = gameState.characters.map { char ->
+                val player = gameState.players.find { it.id == char.playerId }
+                val team = player?.team ?: Team.RED
+                val castleSector = gameState.teamCastles[team] ?: if (team == Team.RED) "13" else "20"
+                
+                // Assign starting castle ownership to the player/team
+                val castleTerr = initialTerritories[castleSector]
+                if (castleTerr != null) {
+                    initialTerritories[castleSector] = castleTerr.copy(
+                        ownerPlayerId = char.playerId,
+                        ownerTeam = team
+                    )
+                }
+                
+                char.copy(
+                    currentSector = castleSector,
+                    hasActedThisTurn = false
+                )
             }
+            
             gameState = gameState.copy(
                 status = GameStatus.IN_PROGRESS,
                 activeTeamTurn = Team.RED,
                 currentTurn = 1,
-                territories = initialTerritories
+                territories = initialTerritories,
+                characters = updatedCharacters
             )
         }
         
