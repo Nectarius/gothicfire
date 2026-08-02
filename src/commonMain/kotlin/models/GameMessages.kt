@@ -36,6 +36,12 @@ sealed class GameAction {
     
     @Serializable
     data class HireSoldiers(val count: Int, val characterId: String? = null) : GameAction()
+    
+    @Serializable
+    data class SearchScroll(val targetSector: String, val characterId: String? = null) : GameAction()
+    
+    @Serializable
+    data class UseScroll(val scrollId: String, val characterId: String? = null) : GameAction()
 }
 
 @Serializable
@@ -50,5 +56,17 @@ sealed class GameEvent {
     data class Error(val message: String) : GameEvent()
     
     @Serializable
-    data class FightOccurred(val sectorId: String, val winnerId: String, val loserId: String) : GameEvent()
+    data class FightOccurred(
+        val sectorId: String,
+        val winnerId: String,
+        val loserId: String,
+        val winnerLosses: Int = 0,
+        val loserLosses: Int = 0
+    ) : GameEvent()
+    
+    @Serializable
+    data class ScrollFound(val characterId: String, val characterName: String, val scroll: Scroll) : GameEvent()
+    
+    @Serializable
+    data class ScrollSearchFailed(val characterId: String, val characterName: String, val sectorId: String) : GameEvent()
 }

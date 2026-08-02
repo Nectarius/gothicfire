@@ -30,7 +30,8 @@ data class Character(
     val isDead: Boolean = false,
     val food: Int = 0,
     val gold: Int = 0,
-    val soldiers: Int = 0
+    val soldiers: Int = 0,
+    val scrolls: List<Scroll> = emptyList()
 )
 
 @Serializable

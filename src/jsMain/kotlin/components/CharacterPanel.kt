@@ -6,6 +6,9 @@ import dev.kilua.core.IComponent
 import dev.kilua.html.*
 import models.GameState
 import models.GameAction
+import models.isAdjacentSector
+import models.MapData
+import models.ScrollType
 
 @Composable
 fun IComponent.CharacterPanel(
@@ -106,7 +109,7 @@ fun IComponent.CharacterPanel(
                         span(className = "font-600 text-warning") { textNode("⚔️ Army: ${activeChar.soldiers}/100") }
                         if (activeChar.soldiers > 0) {
                             span(className = "text-xs text-dark-gray") {
-                                textNode("Upkeep: ${activeChar.soldiers * 5}🌾 & ${activeChar.soldiers}🪙/turn")
+                                textNode("Upkeep: ${activeChar.soldiers}🌾/turn")
                             }
                         }
                     }
@@ -135,6 +138,45 @@ fun IComponent.CharacterPanel(
                             }
                         }
                     }
+                    
+                    // Scroll Inventory Section
+                    if (!activeChar.isDead) {
+                        div(className = "scroll-section mt-05 pt-05") {
+                            div(className = "d-flex justify-between items-center") {
+                                span(className = "font-600 text-sm") { textNode("📜 Scrolls") }
+                                span(className = "text-xs text-dark-gray") { 
+                                    textNode("${activeChar.scrolls.size} held")
+                                }
+                            }
+                            
+                            if (activeChar.scrolls.isNotEmpty()) {
+                                div(className = "d-flex flex-col gap-02 mt-03") {
+                                    for (scroll in activeChar.scrolls) {
+                                        val (icon, label) = when (scroll.type) {
+                                            ScrollType.STRENGTH -> "💪" to "Strength"
+                                            ScrollType.AGILITY -> "🏃" to "Agility"
+                                            ScrollType.WISDOM -> "🧠" to "Wisdom"
+                                        }
+                                        div(className = "scroll-item d-flex justify-between items-center") {
+                                            span(className = "text-xs") {
+                                                textNode("$icon $label +${scroll.boostAmount}")
+                                            }
+                                            button("Use", className = "btn btn-xs btn-outline scroll-use-btn") {
+                                                title("Permanently boost ${activeChar.name}'s $label by +${scroll.boostAmount}")
+                                                onClick {
+                                                    sendAction(GameAction.UseScroll(scroll.id, activeChar.id))
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                p(className = "text-xs text-dark-gray m-0 mt-03") {
+                                    textNode("No scrolls. Search territories to find them!")
+                                }
+                            }
+                        }
+                    }
                 }
             }
         } else {
@@ -142,4 +184,3 @@ fun IComponent.CharacterPanel(
         }
     }
 }
-

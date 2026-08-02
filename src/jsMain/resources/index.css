@@ -723,5 +723,345 @@ input:focus, textarea:focus {
     border-color: #ef4444;
 }
 
+/* Scroll Notification Toast */
+.scroll-notification-toast {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    background: rgba(30, 41, 59, 0.95);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
+    animation: slideDown 0.3s ease-out;
+    pointer-events: none;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Scroll Section in Character Panel */
+.scroll-section {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.scroll-item {
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+}
+
+.scroll-use-btn {
+    padding: 0.15rem 0.5rem !important;
+    font-size: 0.7rem !important;
+    border-color: rgba(139, 92, 246, 0.4) !important;
+    color: #a78bfa !important;
+}
+
+.scroll-use-btn:hover {
+    background: rgba(139, 92, 246, 0.2) !important;
+}
+
+/* Pre-Battle Preparation Modal */
+.battle-prep-modal {
+    max-width: 440px;
+    width: 95%;
+}
+
+.battle-win-chance-banner {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.battle-win-chance-banner.chance-high {
+    border-color: rgba(34, 197, 94, 0.4);
+    background: linear-gradient(135deg, rgba(20, 83, 45, 0.3) 0%, rgba(15, 23, 42, 0.85) 100%);
+}
+
+.battle-win-chance-banner.chance-high .win-chance-value {
+    color: #4ade80;
+}
+
+.battle-win-chance-banner.chance-med {
+    border-color: rgba(234, 179, 8, 0.4);
+    background: linear-gradient(135deg, rgba(113, 63, 18, 0.3) 0%, rgba(15, 23, 42, 0.85) 100%);
+}
+
+.battle-win-chance-banner.chance-med .win-chance-value {
+    color: #facc15;
+}
+
+.battle-win-chance-banner.chance-low {
+    border-color: rgba(239, 68, 68, 0.4);
+    background: linear-gradient(135deg, rgba(127, 29, 29, 0.3) 0%, rgba(15, 23, 42, 0.85) 100%);
+}
+
+.battle-win-chance-banner.chance-low .win-chance-value {
+    color: #f87171;
+}
+
+.win-chance-value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.army-domination-tag {
+    color: #86efac;
+    font-weight: 600;
+}
+
+.army-domination-tag-danger {
+    color: #fca5a5;
+    font-weight: 600;
+}
+
+/* Combatant Comparison Grid */
+.battle-comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.combatant-card {
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.attacker-card {
+    border-left: 3px solid #38bdf8;
+}
+
+.defender-card {
+    border-left: 3px solid #ef4444;
+}
+
+.combatant-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 0.4rem;
+}
+
+.combatant-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #cbd5e1;
+}
+
+/* Battle Scrolls Section */
+.battle-scrolls-section {
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    background: rgba(139, 92, 246, 0.06);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+}
+
+.battle-scroll-row {
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.scroll-apply-btn {
+    padding: 0.15rem 0.5rem !important;
+    font-size: 0.75rem !important;
+    border-color: rgba(139, 92, 246, 0.5) !important;
+    color: #c4b5fd !important;
+    background: rgba(139, 92, 246, 0.15) !important;
+}
+
+.scroll-apply-btn:hover {
+    background: rgba(139, 92, 246, 0.3) !important;
+    border-color: #a78bfa !important;
+}
+
+/* Utility classes */
+.gap-02 { gap: 0.2rem; }
+.gap-03 { gap: 0.3rem; }
+.gap-05 { gap: 0.5rem; }
+.mt-02 { margin-top: 0.2rem; }
+.mt-03 { margin-top: 0.3rem; }
+.pt-05 { padding-top: 0.5rem; }
+.pb-05 { padding-bottom: 0.5rem; }
+.mb-03 { margin-bottom: 0.3rem; }
+.mb-05 { margin-bottom: 0.5rem; }
+.flex-wrap { flex-wrap: wrap; }
+.border-b { border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+.italic { font-style: italic; }
+.text-success { color: #4ade80; }
+
+/* Kingdom & Realm Overview Panel */
+.kingdom-overview-panel {
+    padding: 1.25rem 1.5rem;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.kingdom-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 0.75rem;
+}
+
+.kingdom-summary-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.75rem;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.summary-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.metric-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-top: 0.1rem;
+}
+
+/* Territories Overview Grid */
+.territories-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.75rem;
+}
+
+.territory-overview-card {
+    padding: 0.85rem;
+    border-radius: 8px;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: transform 0.15s, border-color 0.15s;
+}
+
+.territory-overview-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.castle-card {
+    border-left: 3px solid #fbbf24;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.08) 0%, rgba(30, 41, 59, 0.6) 100%);
+}
+
+.territory-mini-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+.territory-code-badge {
+    background: rgba(139, 92, 246, 0.2);
+    color: #c4b5fd;
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(139, 92, 246, 0.4);
+}
+
+.protection-badge {
+    background: rgba(34, 197, 94, 0.15);
+    color: #86efac;
+    padding: 1px 5px;
+    border-radius: 4px;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.garrison-info {
+    padding: 0.3rem 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+/* Heroes Overview Grid */
+.heroes-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.75rem;
+}
+
+.hero-overview-card {
+    padding: 0.85rem;
+    border-radius: 8px;
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hero-dead {
+    opacity: 0.6;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.hero-mini-icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+}
+
+.hero-stats-overview {
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 6px;
+}
+
+.hero-scrolls-container {
+    padding: 0.5rem;
+    background: rgba(139, 92, 246, 0.05);
+    border-radius: 6px;
+    border: 1px solid rgba(139, 92, 246, 0.12);
+}
+
+.hero-scroll-row {
+    padding: 0.2rem 0.4rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
+}
+
+.empty-overview-card {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
 
 

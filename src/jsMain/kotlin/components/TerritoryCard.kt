@@ -127,6 +127,19 @@ fun IComponent.TerritoryCard(
                         }
                     }
                     
+                    // Search for Scrolls button
+                    val canSearch = canAct && activeChar != null && activeChar.currentSector != null &&
+                        (activeChar.currentSector == sectorId || isAdjacentSector(activeChar.currentSector!!, sectorId))
+                    button("🔍 Search for Scrolls (25% chance)", className = "btn btn-outline ${if (!canSearch) "btn-disabled" else ""}") {
+                        val heroName = activeChar?.name ?: "Hero"
+                        title("$heroName spends their turn searching this territory for ancient scrolls. 25% chance to find one!")
+                        onClick {
+                            if (canSearch && activeChar != null) {
+                                sendAction(GameAction.SearchScroll(sectorId, activeChar.id))
+                            }
+                        }
+                    }
+                    
                     val collectTitle = when {
                         charAtLocation == null -> "One of your heroes must be at this location to collect accumulated resources"
                         !hasResources -> "No stored resources available to collect"
@@ -178,7 +191,7 @@ fun IComponent.TerritoryCard(
                     }
                     
                     p(className = "text-xs text-dark-gray m-0 mb-05") {
-                        textNode("Cost: 10🪙 per soldier | Upkeep: 5🌾 & 1🪙 per soldier/turn")
+                        textNode("Cost: 10🪙 per soldier | Upkeep: 1🌾 per soldier/turn")
                     }
                     
                     val maxPossible = kotlin.math.min(100 - activeChar.soldiers, activeChar.gold / 10)

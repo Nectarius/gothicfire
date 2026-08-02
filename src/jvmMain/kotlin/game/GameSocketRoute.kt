@@ -43,6 +43,8 @@ fun Route.gameSocket() {
                             is GameAction.UpgradeTerritory -> game.upgradeTerritory(playerId, action.sectorId, action.upgradeType, action.characterId)
                             is GameAction.CollectResources -> game.collectResources(playerId, action.sectorId, action.characterId)
                             is GameAction.HireSoldiers -> game.hireSoldiers(playerId, action.count, action.characterId)
+                            is GameAction.SearchScroll -> game.searchScroll(playerId, action.targetSector, action.characterId)
+                            is GameAction.UseScroll -> game.useScroll(playerId, action.scrollId, action.characterId)
                             is GameAction.JoinTeam -> {} // Handled above
                         }
                     } catch (e: Exception) {

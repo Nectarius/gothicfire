@@ -18,6 +18,7 @@ import components.CharacterPanel
 import components.TurnHud
 import components.StrategicMap
 import components.GameLobby
+import components.KingdomOverviewPanel
 import game.GameWebSocket
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -64,6 +65,7 @@ class App : Application() {
             var yourPlayerId by remember { mutableStateOf("") }
             var wsError by remember { mutableStateOf("") }
             var activeFight by remember { mutableStateOf<GameEvent.FightOccurred?>(null) }
+            var scrollNotification by remember { mutableStateOf("") }
             
             val ws = remember {
                 GameWebSocket(
@@ -77,11 +79,32 @@ class App : Application() {
                     },
                     onFightOccurred = { fightEvent ->
                         activeFight = fightEvent
+                        val winnerChar = gameState?.characters?.find { it.id == fightEvent.winnerId }
+                        val loserChar = gameState?.characters?.find { it.id == fightEvent.loserId }
+                        val winnerName = winnerChar?.name ?: "Victor"
+                        val loserName = loserChar?.name ?: "Enemy"
+                        val casualtyInfo = if (fightEvent.winnerLosses > 0) " (⚔️ -${fightEvent.winnerLosses} soldiers lost)" else " (No casualties)"
+                        scrollNotification = "⚔️ Battle at Sector ${fightEvent.sectorId}! $winnerName defeated $loserName$casualtyInfo"
                         scope.launch {
-                            delay(2500)
+                            delay(3500)
                             if (activeFight == fightEvent) {
                                 activeFight = null
                             }
+                            scrollNotification = ""
+                        }
+                    },
+                    onScrollFound = { event ->
+                        scrollNotification = "📜 ${event.characterName} found a ${event.scroll.type.name} scroll! (+${event.scroll.boostAmount})"
+                        scope.launch {
+                            delay(3000)
+                            scrollNotification = ""
+                        }
+                    },
+                    onScrollSearchFailed = { event ->
+                        scrollNotification = "🔍 ${event.characterName} searched but found nothing..."
+                        scope.launch {
+                            delay(2500)
+                            scrollNotification = ""
                         }
                     }
                 )
@@ -261,6 +284,13 @@ class App : Application() {
                             
                             TurnHud(playerId = yourPlayerId, gameState = gameState, sendAction = { ws.sendAction(it) })
                             
+                            // Scroll notification toast
+                            if (scrollNotification.isNotBlank()) {
+                                div(className = "scroll-notification-toast glass") {
+                                    textNode(scrollNotification)
+                                }
+                            }
+                            
                             div(className = "war-map-layout") {
                                 CharacterPanel(
                                     playerId = yourPlayerId, 
@@ -278,6 +308,13 @@ class App : Application() {
                                     sendAction = { ws.sendAction(it) }
                                 )
                             }
+                            
+                            KingdomOverviewPanel(
+                                playerId = yourPlayerId,
+                                gameState = gameState,
+                                onSelectCharacter = { selectedCharacterId = it },
+                                sendAction = { ws.sendAction(it) }
+                            )
                         }
                     }
                 }
