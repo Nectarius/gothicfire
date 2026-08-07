@@ -3,8 +3,8 @@ package models
 data class Territory(val id: String, val x: Int, val y: Int, val adjacentIds: List<String>, val isCastle: Boolean = false, val name: String? = null, val protection: Int = 0)
 
 val MapData = mapOf(
-    "0" to Territory("0", 893, 897, listOf("1", "40")),
-    "1" to Territory("1", 973, 906, listOf("0", "40")),
+    "0" to Territory("0", 893, 897, listOf("1", "40", "41")),
+    "1" to Territory("1", 973, 906, listOf("0", "40", "41")),
     "2" to Territory("2", 719, 844, listOf("4", "8", "40")),
     "3" to Territory("3", 587, 807, listOf("4", "7", "9", "40")),
     "4" to Territory("4", 673, 809, listOf("2", "3", "8", "9", "10", "40")),
@@ -43,5 +43,6 @@ val MapData = mapOf(
     "37" to Territory("37", 643, 321, listOf("33", "35", "36", "39", "40")),
     "38" to Territory("38", 487, 294, listOf("36", "39", "40")),
     "39" to Territory("39", 556, 260, listOf("37", "38", "40")),
-    "40" to Territory("40", 614, 570, listOf("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39")),
+    "40" to Territory("40", 614, 570, listOf("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "41")),
+    "41" to Territory("41", 902, 850, listOf("0", "1", "40")),
 )
