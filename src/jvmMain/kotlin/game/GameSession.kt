@@ -144,7 +144,8 @@ class GameSession(var gameState: GameState = GameState()) {
             val updatedCharacters = gameState.characters.map { char ->
                 val player = gameState.players.find { it.id == char.playerId }
                 val team = player?.team ?: Team.RED
-                val castleSector = gameState.teamCastles[team] ?: if (team == Team.RED) "13" else "20"
+                val defaultCastles = MapData.values.filter { it.isCastle }.map { it.id }
+                val castleSector = gameState.teamCastles[team] ?: if (team == Team.RED) (defaultCastles.getOrNull(0) ?: "1") else (defaultCastles.getOrNull(1) ?: "40")
                 
                 // Assign starting castle ownership to the player/team
                 val castleTerr = initialTerritories[castleSector]

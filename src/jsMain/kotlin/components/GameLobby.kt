@@ -11,6 +11,7 @@ import models.GameAction
 import models.GameState
 import models.PredefinedCharacters
 import models.Team
+import models.MapData
 
 @Composable
 fun IComponent.GameLobby(
@@ -138,7 +139,8 @@ fun IComponent.GameLobby(
                 if (!myPlayer.isReady) {
                     val myTeamCastle = gameState.teamCastles[myPlayer.team]
                     if (myTeamCastle == null) {
-                        val availableCastles = listOf("13" to "Castles Blackhood", "20" to "Castles Blackwood")
+                        val availableCastles = MapData.values.filter { it.isCastle }
+                            .map { it.id to (it.name ?: "Castle ${it.id}") }
                             .filter { it.first !in gameState.teamCastles.values }
                         
                         if (availableCastles.size == 1) {
@@ -187,7 +189,7 @@ fun IComponent.GameLobby(
             // RED TEAM
             div(className = "glass flex-col items-center p-2 w-full") {
                 val redCastleId = gameState?.teamCastles?.get(Team.RED)
-                val redCastleName = if (redCastleId == "13") "Castles Blackhood" else if (redCastleId == "20") "Castles Blackwood" else "No base chosen"
+                val redCastleName = redCastleId?.let { MapData[it]?.name ?: "Castle $it" } ?: "No base chosen"
                 h3(className = "text-red m-0 mb-1") { textNode("RED TEAM") }
                 p(className = "text-xs text-gray mt-0 mb-1") { textNode("Base: $redCastleName") }
                 val redPlayers = gameState?.players?.filter { it.team == Team.RED } ?: emptyList()
@@ -208,7 +210,7 @@ fun IComponent.GameLobby(
             // BLUE TEAM
             div(className = "glass flex-col items-center p-2 w-full") {
                 val blueCastleId = gameState?.teamCastles?.get(Team.BLUE)
-                val blueCastleName = if (blueCastleId == "13") "Castles Blackhood" else if (blueCastleId == "20") "Castles Blackwood" else "No base chosen"
+                val blueCastleName = blueCastleId?.let { MapData[it]?.name ?: "Castle $it" } ?: "No base chosen"
                 h3(className = "text-blue m-0 mb-1") { textNode("BLUE TEAM") }
                 p(className = "text-xs text-gray mt-0 mb-1") { textNode("Base: $blueCastleName") }
                 val bluePlayers = gameState?.players?.filter { it.team == Team.BLUE } ?: emptyList()

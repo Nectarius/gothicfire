@@ -2,7 +2,6 @@ package models
 
 fun isAdjacentSector(from: String, to: String): Boolean {
     if (from == to) return false
-    if (from == "40" || to == "40") return false
     val fromTerritory = MapData[from] ?: return false
     return fromTerritory.adjacentIds.contains(to)
 }

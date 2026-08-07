@@ -193,6 +193,8 @@
     },
     {
         "id": 1,
+        "name": "Florsheim",
+        "isCastle": true,
         "centroid": [
             501,
             165
@@ -7395,6 +7397,8 @@
     },
     {
         "id": 40,
+        "name": "Dunkelburg",
+        "isCastle": true,
         "centroid": [
             562,
             795
