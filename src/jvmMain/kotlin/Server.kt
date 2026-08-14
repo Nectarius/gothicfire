@@ -54,7 +54,7 @@ fun generateCodeChallenge(codeVerifier: String): String {
 
 fun main() {
     val logger = LoggerFactory.getLogger("Server")
-    val isDev = (EnvConfig["APP_MODE"] ?: "PROD").equals("DEV", ignoreCase = true)
+    val isDev = (EnvConfig["APP_MODE"] ?: "DEV").equals("DEV", ignoreCase = true)
 
     embeddedServer(
         factory = Netty,
@@ -86,7 +86,7 @@ fun main() {
 }
 
 fun Application.module() {
-    val isDev = (EnvConfig["APP_MODE"] ?: "PROD").equals("DEV", ignoreCase = true)
+    val isDev = (EnvConfig["APP_MODE"] ?: "DEV").equals("DEV", ignoreCase = true)
 
     install(CORS) {
         allowMethod(HttpMethod.Options)
@@ -134,7 +134,7 @@ fun Application.module() {
         oauth("auth-oauth-google") {
             urlProvider = {
                 if (isDev) {
-                    EnvConfig["GOOGLE_REDIRECT_URI"] ?: "http://localhost:8080/auth/google/callback"
+                    EnvConfig["GOOGLE_REDIRECT_URI"] ?: "http://localhost:5120/auth/google/callback"
                 } else {
                     EnvConfig["GOOGLE_REDIRECT_URI"] ?: "https://kornelian.com/auth/google/callback?provider=google"
                 }

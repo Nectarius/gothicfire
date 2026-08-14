@@ -46,3 +46,11 @@ kotlin {
         }
     }
 }
+
+// Ensure KSP-generated RPC sources are available before compilation
+tasks.named("compileKotlinJvm") {
+    dependsOn("kspCommonMainKotlinMetadata")
+}
+tasks.named("compileKotlinJs") {
+    dependsOn("kspCommonMainKotlinMetadata")
+}

@@ -1,68 +1,75 @@
+# ========================
+# Secrets & Credentials
+# ========================
 .env
 .credentials
 .twitter_credentials
-/target/
 *.pem
 *.key
-*.tar
-# .vscode settings
+
+# ========================
+# Build & Toolchain
+# ========================
+
+# Gradle
+.gradle/
+build/
+local.properties
+/target/
+
+# Kotlin
+.kotlin/
+
+# Kotlin JS
+kotlin-js-store/
+
+# Compiled output
+out/
+
+# Module files
+*.iml
+*.ipr
+*.iws
+
+# ========================
+# IDE — IntelliJ / Android Studio
+# ========================
+.idea/
+
+# ========================
+# IDE — VS Code
+# ========================
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 !.vscode/*.code-snippets
-
-# Local History for Visual Studio Code
 .history/
-
-# Built Visual Studio Code Extensions
 *.vsix
 
-# User-specific stuff
-.idea/**/workspace.xml
-.idea/**/tasks.xml
-.idea/**/usage.statistics.xml
-.idea/**/dictionaries
-.idea/**/shelf
-
-# Generated files
-.idea/**/contentModel.xml
-
-# Sensitive or local-only files
-.idea/**/dataSources/
-.idea/**/dataSources.ids
-.idea/**/dataSources.local.xml
-.idea/**/sqlDataSources.xml
-.idea/**/dynamic.xml
-.idea/**/uiDesigner.xml
-.idea/**/dbnavigator.xml
-
-# Gradle / Maven / Build System Integrations
-.idea/**/gradle.xml
-.idea/**/libraries
-compiler.xml
-
-# CMake
-cmake-build-*/
-
-# Compiled output
-out/
-
-# Module files
-# (Note: If you use Gradle or Maven, keeping .iml files out of version control is recommended)
-*.iml
-*.ipr
-*.iws
-
-# Kotlin & Gradle directories
-.kotlin/
-.gradle/
+# ========================
+# Python
+# ========================
 venv/
-build/
+__pycache__/
+*.pyc
+*.pyo
 
-# Local Gradle configuration
-local.properties
+# ========================
+# Debug / Temp / Logs
+# ========================
+debug_output/
+compile*.log
+*.log.bak
 
-# Kotlin JS
-kotlin-js-store/
+# ========================
+# Archives & Binaries
+# ========================
+*.tar
+*.tar.gz
+
+# ========================
+# CMake
+# ========================
+cmake-build-*/
