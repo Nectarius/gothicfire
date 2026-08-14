@@ -193,8 +193,6 @@
     },
     {
         "id": 1,
-        "name": "Florsheim",
-        "isCastle": true,
         "centroid": [
             501,
             165
@@ -2739,6 +2737,8 @@
     },
     {
         "id": 14,
+        "name": "City of Khorinis",
+        "isCastle": true,
         "centroid": [
             150,
             448
@@ -4351,6 +4351,8 @@
     },
     {
         "id": 23,
+        "name": "Onar's farm",
+        "isCastle": true,
         "centroid": [
             722,
             512
@@ -7397,8 +7399,6 @@
     },
     {
         "id": 40,
-        "name": "Dunkelburg",
-        "isCastle": true,
         "centroid": [
             562,
             795
