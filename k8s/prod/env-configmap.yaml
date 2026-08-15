@@ -4,8 +4,9 @@ metadata:
   name: gothicfire-env
   namespace: gothicfire
 data:
-  # Application runs HTTP internally; Traefik + cert-manager handle TLS externally
-  APP_MODE: "DEV"
+  # Application runs HTTP internally (Behind Traefik Proxy); PROD mode applies secure cookies and correct redirects
+  APP_MODE: "PROD"
+  BEHIND_REVERSE_PROXY: "true"
   MONGODB_DB: "gothicfire"
 
   # OAuth redirect URIs (routed through Traefik with TLS termination)

@@ -10,9 +10,8 @@ metadata:
     kubernetes.io/ingress.class: traefik
     # cert-manager will automatically provision and renew TLS certificates
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    # Force HTTPS redirect
+    # Force HTTPS only
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.middlewares: gothicfire-redirect-https@kubernetescrd
 spec:
   tls:
     - hosts:

@@ -59,13 +59,18 @@ fun main() {
     embeddedServer(
         factory = Netty,
         configure = {
-            if (isDev) {
+            val behindProxy = (EnvConfig["BEHIND_REVERSE_PROXY"] ?: "false").toBoolean()
+            if (isDev || behindProxy) {
                 val devPort = EnvConfig["PORT"]?.toIntOrNull() ?: 8080
                 connector {
                     host = "0.0.0.0"
                     port = devPort
                 }
-                logger.info("🚀 [Server] Running in DEV mode on http://localhost:$devPort (Addr: :$devPort)")
+                if (isDev) {
+                    logger.info("🚀 [Server] Running in DEV mode on http://localhost:$devPort (Addr: :$devPort)")
+                } else {
+                    logger.info("🚀 [Server] Running in PROD mode (Behind Proxy) on port $devPort")
+                }
             } else {
                 val prodPort = EnvConfig["PORT"]?.toIntOrNull() ?: 443
                 val keyStore = TlsHelper.loadKeyStoreFromPem()
