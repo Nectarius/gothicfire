@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: gothicfire
+
+resources:
+  - ../base
+  - env-configmap.yaml
+
+patches:
+  - target:
+      kind: Service
+      name: gothicfire-app
+    patch: |-
+      - op: replace
+        path: /spec/type
+        value: LoadBalancer
+      - op: replace
+        path: /spec/ports/0/port
+        value: 5120

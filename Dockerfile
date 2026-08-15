@@ -1,13 +1,16 @@
 # ==========================================
 # Stage 1: Build Stage
 # ==========================================
-FROM eclipse-temurin:21-jdk-jammy AS builder
+FROM eclipse-temurin:25-jdk AS builder
 
 WORKDIR /app
 
 # Copy Gradle wrapper and configuration files first to leverage Docker caching
 COPY gradlew settings.gradle.kts build.gradle.kts gradle.properties ./
 COPY gradle ./gradle
+
+# Install native dependencies required by Node.js (downloaded by Kotlin JS plugin)
+RUN apt-get update && apt-get install -y libatomic1 && rm -rf /var/lib/apt/lists/*
 
 # Make gradlew executable and preload wrapper/dependencies
 RUN chmod +x gradlew
@@ -24,7 +27,7 @@ RUN ./gradlew jarWithJs --no-daemon
 # ==========================================
 # Stage 2: Runtime Stage
 # ==========================================
-FROM eclipse-temurin:21-jre-jammy AS runner
+FROM eclipse-temurin:25-jre AS runner
 
 # Create a non-root system user and group for security
 RUN groupadd -r -g 1001 appgroup && \

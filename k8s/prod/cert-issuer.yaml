@@ -1,0 +1,38 @@
+# ===========================================
+# Let's Encrypt ClusterIssuers for cert-manager
+# ===========================================
+
+# --- Staging (for testing — does NOT produce trusted certs) ---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    # Staging endpoint — use for testing to avoid rate limits
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: taffeite@primehome.com  # UPDATE with your real email
+    privateKeySecretRef:
+      name: letsencrypt-staging-key
+    solvers:
+      - http01:
+          ingress:
+            class: traefik
+
+---
+
+# --- Production (real trusted certs) ---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@kornelian.com  # UPDATE with your real email
+    privateKeySecretRef:
+      name: letsencrypt-prod-key
+    solvers:
+      - http01:
+          ingress:
+            class: traefik

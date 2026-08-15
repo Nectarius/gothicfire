@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gothicfire-ingress
+  namespace: gothicfire
+  labels:
+    app.kubernetes.io/name: gothicfire-ingress
+    app.kubernetes.io/part-of: gothicfire
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    # cert-manager will automatically provision and renew TLS certificates
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Force HTTPS redirect
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: gothicfire-redirect-https@kubernetescrd
+spec:
+  tls:
+    - hosts:
+        - kornelian.com
+      secretName: kornelian-com-tls
+  rules:
+    - host: kornelian.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gothicfire-app
+                port:
+                  number: 8080

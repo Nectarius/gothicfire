@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gothicfire-app
+  namespace: gothicfire
+  labels:
+    app.kubernetes.io/name: gothicfire-app
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: gothicfire
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gothicfire-app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gothicfire-app
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/part-of: gothicfire
+    spec:
+      containers:
+        - name: app
+          image: gothicfire:latest
+          imagePullPolicy: Never  # Image imported locally via k3s ctr
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: gothicfire-env
+            - secretRef:
+                name: gothicfire-secrets
+                optional: true
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      restartPolicy: Always

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gothicfire-env
+  namespace: gothicfire
+data:
+  # Application runs HTTP internally; Traefik handles external routing
+  APP_MODE: "DEV"
+  MONGODB_DB: "gothicfire"
+
+  # OAuth redirect URIs (Direct access via K3s LoadBalancer on port 5120)
+  GOOGLE_REDIRECT_URI: "http://localhost:5120/auth/google/callback"
+  TWITTER_CALLBACK_URL: "http://localhost:5120/auth/twitter/callback"
+
+  # OAuth endpoints
+  GOOGLE_AUTH_URI: "https://accounts.google.com/o/oauth2/auth"
+  GOOGLE_TOKEN_URI: "https://oauth2.googleapis.com/token"
+  TWITTER_AUTH_URI: "https://twitter.com/i/oauth2/authorize"
+  TWITTER_TOKEN_URI: "https://api.twitter.com/2/oauth2/token"

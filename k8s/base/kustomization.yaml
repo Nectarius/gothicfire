@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: gothicfire
+
+resources:
+  - namespace.yaml
+  - app-deployment.yaml
+  - app-service.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/managed-by: kustomize

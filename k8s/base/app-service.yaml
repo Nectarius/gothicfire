@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gothicfire-app
+  namespace: gothicfire
+  labels:
+    app.kubernetes.io/name: gothicfire-app
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: gothicfire
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: gothicfire-app
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
