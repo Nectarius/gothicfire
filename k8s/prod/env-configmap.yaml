@@ -9,8 +9,8 @@ data:
   MONGODB_DB: "gothicfire"
 
   # OAuth redirect URIs (routed through Traefik with TLS termination)
-  GOOGLE_REDIRECT_URI: "https://kornelian.com/auth/google/callback?provider=google"
-  TWITTER_CALLBACK_URL: "https://kornelian.com/auth/twitter/callback"
+  GOOGLE_REDIRECT_URI: "https://gothiccastles.com/auth/google/callback?provider=google"
+  TWITTER_CALLBACK_URL: "https://gothiccastles.com/auth/twitter/callback"
 
   # OAuth endpoints
   GOOGLE_AUTH_URI: "https://accounts.google.com/o/oauth2/auth"

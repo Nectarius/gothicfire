@@ -15,7 +15,7 @@ Complete guide for deploying Gothic Fire to K3s for both **local development** (
 k8s/
 ├── base/         # Shared: Deployments, Services, PVC
 ├── local/        # Local: HTTP Ingress (gothicfire.local)
-├── prod/         # Prod: HTTPS Ingress + cert-manager (kornelian.com)
+├── prod/         # Prod: HTTPS Ingress + cert-manager (gothiccastles.com)
 └── scripts/      # Helpers: build, secrets, deploy
 ```
 
@@ -175,7 +175,7 @@ Point your domain's **A record** to your server's public IP:
 
 | Record Type | Host              | Value            |
 |:------------|:------------------|:-----------------|
-| A           | `kornelian.com`   | `YOUR_SERVER_IP` |
+| A           | `gothiccastles.com`   | `YOUR_SERVER_IP` |
 
 ### Step 4: Build, Import & Deploy
 
@@ -192,13 +192,13 @@ cd /path/to/gothicfire
 ```bash
 # Check certificate status
 kubectl get certificate -n gothicfire
-kubectl describe certificate kornelian-com-tls -n gothicfire
+kubectl describe certificate gothiccastles.com-tls -n gothicfire
 
 # Check the cert-manager logs if issues
 kubectl logs -n cert-manager deployment/cert-manager -f
 ```
 
-Open your browser: **https://kornelian.com**
+Open your browser: **https://gothiccastles.com**
 
 ### Step 6 (Optional): Test with Staging Certs First
 

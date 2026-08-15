@@ -16,10 +16,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - kornelian.com
-      secretName: kornelian-com-tls
+        - gothiccastles.com
+      secretName: gothiccastles-com-tls
   rules:
-    - host: kornelian.com
+    - host: gothiccastles.com
       http:
         paths:
           - path: /

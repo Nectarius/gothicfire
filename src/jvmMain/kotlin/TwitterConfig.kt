@@ -7,6 +7,6 @@ object TwitterConfig {
     val tokenUrl: String = EnvConfig["TWITTER_TOKEN_URI"] ?: "https://api.twitter.com/2/oauth2/token"
     val isDev: Boolean = (EnvConfig["APP_MODE"] ?: "DEV").equals("DEV", ignoreCase = true)
     val callbackUrl: String = EnvConfig["TWITTER_CALLBACK_URL"] 
-        ?: if (isDev) "http://localhost:5120/auth/twitter/callback" else "https://kornelian.com/auth/twitter/callback"
+        ?: if (isDev) "http://localhost:5120/auth/twitter/callback" else "https://gothiccastles.com/auth/twitter/callback"
     val scopes: String = "tweet.read users.read offline.access"
 }

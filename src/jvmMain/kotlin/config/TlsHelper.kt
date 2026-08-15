@@ -13,7 +13,7 @@ object TlsHelper {
     private val logger = LoggerFactory.getLogger(TlsHelper::class.java)
 
     fun resolveCertFile(): File {
-        val configuredPath = EnvConfig["TLS_CERT_FILE"] ?: "kornelian.com.pem"
+        val configuredPath = EnvConfig["TLS_CERT_FILE"] ?: "gothiccastles.com.pem"
         val primary = File(configuredPath)
         if (primary.exists()) return primary
         val fallback = File("cert.pem")
@@ -22,7 +22,7 @@ object TlsHelper {
     }
 
     fun resolveKeyFile(): File {
-        val configuredPath = EnvConfig["TLS_KEY_FILE"] ?: "kornelian.com.key"
+        val configuredPath = EnvConfig["TLS_KEY_FILE"] ?: "gothiccastles.com.key"
         val primary = File(configuredPath)
         if (primary.exists()) return primary
         val fallback = File("key.pem")

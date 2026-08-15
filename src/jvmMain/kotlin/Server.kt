@@ -71,14 +71,14 @@ fun main() {
                 val keyStore = TlsHelper.loadKeyStoreFromPem()
                 sslConnector(
                     keyStore = keyStore,
-                    keyAlias = "kornelian_key",
+                    keyAlias = "gothiccastles_key",
                     keyStorePassword = { "changeit".toCharArray() },
                     privateKeyPassword = { "changeit".toCharArray() }
                 ) {
                     host = "0.0.0.0"
                     port = prodPort
                 }
-                logger.info("🔒 [Server] Running in PROD mode with TLS on https://kornelian.com:$prodPort (Addr: :$prodPort)")
+                logger.info("🔒 [Server] Running in PROD mode with TLS on https://gothiccastles.com:$prodPort (Addr: :$prodPort)")
             }
         },
         module = Application::module
@@ -106,7 +106,7 @@ fun Application.module() {
             cookie.maxAgeInSeconds = 3600 * 24 * 7 // 1 week
             cookie.httpOnly = true
             if (!isDev) {
-                cookie.domain = "kornelian.com"
+                cookie.domain = "gothiccastles.com"
                 cookie.secure = true
             }
         }
@@ -115,7 +115,7 @@ fun Application.module() {
             cookie.maxAgeInSeconds = 600 // 10 minutes
             cookie.httpOnly = true
             if (!isDev) {
-                cookie.domain = "kornelian.com"
+                cookie.domain = "gothiccastles.com"
                 cookie.secure = true
             }
         }
@@ -136,7 +136,7 @@ fun Application.module() {
                 if (isDev) {
                     EnvConfig["GOOGLE_REDIRECT_URI"] ?: "http://localhost:5120/auth/google/callback"
                 } else {
-                    EnvConfig["GOOGLE_REDIRECT_URI"] ?: "https://kornelian.com/auth/google/callback?provider=google"
+                    EnvConfig["GOOGLE_REDIRECT_URI"] ?: "https://gothiccastles.com/auth/google/callback?provider=google"
                 }
             }
             providerLookup = {

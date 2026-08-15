@@ -11,10 +11,10 @@ Gothic Fire includes dual environment configuration controlled by the `APP_MODE`
 | Setting | DEV Mode (`APP_MODE=DEV`) | PROD Mode (`APP_MODE=PROD`) |
 | :--- | :--- | :--- |
 | **Protocol & Port** | HTTP on port `8080` (Addr: `:8080`) | HTTPS (TLS) on port `443` (Addr: `:443`) |
-| **TLS Certificates** | Not required | `kornelian.com.pem` & `kornelian.com.key` (or `cert.pem` / `key.pem`) |
-| **Cookie Domain** | Unrestricted (Localhost) | `kornelian.com` (`HttpOnly=true`, `Secure=true`) |
-| **Google Redirect URI** | `http://localhost:5120/auth/google/callback` | `https://kornelian.com/auth/google/callback?provider=google` |
-| **Twitter Callback URI**| `http://localhost:5120/auth/twitter/callback` | `https://kornelian.com/auth/twitter/callback` |
+| **TLS Certificates** | Not required | `gothiccastles.com.pem` & `gothiccastles.com.key` (or `cert.pem` / `key.pem`) |
+| **Cookie Domain** | Unrestricted (Localhost) | `gothiccastles.com` (`HttpOnly=true`, `Secure=true`) |
+| **Google Redirect URI** | `http://localhost:5120/auth/google/callback` | `https://gothiccastles.com/auth/google/callback?provider=google` |
+| **Twitter Callback URI**| `http://localhost:5120/auth/twitter/callback` | `https://gothiccastles.com/auth/twitter/callback` |
 | **Google OAuth Scopes** | `email`, `profile` | `email`, `profile` |
 
 ---
@@ -34,8 +34,8 @@ MONGODB_URI=mongodb://mongo:27017
 MONGODB_DB=gothicfire
 
 # TLS Configuration (For PROD mode)
-TLS_CERT_FILE=kornelian.com.pem
-TLS_KEY_FILE=kornelian.com.key
+TLS_CERT_FILE=gothiccastles.com.pem
+TLS_KEY_FILE=gothiccastles.com.key
 
 # Google OAuth Credentials
 GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
@@ -93,11 +93,11 @@ docker run -d \
   --name gothicfire-app \
   --restart unless-stopped \
   -p 443:443 \
-  -v $(pwd)/kornelian.com.pem:/app/kornelian.com.pem:ro \
-  -v $(pwd)/kornelian.com.key:/app/kornelian.com.key:ro \
+  -v $(pwd)/gothiccastles.com.pem:/app/gothiccastles.com.pem:ro \
+  -v $(pwd)/gothiccastles.com.key:/app/gothiccastles.com.key:ro \
   -e APP_MODE=PROD \
-  -e TLS_CERT_FILE=kornelian.com.pem \
-  -e TLS_KEY_FILE=kornelian.com.key \
+  -e TLS_CERT_FILE=gothiccastles.com.pem \
+  -e TLS_KEY_FILE=gothiccastles.com.key \
   -e MONGODB_URI="mongodb://your-mongo-host:27017" \
   -e MONGODB_DB="gothicfire" \
   -e GOOGLE_CLIENT_ID="your_google_client_id" \
@@ -125,8 +125,8 @@ docker run -d \
 | :--- | :--- | :--- |
 | `APP_MODE` | `PROD` (Docker) / `DEV` (local) | `DEV` enables HTTP on port 8080; `PROD` enables HTTPS on port 443 |
 | `PORT` | `8080` (DEV) / `443` (PROD) | Custom listening port override |
-| `TLS_CERT_FILE` | `kornelian.com.pem` | Path to X.509 TLS certificate (PEM) |
-| `TLS_KEY_FILE` | `kornelian.com.key` | Path to PKCS#8 private key (PEM) |
+| `TLS_CERT_FILE` | `gothiccastles.com.pem` | Path to X.509 TLS certificate (PEM) |
+| `TLS_KEY_FILE` | `gothiccastles.com.key` | Path to PKCS#8 private key (PEM) |
 | `MONGODB_URI` | `mongodb://localhost:27017` | MongoDB connection string |
 | `MONGODB_DB` | `gothicfire` | MongoDB database name |
 | `GOOGLE_CLIENT_ID` | *optional* | Google OAuth Client ID |

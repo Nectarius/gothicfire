@@ -4,9 +4,9 @@ metadata:
   name: kornelian-com-tls
   namespace: gothicfire
 spec:
-  secretName: kornelian-com-tls
+  secretName: gothiccastles-com-tls
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
-    - kornelian.com
+    - gothiccastles.com
