@@ -13,8 +13,8 @@ Gothic Fire includes dual environment configuration controlled by the `APP_MODE`
 | **Protocol & Port** | HTTP on port `8080` (Addr: `:8080`) | HTTPS (TLS) on port `443` (Addr: `:443`) |
 | **TLS Certificates** | Not required | `kornelian.com.pem` & `kornelian.com.key` (or `cert.pem` / `key.pem`) |
 | **Cookie Domain** | Unrestricted (Localhost) | `kornelian.com` (`HttpOnly=true`, `Secure=true`) |
-| **Google Redirect URI** | `http://localhost:8080/auth/google/callback` | `https://kornelian.com/auth/google/callback?provider=google` |
-| **Twitter Callback URI**| `http://localhost:8080/auth/twitter/callback` | `https://kornelian.com/auth/twitter/callback` |
+| **Google Redirect URI** | `http://localhost:5120/auth/google/callback` | `https://kornelian.com/auth/google/callback?provider=google` |
+| **Twitter Callback URI**| `http://localhost:5120/auth/twitter/callback` | `https://kornelian.com/auth/twitter/callback` |
 | **Google OAuth Scopes** | `email`, `profile` | `email`, `profile` |
 
 ---
@@ -28,6 +28,7 @@ Docker Compose starts both the application container and a persistent MongoDB da
 Create or adjust your `.env` file:
 
 ```env
+# Set to PROD for production deployment with TLS
 APP_MODE=PROD
 MONGODB_URI=mongodb://mongo:27017
 MONGODB_DB=gothicfire
@@ -39,6 +40,14 @@ TLS_KEY_FILE=kornelian.com.key
 # Google OAuth Credentials
 GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+# Twitter OAuth Credentials
+TWITTER_CLIENT_ID=your_twitter_client_id
+TWITTER_CLIENT_SECRET=your_twitter_client_secret
+
+# Optional: Override OAuth redirect URIs
+# GOOGLE_REDIRECT_URI=http://localhost:5120/auth/google/callback
+# TWITTER_CALLBACK_URL=http://localhost:5120/auth/twitter/callback
 ```
 
 ### 2. Start the Stack
@@ -114,7 +123,7 @@ docker run -d \
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| `APP_MODE` | `PROD` (or `DEV`) | `DEV` enables HTTP on port 8080; `PROD` enables HTTPS on port 443 |
+| `APP_MODE` | `PROD` (Docker) / `DEV` (local) | `DEV` enables HTTP on port 8080; `PROD` enables HTTPS on port 443 |
 | `PORT` | `8080` (DEV) / `443` (PROD) | Custom listening port override |
 | `TLS_CERT_FILE` | `kornelian.com.pem` | Path to X.509 TLS certificate (PEM) |
 | `TLS_KEY_FILE` | `kornelian.com.key` | Path to PKCS#8 private key (PEM) |
@@ -122,5 +131,7 @@ docker run -d \
 | `MONGODB_DB` | `gothicfire` | MongoDB database name |
 | `GOOGLE_CLIENT_ID` | *optional* | Google OAuth Client ID |
 | `GOOGLE_CLIENT_SECRET` | *optional* | Google OAuth Client Secret |
+| `GOOGLE_REDIRECT_URI` | *auto* | Override Google OAuth redirect URI |
 | `TWITTER_CLIENT_ID` | *optional* | Twitter OAuth 2.0 Client ID |
 | `TWITTER_CLIENT_SECRET`| *optional* | Twitter OAuth 2.0 Client Secret |
+| `TWITTER_CALLBACK_URL` | *auto* | Override Twitter OAuth callback URL |

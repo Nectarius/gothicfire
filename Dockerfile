@@ -39,7 +39,7 @@ COPY --from=builder --chown=appuser:appgroup /app/build/libs/kilua-ktor-mongo.ja
 USER appuser
 
 # Default runtime configuration
-ENV APP_MODE="DEV" \
+ENV APP_MODE="PROD" \
     MONGODB_URI="mongodb://localhost:27017" \
     MONGODB_DB="gothicfire"
 
