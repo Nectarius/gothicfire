@@ -198,6 +198,28 @@ input:focus, textarea:focus {
     border: 2px dashed #22c55e;
 }
 
+.territory-node-high-protection {
+    box-shadow: 0 0 15px 5px rgba(56, 189, 248, 0.8);
+    border-color: #38bdf8;
+    animation: pulse-protection 2s infinite alternate;
+}
+
+@keyframes pulse-protection {
+    0% { box-shadow: 0 0 10px 2px rgba(56, 189, 248, 0.6); }
+    100% { box-shadow: 0 0 20px 8px rgba(56, 189, 248, 1); }
+}
+
+.territory-node-high-cultivation {
+    box-shadow: 0 0 15px 5px rgba(34, 197, 94, 0.8);
+    border-color: #22c55e;
+    animation: pulse-cultivation 2s infinite alternate;
+}
+
+@keyframes pulse-cultivation {
+    0% { box-shadow: 0 0 10px 2px rgba(34, 197, 94, 0.6); }
+    100% { box-shadow: 0 0 20px 8px rgba(34, 197, 94, 1); }
+}
+
 .territory-node-valid-move:hover {
     background-color: rgba(34, 197, 94, 0.8);
 }
@@ -440,6 +462,139 @@ input:focus, textarea:focus {
     0% { transform: scale(1); opacity: 0.8; }
     50% { transform: scale(1.3); opacity: 1; }
     100% { transform: scale(1); opacity: 0.8; }
+}
+
+/* ====== Strategy-specific fight visuals ====== */
+
+/* Arcane Phalanx — blue/cyan shield aura */
+.fight-strategy-phalanx {
+    border-color: #22d3ee !important;
+    background-color: rgba(34, 211, 238, 0.35) !important;
+    box-shadow: 0 0 24px rgba(34, 211, 238, 0.7), 0 0 48px rgba(34, 211, 238, 0.3) !important;
+    animation: shakePhalanx 0.6s infinite !important;
+}
+
+@keyframes shakePhalanx {
+    0% { transform: translate(-50%, -50%) scale(1); }
+    25% { transform: translate(-51%, -49%) scale(1.05); }
+    50% { transform: translate(-50%, -50%) scale(1); }
+    75% { transform: translate(-49%, -51%) scale(1.05); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+.fight-overlay-phalanx {
+    animation: pulsePhalanx 0.8s infinite !important;
+    filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.9)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+@keyframes pulsePhalanx {
+    0% { transform: scale(1); opacity: 0.7; }
+    50% { transform: scale(1.5); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.7; }
+}
+
+/* Hammer and Spell — amber/gold burst */
+.fight-strategy-hammer {
+    border-color: #f59e0b !important;
+    background-color: rgba(245, 158, 11, 0.35) !important;
+    box-shadow: 0 0 24px rgba(245, 158, 11, 0.7), 0 0 48px rgba(245, 158, 11, 0.3) !important;
+    animation: shakeHammer 0.35s infinite !important;
+}
+
+@keyframes shakeHammer {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    20% { transform: translate(-53%, -47%) rotate(-8deg); }
+    40% { transform: translate(-50%, -50%) rotate(0deg); }
+    60% { transform: translate(-47%, -53%) rotate(8deg); }
+    80% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(0deg); }
+}
+
+.fight-overlay-hammer {
+    animation: pulseHammer 0.5s infinite !important;
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.9)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+@keyframes pulseHammer {
+    0% { transform: scale(1) rotate(0deg); opacity: 0.8; }
+    25% { transform: scale(1.4) rotate(10deg); opacity: 1; }
+    50% { transform: scale(1) rotate(0deg); opacity: 0.8; }
+    75% { transform: scale(1.4) rotate(-10deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 0.8; }
+}
+
+/* Spell-Infused Volley — fiery red/orange pulse */
+.fight-strategy-volley {
+    border-color: #ef4444 !important;
+    background-color: rgba(239, 68, 68, 0.35) !important;
+    box-shadow: 0 0 28px rgba(239, 68, 68, 0.7), 0 0 56px rgba(249, 115, 22, 0.4) !important;
+    animation: shakeVolley 0.4s infinite !important;
+}
+
+@keyframes shakeVolley {
+    0% { transform: translate(-50%, -50%) scale(1); }
+    15% { transform: translate(-52%, -48%) scale(1.08); }
+    30% { transform: translate(-48%, -52%) scale(1); }
+    45% { transform: translate(-50%, -50%) scale(1.08); }
+    60% { transform: translate(-52%, -50%) scale(1); }
+    75% { transform: translate(-50%, -48%) scale(1.08); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+.fight-overlay-volley {
+    animation: pulseVolley 0.6s infinite !important;
+    filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.9)) drop-shadow(0 0 24px rgba(249, 115, 22, 0.5));
+}
+
+@keyframes pulseVolley {
+    0% { transform: scale(1); opacity: 0.7; filter: brightness(1); }
+    30% { transform: scale(1.6); opacity: 1; filter: brightness(1.3); }
+    60% { transform: scale(0.9); opacity: 0.7; filter: brightness(1); }
+    100% { transform: scale(1); opacity: 0.7; filter: brightness(1); }
+}
+
+/* Strategy label floating below fight overlay */
+.fight-strategy-label {
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    padding: 1px 6px;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 25;
+    animation: fadeInLabel 0.3s ease-out;
+}
+
+@keyframes fadeInLabel {
+    from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.fight-strategy-label-arcane_phalanx {
+    background: rgba(34, 211, 238, 0.25);
+    border: 1px solid rgba(34, 211, 238, 0.5);
+    color: #67e8f9;
+    text-shadow: 0 0 6px rgba(34, 211, 238, 0.6);
+}
+
+.fight-strategy-label-hammer_and_spell {
+    background: rgba(245, 158, 11, 0.25);
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    color: #fbbf24;
+    text-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+}
+
+.fight-strategy-label-spell_infused_volley {
+    background: rgba(239, 68, 68, 0.25);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
+    text-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
 }
 
 .territory-node-owned-red {
@@ -896,6 +1051,43 @@ input:focus, textarea:focus {
     border-color: #a78bfa !important;
 }
 
+/* Battle Strategy Section */
+.battle-strategy-section {
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    background: rgba(217, 119, 6, 0.06);
+    border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.strategy-card {
+    padding: 0.5rem 0.65rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.strategy-card:hover:not(.strategy-card-disabled) {
+    background: rgba(217, 119, 6, 0.12);
+    border-color: rgba(217, 119, 6, 0.4);
+    transform: translateY(-1px);
+}
+
+.strategy-card-selected {
+    background: rgba(217, 119, 6, 0.18) !important;
+    border-color: rgba(245, 158, 11, 0.6) !important;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.15), inset 0 0 8px rgba(245, 158, 11, 0.05);
+}
+
+.strategy-card-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.gap-04 { gap: 0.4rem; }
+.ml-05 { margin-left: 0.5rem; }
+
 /* Utility classes */
 .gap-02 { gap: 0.2rem; }
 .gap-03 { gap: 0.3rem; }
@@ -1065,3 +1257,54 @@ input:focus, textarea:focus {
 
 
 
+
+/* Nature Events Animations */
+.nature-event-toast {
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    pointer-events: none;
+    z-index: 50;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+}
+
+.nature-event-positive {
+    color: #4ade80;
+    background: rgba(22, 101, 52, 0.8);
+    border: 1px solid #4ade80;
+    animation: floatUpPositive 4s ease-out forwards;
+}
+
+.nature-event-negative {
+    color: #f87171;
+    background: rgba(153, 27, 27, 0.8);
+    border: 1px solid #f87171;
+    animation: shakeFadeNegative 4s ease-out forwards;
+}
+
+@keyframes floatUpPositive {
+    0% { opacity: 0; transform: translate(-50%, 0) scale(0.8); }
+    10% { opacity: 1; transform: translate(-50%, -10px) scale(1.1); }
+    20% { transform: translate(-50%, -15px) scale(1); }
+    80% { opacity: 1; transform: translate(-50%, -30px); }
+    100% { opacity: 0; transform: translate(-50%, -40px); }
+}
+
+@keyframes shakeFadeNegative {
+    0% { opacity: 0; transform: translate(-50%, 0) scale(0.8); }
+    10% { opacity: 1; transform: translate(-50%, -10px) scale(1.1); }
+    12% { transform: translate(calc(-50% - 3px), -10px); }
+    14% { transform: translate(calc(-50% + 3px), -10px); }
+    16% { transform: translate(calc(-50% - 3px), -10px); }
+    18% { transform: translate(calc(-50% + 3px), -10px); }
+    20% { transform: translate(-50%, -10px) scale(1); }
+    80% { opacity: 1; transform: translate(-50%, -20px); }
+    100% { opacity: 0; transform: translate(-50%, -30px); }
+}

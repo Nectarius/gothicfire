@@ -106,19 +106,20 @@ fun IComponent.TerritoryCard(
                 h4(className = "m-0 mb-05 text-sm text-gray") { textNode("Territory Management Actions") }
                 
                 div(className = "d-flex flex-col gap-05") {
+                    val boostAmount = if (activeChar != null) 1 + (activeChar.wisdom / 2) else 2
                     div(className = "d-flex gap-1") {
-                        button("🌱 Cultivate (+2)", className = "btn btn-outline flex-1 ${if (!canAct) "btn-disabled" else ""}") {
+                        button("🌱 Cultivate (+$boostAmount)", className = "btn btn-outline flex-1 ${if (!canAct) "btn-disabled" else ""}") {
                             val heroName = activeChar?.name ?: "Hero"
-                            title("Spends $heroName's turn to increase Cultivation by +2")
+                            title("Spends $heroName's turn to increase Cultivation by +$boostAmount")
                             onClick {
                                 if (canAct && activeChar != null) {
                                     sendAction(GameAction.UpgradeTerritory(sectorId, "CULTIVATION", activeChar.id))
                                 }
                             }
                         }
-                        button("🛡️ Fortify (+2)", className = "btn btn-outline flex-1 ${if (!canAct) "btn-disabled" else ""}") {
+                        button("🛡️ Fortify (+$boostAmount)", className = "btn btn-outline flex-1 ${if (!canAct) "btn-disabled" else ""}") {
                             val heroName = activeChar?.name ?: "Hero"
-                            title("Spends $heroName's turn to increase Protection by +2")
+                            title("Spends $heroName's turn to increase Protection by +$boostAmount")
                             onClick {
                                 if (canAct && activeChar != null) {
                                     sendAction(GameAction.UpgradeTerritory(sectorId, "PROTECTION", activeChar.id))
@@ -228,6 +229,30 @@ fun IComponent.TerritoryCard(
                     } else if (activeChar.gold < 10) {
                         p(className = "text-xs text-dark-gray m-0 mt-05 text-center") {
                             textNode("Need at least 10 Gold in ${activeChar.name}'s bag to recruit soldiers.")
+                        }
+                    }
+                    
+                    if (territoryDef?.isCastle == true) {
+                        // Siege Weapon Section
+                        div(className = "d-flex justify-between items-center mt-1 mb-05 pt-05 border-t") {
+                            h4(className = "m-0 text-sm") { textNode("🏹 Buy Siege Weapons") }
+                            span(className = "text-xs text-primary font-600") {
+                                textNode("Siege Weapons: ${activeChar.siegeWeapons}")
+                            }
+                        }
+                        
+                        p(className = "text-xs text-dark-gray m-0 mb-05") {
+                            textNode("Cost: 50🪙 each | Spends turn | Negates high protection (20+)")
+                        }
+                        
+                        val canAffordSiege = activeChar.gold >= 50 && !activeChar.hasActedThisTurn
+                        button("+1 Siege Weapon (50🪙)", className = "btn btn-sm btn-outline w-full ${if (!canAffordSiege) "btn-disabled" else ""}") {
+                            title(if (activeChar.hasActedThisTurn) "Already acted this turn" else "Buy 1 Siege Weapon for 50 gold. Spends your turn.")
+                            onClick {
+                                if (canAffordSiege) {
+                                    sendAction(GameAction.BuySiegeWeapon(activeChar.id))
+                                }
+                            }
                         }
                     }
                 }

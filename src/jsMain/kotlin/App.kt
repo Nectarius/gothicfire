@@ -66,6 +66,8 @@ class App : Application() {
             var wsError by remember { mutableStateOf("") }
             var activeFight by remember { mutableStateOf<GameEvent.FightOccurred?>(null) }
             var scrollNotification by remember { mutableStateOf("") }
+            var activeNatureEvents by remember { mutableStateOf<List<GameEvent.NatureEventOccurred>>(emptyList()) }
+            var activeTransfers by remember { mutableStateOf<List<GameEvent.ResourceTransferred>>(emptyList()) }
             
             val ws = remember {
                 GameWebSocket(
@@ -84,7 +86,13 @@ class App : Application() {
                         val winnerName = winnerChar?.name ?: "Victor"
                         val loserName = loserChar?.name ?: "Enemy"
                         val casualtyInfo = if (fightEvent.winnerLosses > 0) " (⚔️ -${fightEvent.winnerLosses} soldiers lost)" else " (No casualties)"
-                        scrollNotification = "⚔️ Battle at Sector ${fightEvent.sectorId}! $winnerName defeated $loserName$casualtyInfo"
+                        val strategyLabel = when (fightEvent.strategy) {
+                            models.BattleStrategy.ARCANE_PHALANX -> " 🛡️ Arcane Phalanx!"
+                            models.BattleStrategy.HAMMER_AND_SPELL -> " ⚔️ Hammer and Spell!"
+                            models.BattleStrategy.SPELL_INFUSED_VOLLEY -> " 🔥 Spell-Infused Volley!"
+                            else -> ""
+                        }
+                        scrollNotification = "⚔️ Battle at Sector ${fightEvent.sectorId}! $winnerName defeated $loserName$casualtyInfo$strategyLabel"
                         scope.launch {
                             delay(3500)
                             if (activeFight == fightEvent) {
@@ -105,6 +113,20 @@ class App : Application() {
                         scope.launch {
                             delay(2500)
                             scrollNotification = ""
+                        }
+                    },
+                    onNatureEvent = { event ->
+                        activeNatureEvents = activeNatureEvents + event
+                        scope.launch {
+                            delay(4000)
+                            activeNatureEvents = activeNatureEvents.filter { it != event }
+                        }
+                    },
+                    onResourceTransferred = { event ->
+                        activeTransfers = activeTransfers + event
+                        scope.launch {
+                            delay(4000)
+                            activeTransfers = activeTransfers.filter { it != event }
                         }
                     }
                 )
@@ -305,6 +327,8 @@ class App : Application() {
                                     selectedCharacterId = selectedCharacterId,
                                     onSelectCharacter = { selectedCharacterId = it },
                                     activeFight = activeFight,
+                                    activeNatureEvents = activeNatureEvents,
+                                    activeTransfers = activeTransfers,
                                     sendAction = { ws.sendAction(it) }
                                 )
                             }

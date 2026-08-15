@@ -20,10 +20,10 @@ sealed class GameAction {
     data object StartGame : GameAction()
     
     @Serializable
-    data class PlaceCharacter(val targetSector: String, val characterId: String? = null) : GameAction()
+    data class PlaceCharacter(val targetSector: String, val characterId: String? = null, val strategy: BattleStrategy = BattleStrategy.NONE) : GameAction()
     
     @Serializable
-    data class MoveCharacter(val targetSector: String, val characterId: String? = null) : GameAction()
+    data class MoveCharacter(val targetSector: String, val characterId: String? = null, val strategy: BattleStrategy = BattleStrategy.NONE) : GameAction()
     
     @Serializable
     data class SelectCastleAndReady(val castleId: String) : GameAction()
@@ -42,6 +42,18 @@ sealed class GameAction {
     
     @Serializable
     data class UseScroll(val scrollId: String, val characterId: String? = null) : GameAction()
+    
+    @Serializable
+    data class BuySiegeWeapon(val characterId: String? = null) : GameAction()
+    
+    @Serializable
+    data class TransferResources(val fromCharId: String, val toCharId: String, val food: Int, val gold: Int) : GameAction()
+
+    @Serializable
+    data class MarketTrade(val characterId: String, val buyFood: Boolean, val goldAmount: Int) : GameAction()
+
+    @Serializable
+    data class SkipTurn(val characterId: String) : GameAction()
 }
 
 @Serializable
@@ -61,7 +73,8 @@ sealed class GameEvent {
         val winnerId: String,
         val loserId: String,
         val winnerLosses: Int = 0,
-        val loserLosses: Int = 0
+        val loserLosses: Int = 0,
+        val strategy: BattleStrategy = BattleStrategy.NONE
     ) : GameEvent()
     
     @Serializable
@@ -69,4 +82,10 @@ sealed class GameEvent {
     
     @Serializable
     data class ScrollSearchFailed(val characterId: String, val characterName: String, val sectorId: String) : GameEvent()
+    
+    @Serializable
+    data class NatureEventOccurred(val sectorId: String, val type: NatureEventType) : GameEvent()
+    
+    @Serializable
+    data class ResourceTransferred(val fromCharId: String, val toCharId: String, val fromSectorId: String, val toSectorId: String, val food: Int, val gold: Int) : GameEvent()
 }

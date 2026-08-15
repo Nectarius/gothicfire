@@ -12,6 +12,9 @@ import models.MapData
 import models.Team
 import models.ScrollType
 import models.estimateWinChance
+import models.BattleStrategy
+import models.canUseStrategy
+import models.strategyBonus
 
 data class PendingBattle(
     val targetSector: String,
@@ -26,10 +29,13 @@ fun IComponent.StrategicMap(
     selectedCharacterId: String?,
     onSelectCharacter: (String) -> Unit,
     activeFight: models.GameEvent.FightOccurred? = null,
+    activeNatureEvents: List<models.GameEvent.NatureEventOccurred> = emptyList(),
+    activeTransfers: List<models.GameEvent.ResourceTransferred> = emptyList(),
     sendAction: (GameAction) -> Unit
 ) {
     var openedTerritoryId by remember { mutableStateOf<String?>(null) }
     var pendingBattle by remember { mutableStateOf<PendingBattle?>(null) }
+    var selectedStrategy by remember { mutableStateOf(BattleStrategy.NONE) }
     
     val myPlayer = gameState?.players?.find { it.id == playerId }
     val myCharacters = gameState?.characters?.filter { it.playerId == playerId } ?: emptyList()
@@ -73,7 +79,22 @@ fun IComponent.StrategicMap(
                 if (isSectorSelected) cellClasses.add("territory-node-selected")
                 if (isValidMoveTarget) cellClasses.add("territory-node-valid-move")
                 if (isValidPlacementTarget) cellClasses.add("territory-node-valid-place")
-                if (activeFight?.sectorId == sector) cellClasses.add("territory-node-fight")
+                if (activeFight?.sectorId == sector) {
+                    cellClasses.add("territory-node-fight")
+                    when (activeFight?.strategy) {
+                        BattleStrategy.ARCANE_PHALANX -> cellClasses.add("fight-strategy-phalanx")
+                        BattleStrategy.HAMMER_AND_SPELL -> cellClasses.add("fight-strategy-hammer")
+                        BattleStrategy.SPELL_INFUSED_VOLLEY -> cellClasses.add("fight-strategy-volley")
+                        else -> {}
+                    }
+                }
+                
+                if (terrState != null && terrState.protection > 20) {
+                    cellClasses.add("territory-node-high-protection")
+                }
+                if (terrState != null && terrState.cultivation > 30) {
+                    cellClasses.add("territory-node-high-cultivation")
+                }
 
                 div(className = cellClasses.joinToString(" ")) {
                     style("left", "$leftPerc%")
@@ -95,6 +116,42 @@ fun IComponent.StrategicMap(
                         }
                     }
                     
+                    // Render active nature events for this sector
+                    val natureEvent = activeNatureEvents.find { it.sectorId == sector }
+                    if (natureEvent != null) {
+                        val isPositive = natureEvent.type == models.NatureEventType.ABUNDANT_HARVEST || natureEvent.type == models.NatureEventType.VOLUNTEERS
+                        val toastClass = if (isPositive) "nature-event-positive" else "nature-event-negative"
+                        val eventText = when (natureEvent.type) {
+                            models.NatureEventType.ABUNDANT_HARVEST -> "🌾 Abundant Harvest!"
+                            models.NatureEventType.VOLUNTEERS -> "🎺 Volunteers!"
+                            models.NatureEventType.HURRICANE -> "🌪️ Hurricane!"
+                            models.NatureEventType.FLOOD -> "🌊 Flood!"
+                        }
+                        div(className = "nature-event-toast $toastClass") {
+                            textNode(eventText)
+                        }
+                    }
+                    
+                    // Render resource transfers for this sector
+                    val transferOut = activeTransfers.find { it.fromSectorId == sector }
+                    if (transferOut != null) {
+                        val parts = mutableListOf<String>()
+                        if (transferOut.food > 0) parts.add("-${transferOut.food}🌾")
+                        if (transferOut.gold > 0) parts.add("-${transferOut.gold}💰")
+                        div(className = "nature-event-toast nature-event-negative") {
+                            textNode(parts.joinToString(" "))
+                        }
+                    }
+                    val transferIn = activeTransfers.find { it.toSectorId == sector && it.fromSectorId != sector }
+                    if (transferIn != null) {
+                        val parts = mutableListOf<String>()
+                        if (transferIn.food > 0) parts.add("+${transferIn.food}🌾")
+                        if (transferIn.gold > 0) parts.add("+${transferIn.gold}💰")
+                        div(className = "nature-event-toast nature-event-positive") {
+                            textNode(parts.joinToString(" "))
+                        }
+                    }
+                    
                     if (terrState != null && (terrState.food > 0 || terrState.gold > 0)) {
                         div(className = "territory-res-pill") {
                             if (terrState.food > 0) span(className = "res-tag") { textNode("🌾${terrState.food}") }
@@ -103,8 +160,26 @@ fun IComponent.StrategicMap(
                     }
                     
                     if (activeFight?.sectorId == sector) {
-                        div(className = "fight-overlay") {
-                            textNode("⚔️")
+                        val fightStrategy = activeFight?.strategy ?: BattleStrategy.NONE
+                        val (fightIcon, overlayClass) = when (fightStrategy) {
+                            BattleStrategy.ARCANE_PHALANX -> "🛡️" to "fight-overlay fight-overlay-phalanx"
+                            BattleStrategy.HAMMER_AND_SPELL -> "⚔️" to "fight-overlay fight-overlay-hammer"
+                            BattleStrategy.SPELL_INFUSED_VOLLEY -> "🔥" to "fight-overlay fight-overlay-volley"
+                            else -> "⚔️" to "fight-overlay"
+                        }
+                        div(className = overlayClass) {
+                            textNode(fightIcon)
+                        }
+                        if (fightStrategy != BattleStrategy.NONE) {
+                            val stratLabel = when (fightStrategy) {
+                                BattleStrategy.ARCANE_PHALANX -> "Arcane Phalanx"
+                                BattleStrategy.HAMMER_AND_SPELL -> "Hammer & Spell"
+                                BattleStrategy.SPELL_INFUSED_VOLLEY -> "Spell Volley"
+                                else -> ""
+                            }
+                            div(className = "fight-strategy-label fight-strategy-label-${fightStrategy.name.lowercase()}") {
+                                textNode(stratLabel)
+                            }
                         }
                     }
 
@@ -212,7 +287,7 @@ fun IComponent.StrategicMap(
             val locationProtection = terrState?.protection ?: (territoryData?.protection ?: 0)
             
             if (battleChar != null && enemyChar != null) {
-                val winChance = estimateWinChance(battleChar, enemyChar, locationProtection)
+                val winChance = estimateWinChance(battleChar, enemyChar, locationProtection, selectedStrategy, battleChar.siegeWeapons)
                 val chanceClass = when {
                     winChance >= 70 -> "chance-high"
                     winChance >= 40 -> "chance-med"
@@ -223,7 +298,10 @@ fun IComponent.StrategicMap(
                 val isDefender10x = enemyChar.soldiers > battleChar.soldiers * 10 && enemyChar.soldiers > 0
                 
                 div(className = "territory-modal-backdrop") {
-                    onClick { pendingBattle = null }
+                    onClick {
+                        pendingBattle = null
+                        selectedStrategy = BattleStrategy.NONE
+                    }
                     
                     div(className = "territory-modal-card glass battle-prep-modal") {
                         onClick { it.stopPropagation() }
@@ -235,7 +313,10 @@ fun IComponent.StrategicMap(
                                 if (territoryData?.name != null) textNode(" (${territoryData.name})")
                             }
                             button("✕", className = "btn-modal-close") {
-                                onClick { pendingBattle = null }
+                                onClick {
+                                    pendingBattle = null
+                                    selectedStrategy = BattleStrategy.NONE
+                                }
                             }
                         }
                         
@@ -326,6 +407,105 @@ fun IComponent.StrategicMap(
                             }
                         }
                         
+                        // ====== BATTLE STRATEGY PICKER ======
+                        div(className = "battle-strategy-section mb-1") {
+                            div(className = "d-flex justify-between items-center mb-05") {
+                                span(className = "font-600 text-sm") { textNode("🏴 Battle Strategy") }
+                                if (selectedStrategy != BattleStrategy.NONE) {
+                                    val bonus = strategyBonus(battleChar, selectedStrategy)
+                                    span(className = "text-xs text-primary font-600") {
+                                        textNode("+${bonus.asDynamic().toFixed(1)} combat bonus")
+                                    }
+                                } else {
+                                    span(className = "text-xs text-dark-gray") { textNode("Select a strategy for a combat bonus") }
+                                }
+                            }
+                            
+                            // Strategy cards
+                            div(className = "d-flex flex-col gap-04") {
+                                // 1. Arcane Phalanx
+                                val canPhalanx = canUseStrategy(battleChar, BattleStrategy.ARCANE_PHALANX)
+                                val phalanxSelected = selectedStrategy == BattleStrategy.ARCANE_PHALANX
+                                div(className = "strategy-card${if (phalanxSelected) " strategy-card-selected" else ""}${if (!canPhalanx) " strategy-card-disabled" else ""}") {
+                                    onClick {
+                                        if (canPhalanx) {
+                                            selectedStrategy = if (phalanxSelected) BattleStrategy.NONE else BattleStrategy.ARCANE_PHALANX
+                                        }
+                                    }
+                                    div(className = "d-flex justify-between items-center") {
+                                        div {
+                                            span(className = "font-600 text-sm") { textNode("🛡️ Arcane Phalanx") }
+                                            if (canPhalanx) {
+                                                span(className = "text-xs text-primary ml-05") {
+                                                    textNode("+${strategyBonus(battleChar, BattleStrategy.ARCANE_PHALANX).asDynamic().toFixed(1)}")
+                                                }
+                                            }
+                                        }
+                                        if (!canPhalanx) {
+                                            span(className = "text-xs text-red") { textNode("Need >5 troops") }
+                                        }
+                                    }
+                                    p(className = "text-xs text-gray m-0 mt-02") {
+                                        textNode("Heavy infantry locks shields while archers and mages unleash coordinated volleys from behind.")
+                                    }
+                                }
+                                
+                                // 2. Hammer and Spell
+                                val canHammer = canUseStrategy(battleChar, BattleStrategy.HAMMER_AND_SPELL)
+                                val hammerSelected = selectedStrategy == BattleStrategy.HAMMER_AND_SPELL
+                                div(className = "strategy-card${if (hammerSelected) " strategy-card-selected" else ""}${if (!canHammer) " strategy-card-disabled" else ""}") {
+                                    onClick {
+                                        if (canHammer) {
+                                            selectedStrategy = if (hammerSelected) BattleStrategy.NONE else BattleStrategy.HAMMER_AND_SPELL
+                                        }
+                                    }
+                                    div(className = "d-flex justify-between items-center") {
+                                        div {
+                                            span(className = "font-600 text-sm") { textNode("⚔️ Hammer and Spell") }
+                                            if (canHammer) {
+                                                span(className = "text-xs text-primary ml-05") {
+                                                    textNode("+${strategyBonus(battleChar, BattleStrategy.HAMMER_AND_SPELL).asDynamic().toFixed(1)}")
+                                                }
+                                            }
+                                        }
+                                        if (!canHammer) {
+                                            span(className = "text-xs text-red") { textNode("Need AGI≥6 & >3 troops") }
+                                        }
+                                    }
+                                    p(className = "text-xs text-gray m-0 mt-02") {
+                                        textNode("Infantry pins the frontline while battle mages flank and deliver the catastrophic finishing strike.")
+                                    }
+                                }
+                                
+                                // 3. Spell-Infused Volley
+                                val canVolley = canUseStrategy(battleChar, BattleStrategy.SPELL_INFUSED_VOLLEY)
+                                val volleySelected = selectedStrategy == BattleStrategy.SPELL_INFUSED_VOLLEY
+                                div(className = "strategy-card${if (volleySelected) " strategy-card-selected" else ""}${if (!canVolley) " strategy-card-disabled" else ""}") {
+                                    onClick {
+                                        if (canVolley) {
+                                            selectedStrategy = if (volleySelected) BattleStrategy.NONE else BattleStrategy.SPELL_INFUSED_VOLLEY
+                                        }
+                                    }
+                                    div(className = "d-flex justify-between items-center") {
+                                        div {
+                                            span(className = "font-600 text-sm") { textNode("🔥 Spell-Infused Volley") }
+                                            if (canVolley) {
+                                                span(className = "text-xs text-primary ml-05") {
+                                                    textNode("+${strategyBonus(battleChar, BattleStrategy.SPELL_INFUSED_VOLLEY).asDynamic().toFixed(1)}")
+                                                }
+                                            }
+                                        }
+                                        if (!canVolley) {
+                                            span(className = "text-xs text-red") { textNode("Need WIS≥6 & >5 troops") }
+                                        }
+                                    }
+                                    p(className = "text-xs text-gray m-0 mt-02") {
+                                        textNode("Mages enchant arrows with fire and lightning to disintegrate the opposing force before melee.")
+                                    }
+                                }
+                            }
+                        }
+                        
                         // Scrolls Section
                         div(className = "battle-scrolls-section mb-1") {
                             div(className = "d-flex justify-between items-center mb-05") {
@@ -365,17 +545,19 @@ fun IComponent.StrategicMap(
                                 title("Do not attack. Any scrolls already consumed will remain used.")
                                 onClick {
                                     pendingBattle = null
+                                    selectedStrategy = BattleStrategy.NONE
                                 }
                             }
                             button("⚔️ Confirm Attack", className = "btn btn-primary flex-1") {
                                 title("Engage in battle at Sector ${pb.targetSector}!")
                                 onClick {
                                     if (pb.isPlacement) {
-                                        sendAction(GameAction.PlaceCharacter(pb.targetSector, battleChar.id))
+                                        sendAction(GameAction.PlaceCharacter(pb.targetSector, battleChar.id, selectedStrategy))
                                     } else {
-                                        sendAction(GameAction.MoveCharacter(pb.targetSector, battleChar.id))
+                                        sendAction(GameAction.MoveCharacter(pb.targetSector, battleChar.id, selectedStrategy))
                                     }
                                     pendingBattle = null
+                                    selectedStrategy = BattleStrategy.NONE
                                 }
                             }
                         }
@@ -383,6 +565,7 @@ fun IComponent.StrategicMap(
                 }
             } else {
                 pendingBattle = null
+                selectedStrategy = BattleStrategy.NONE
             }
         }
     }

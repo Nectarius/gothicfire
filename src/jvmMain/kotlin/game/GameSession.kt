@@ -14,8 +14,18 @@ class GameSession(var gameState: GameState = GameState()) {
     private val logger = LoggerFactory.getLogger(GameSession::class.java)
     private val mutex = Mutex()
     
+    companion object {
+        // 2 hours in milliseconds
+        const val ABANDON_TIMEOUT_MS = 2 * 60 * 60 * 1000L
+    }
+    
     // WebSockets connected to this session
     val connections = mutableMapOf<String, DefaultWebSocketSession>()
+    
+    // Tracks when each player was last seen (connected via WebSocket).
+    // Updated on join/reconnect and on every broadcastState for connected players.
+    // Set to current time on disconnect so we can measure how long they've been gone.
+    private val lastSeenTimestamps = mutableMapOf<String, Long>()
     
     suspend fun joinTeam(incomingPlayerId: String, playerName: String, team: Team, session: DefaultWebSocketSession): String? {
         var effectivePlayerId = incomingPlayerId
@@ -23,7 +33,7 @@ class GameSession(var gameState: GameState = GameState()) {
         
         mutex.withLock {
             if (gameState.status == GameStatus.IN_PROGRESS) {
-                // If game is already in progress, allow reconnecting matching player
+                // Game is in progress — only allow reconnecting an existing player on the same team
                 val existingPlayer = gameState.players.find { it.name.equals(playerName, ignoreCase = true) && it.team == team }
                     ?: gameState.players.find { it.team == team }
                     ?: gameState.players.find { it.id == incomingPlayerId }
@@ -31,15 +41,25 @@ class GameSession(var gameState: GameState = GameState()) {
                 if (existingPlayer != null) {
                     effectivePlayerId = existingPlayer.id
                     connections[effectivePlayerId] = session
+                    lastSeenTimestamps[effectivePlayerId] = System.currentTimeMillis()
                     success = true
                     logger.info("Reconnected player '{}' (id={}) to active game.", existingPlayer.name, effectivePlayerId)
                 } else {
+                    // Block new players from joining an active game
                     connections[incomingPlayerId] = session
-                    broadcastError(incomingPlayerId, "Game is currently in progress.")
+                    broadcastError(incomingPlayerId, "Game is currently in progress. New players cannot join.")
                     connections.remove(incomingPlayerId)
+                    logger.info("Rejected new player '{}' — game already in progress.", playerName)
                     return@withLock
                 }
+            } else if (gameState.status == GameStatus.GAME_OVER) {
+                // Game is over — block joining, the session manager should reset first
+                connections[incomingPlayerId] = session
+                broadcastError(incomingPlayerId, "Game is over. Please wait for a new game to start.")
+                connections.remove(incomingPlayerId)
+                return@withLock
             } else {
+                // LOBBY — allow new players to join
                 val teamCount = gameState.players.count { it.team == team }
                 if (teamCount >= 5) {
                     connections[incomingPlayerId] = session
@@ -54,6 +74,7 @@ class GameSession(var gameState: GameState = GameState()) {
                     gameState = gameState.copy(players = gameState.players + newPlayer)
                 }
                 connections[incomingPlayerId] = session
+                lastSeenTimestamps[incomingPlayerId] = System.currentTimeMillis()
                 success = true
             }
         }
@@ -68,14 +89,69 @@ class GameSession(var gameState: GameState = GameState()) {
     suspend fun leave(playerId: String) {
         mutex.withLock {
             connections.remove(playerId)
+            // Record the disconnect timestamp so we can track abandonment
+            lastSeenTimestamps[playerId] = System.currentTimeMillis()
+            
             if (gameState.status == GameStatus.LOBBY) {
                 gameState = gameState.copy(
                     players = gameState.players.filter { it.id != playerId },
                     characters = gameState.characters.filter { it.playerId != playerId }
                 )
+                lastSeenTimestamps.remove(playerId)
             }
         }
+        
+        // Check if an entire team has abandoned during an active game
+        checkAbandonmentTimeout()
+        
         broadcastState()
+    }
+    
+    /**
+     * Checks if all players on one team have been disconnected for longer than ABANDON_TIMEOUT_MS.
+     * If so, the opposing team wins by forfeit.
+     */
+    private suspend fun checkAbandonmentTimeout() {
+        mutex.withLock {
+            if (gameState.status != GameStatus.IN_PROGRESS) return
+            
+            if (connections.isEmpty()) {
+                logger.info("All players have disconnected. Game ends in a draw.")
+                gameState = gameState.copy(
+                    status = GameStatus.GAME_OVER,
+                    winningTeam = null
+                )
+                db.GameRepository.saveGameState(state = gameState, trigger = "ALL_DISCONNECTED")
+                return@withLock
+            }
+            
+            val now = System.currentTimeMillis()
+            
+            for (team in listOf(Team.RED, Team.BLUE)) {
+                val teamPlayerIds = gameState.players.filter { it.team == team }.map { it.id }
+                if (teamPlayerIds.isEmpty()) continue
+                
+                // Check if ALL players on this team are disconnected AND have been gone for 2+ hours
+                val allAbandoned = teamPlayerIds.all { playerId ->
+                    val isDisconnected = !connections.containsKey(playerId)
+                    if (!isDisconnected) return@all false
+                    
+                    val lastSeen = lastSeenTimestamps[playerId] ?: now
+                    (now - lastSeen) >= ABANDON_TIMEOUT_MS
+                }
+                
+                if (allAbandoned) {
+                    val winningTeam = if (team == Team.RED) Team.BLUE else Team.RED
+                    logger.info("Team {} has been abandoned for 2+ hours. Team {} wins by forfeit.", team, winningTeam)
+                    gameState = gameState.copy(
+                        status = GameStatus.GAME_OVER,
+                        winningTeam = winningTeam
+                    )
+                    db.GameRepository.saveGameState(state = gameState, trigger = "ABANDON_FORFEIT")
+                    return
+                }
+            }
+        }
     }
     
     suspend fun toggleReady(playerId: String) {
@@ -134,7 +210,7 @@ class GameSession(var gameState: GameState = GameState()) {
                     ownerPlayerId = null,
                     ownerTeam = null,
                     cultivation = 10,
-                    protection = if (territory.isCastle) territory.protection else 10,
+                    protection = if (territory.isCastle) 20 else 5,
                     food = 0,
                     gold = 0
                 )
@@ -255,7 +331,7 @@ class GameSession(var gameState: GameState = GameState()) {
         val currentTerr = territories[sectorId] ?: TerritoryState(
             sectorId = sectorId,
             cultivation = 10,
-            protection = MapData[sectorId]?.protection ?: 10
+            protection = MapData[sectorId]?.protection ?: 5
         )
         val wasOwnedByAnother = currentTerr.ownerPlayerId != null && currentTerr.ownerPlayerId != player.id
         val (lootedFood, lootedGold) = if (wasOwnedByAnother) {
@@ -269,7 +345,7 @@ class GameSession(var gameState: GameState = GameState()) {
                 ownerPlayerId = player.id,
                 ownerTeam = player.team,
                 cultivation = if (currentTerr.cultivation > 10) 10 else currentTerr.cultivation,
-                protection = if (currentTerr.protection > 10) 10 else currentTerr.protection,
+                protection = MapData[sectorId]?.protection ?: 5,
                 food = 0,
                 gold = 0
             )
@@ -283,7 +359,7 @@ class GameSession(var gameState: GameState = GameState()) {
         )
     }
 
-    suspend fun placeCharacter(playerId: String, targetSector: String, characterId: String? = null) {
+    suspend fun placeCharacter(playerId: String, targetSector: String, characterId: String? = null, strategy: BattleStrategy = BattleStrategy.NONE) {
         mutex.withLock {
             if (gameState.status != GameStatus.IN_PROGRESS) return
             
@@ -311,7 +387,7 @@ class GameSession(var gameState: GameState = GameState()) {
             if (occupant != null) {
                 // It's a fight!
                 val protection = gameState.territories[targetSector]?.protection ?: (MapData[targetSector]?.protection ?: 0)
-                val outcome = resolveFight(charToPlace, occupant, protection)
+                val outcome = resolveFight(charToPlace, occupant, protection, strategy, charToPlace.siegeWeapons)
                 val winner = outcome.winner
                 val loserId = outcome.loser.id
                 
@@ -321,12 +397,23 @@ class GameSession(var gameState: GameState = GameState()) {
                     winnerId = winner.id,
                     loserId = loserId,
                     winnerLosses = outcome.winnerLosses,
-                    loserLosses = outcome.loserLosses
+                    loserLosses = outcome.loserLosses,
+                    strategy = strategy
                 )
                 broadcastEvent(fightEvent)
                 
                 var lootedFood = 0
                 var lootedGold = 0
+                
+                // Collateral damage to territory
+                val siegeDamage = if (charToPlace.siegeWeapons > 0) 5 else 1
+                val oldTerr = newTerritories[targetSector] ?: TerritoryState(sectorId = targetSector, protection = MapData[targetSector]?.protection ?: 5)
+                val damagedTerr = oldTerr.copy(
+                    protection = (oldTerr.protection - siegeDamage).coerceAtLeast(0),
+                    cultivation = (oldTerr.cultivation - siegeDamage).coerceAtLeast(0)
+                )
+                newTerritories = newTerritories + (targetSector to damagedTerr)
+                
                 if (outcome.isAttackerWinner) {
                     val captureRes = handleCaptureTerritory(newTerritories, targetSector, player)
                     newTerritories = captureRes.updatedTerritories
@@ -411,7 +498,7 @@ class GameSession(var gameState: GameState = GameState()) {
         broadcastState()
     }
     
-    suspend fun moveCharacter(playerId: String, targetSector: String, characterId: String? = null) {
+    suspend fun moveCharacter(playerId: String, targetSector: String, characterId: String? = null, strategy: BattleStrategy = BattleStrategy.NONE) {
         mutex.withLock {
             if (gameState.status != GameStatus.IN_PROGRESS) return
             
@@ -440,7 +527,7 @@ class GameSession(var gameState: GameState = GameState()) {
                 
                 // Otherwise, it's a fight!
                 val protection = gameState.territories[targetSector]?.protection ?: (MapData[targetSector]?.protection ?: 0)
-                val outcome = resolveFight(charToMove, occupant, protection)
+                val outcome = resolveFight(charToMove, occupant, protection, strategy, charToMove.siegeWeapons)
                 val winner = outcome.winner
                 val loserId = outcome.loser.id
                 
@@ -450,12 +537,23 @@ class GameSession(var gameState: GameState = GameState()) {
                     winnerId = winner.id,
                     loserId = loserId,
                     winnerLosses = outcome.winnerLosses,
-                    loserLosses = outcome.loserLosses
+                    loserLosses = outcome.loserLosses,
+                    strategy = strategy
                 )
                 broadcastEvent(fightEvent)
                 
                 var lootedFood = 0
                 var lootedGold = 0
+                
+                // Collateral damage to territory
+                val siegeDamage = if (charToMove.siegeWeapons > 0) 5 else 1
+                val oldTerr = newTerritories[targetSector] ?: TerritoryState(sectorId = targetSector, protection = MapData[targetSector]?.protection ?: 5)
+                val damagedTerr = oldTerr.copy(
+                    protection = (oldTerr.protection - siegeDamage).coerceAtLeast(0),
+                    cultivation = (oldTerr.cultivation - siegeDamage).coerceAtLeast(0)
+                )
+                newTerritories = newTerritories + (targetSector to damagedTerr)
+                
                 if (outcome.isAttackerWinner) {
                     val captureRes = handleCaptureTerritory(newTerritories, targetSector, player)
                     newTerritories = captureRes.updatedTerritories
@@ -554,9 +652,10 @@ class GameSession(var gameState: GameState = GameState()) {
             if (territory.ownerPlayerId != playerId && territory.ownerTeam != player.team) return // Only owner or team owner can upgrade
             
             val updatedTerritories = gameState.territories.toMutableMap()
+            val boostAmount = 1 + (char.wisdom / 2)
             val newTerritory = when (upgradeType.uppercase()) {
-                "CULTIVATION" -> territory.copy(cultivation = territory.cultivation + 2)
-                "PROTECTION" -> territory.copy(protection = territory.protection + 2)
+                "CULTIVATION" -> territory.copy(cultivation = territory.cultivation + boostAmount)
+                "PROTECTION" -> territory.copy(protection = territory.protection + boostAmount)
                 else -> territory
             }
             updatedTerritories[sectorId] = newTerritory
@@ -690,6 +789,34 @@ class GameSession(var gameState: GameState = GameState()) {
         }
         broadcastState()
     }
+    suspend fun buySiegeWeapon(playerId: String, characterId: String?) {
+        mutex.withLock {
+            if (gameState.status != GameStatus.IN_PROGRESS) return
+            if (gameState.activeTeamTurn != gameState.players.find { it.id == playerId }?.team) return
+            
+            val char = (if (characterId != null) {
+                gameState.characters.find { it.id == characterId && it.playerId == playerId }
+            } else null) ?: gameState.characters.find { it.playerId == playerId && !it.isDead } ?: return
+            
+            if (char.isDead || char.hasActedThisTurn) return
+            if (char.gold < 50) return
+            if (char.currentSector == null || MapData[char.currentSector]?.isCastle != true) return
+            
+            val newChars = gameState.characters.map {
+                if (it.id == char.id) {
+                    it.copy(
+                        gold = it.gold - 50,
+                        siegeWeapons = it.siegeWeapons + 1,
+                        hasActedThisTurn = true
+                    )
+                } else it
+            }
+            
+            gameState = gameState.copy(characters = newChars)
+            checkTurnEnd()
+        }
+        broadcastState()
+    }
     
     suspend fun useScroll(playerId: String, scrollId: String, characterId: String? = null) {
         mutex.withLock {
@@ -718,7 +845,96 @@ class GameSession(var gameState: GameState = GameState()) {
         broadcastState()
     }
     
-    private fun checkTurnEnd() {
+    suspend fun transferResources(playerId: String, fromCharId: String, toCharId: String, food: Int, gold: Int) {
+        if (food <= 0 && gold <= 0) return
+        var eventToBroadcast: GameEvent? = null
+        
+        mutex.withLock {
+            if (gameState.status != GameStatus.IN_PROGRESS) return
+            
+            val fromChar = gameState.characters.find { it.id == fromCharId && it.playerId == playerId } ?: return
+            val toChar = gameState.characters.find { it.id == toCharId && it.playerId == playerId } ?: return
+            
+            if (fromChar.isDead || toChar.isDead || fromChar.hasActedThisTurn) return
+            
+            if (fromChar.food < food || fromChar.gold < gold) return
+            
+            val newChars = gameState.characters.map { char ->
+                when (char.id) {
+                    fromChar.id -> char.copy(
+                        food = char.food - food,
+                        gold = char.gold - gold,
+                        hasActedThisTurn = true
+                    )
+                    toChar.id -> char.copy(
+                        food = char.food + food,
+                        gold = char.gold + gold
+                    )
+                    else -> char
+                }
+            }
+            
+            gameState = gameState.copy(characters = newChars)
+            checkTurnEnd()
+            
+            eventToBroadcast = GameEvent.ResourceTransferred(
+                fromCharId = fromChar.id,
+                toCharId = toChar.id,
+                fromSectorId = fromChar.currentSector ?: "",
+                toSectorId = toChar.currentSector ?: "",
+                food = food,
+                gold = gold
+            )
+        }
+        
+        eventToBroadcast?.let { broadcastEvent(it) }
+        broadcastState()
+    }
+    
+    suspend fun skipTurn(playerId: String, characterId: String) {
+        mutex.withLock {
+            if (gameState.status != GameStatus.IN_PROGRESS) return
+            val char = gameState.characters.find { it.id == characterId && it.playerId == playerId } ?: return
+            if (char.hasActedThisTurn || char.isDead) return
+            
+            val newChars = gameState.characters.map {
+                if (it.id == characterId) it.copy(hasActedThisTurn = true) else it
+            }
+            gameState = gameState.copy(characters = newChars)
+        }
+        checkTurnEnd()
+        broadcastState()
+    }
+
+    suspend fun marketTrade(playerId: String, characterId: String, buyFood: Boolean, goldAmount: Int) {
+        if (goldAmount <= 0) return
+        
+        mutex.withLock {
+            if (gameState.status != GameStatus.IN_PROGRESS) return
+            val char = gameState.characters.find { it.id == characterId && it.playerId == playerId } ?: return
+            if (char.isDead) return
+            
+            val rate = gameState.marketRate
+            val foodAmount = (goldAmount * rate).toInt()
+            
+            val newChars = gameState.characters.map { c ->
+                if (c.id == char.id) {
+                    if (buyFood) {
+                        if (c.gold < goldAmount) return@withLock
+                        c.copy(gold = c.gold - goldAmount, food = c.food + foodAmount)
+                    } else {
+                        if (c.food < foodAmount) return@withLock
+                        c.copy(food = c.food - foodAmount, gold = c.gold + goldAmount)
+                    }
+                } else c
+            }
+            
+            gameState = gameState.copy(characters = newChars)
+        }
+        broadcastState()
+    }
+
+    private suspend fun checkTurnEnd() {
         if (gameState.status == GameStatus.GAME_OVER) {
             db.GameRepository.saveGameState(state = gameState, trigger = "GAME_OVER")
             return
@@ -758,21 +974,68 @@ class GameSession(var gameState: GameState = GameState()) {
                 }
             }
             
-            // Produce food and gold for all owned territories
-            val updatedTerritories = gameState.territories.mapValues { (_, terr) ->
+            val generatedEvents = mutableListOf<GameEvent.NatureEventOccurred>()
+            val finalUpdatedChars = updatedChars.toMutableList()
+            var eventCount = 0
+            
+            // Produce food and gold for all owned territories, and roll for nature events
+            val updatedTerritories = gameState.territories.mapValues { (sectorId, terr) ->
                 if (terr.ownerPlayerId != null || terr.ownerTeam != null) {
-                    terr.copy(food = terr.food + 1, gold = terr.gold + 1)
+                    val foodGain = (terr.cultivation / 2).coerceAtLeast(1)
+                    var currentTerr = terr.copy(food = terr.food + foodGain, gold = terr.gold + 1)
+                    
+                    val charsHere = finalUpdatedChars.filter { it.currentSector == sectorId && !it.isDead }
+                    
+                    // Only trigger events on territories where characters are present, with a 15% chance
+                    if (charsHere.isNotEmpty() && eventCount < 5 && kotlin.random.Random.nextDouble() < 0.15) {
+                        val eventTypes = NatureEventType.values().toMutableList()
+                        if (eventTypes.isNotEmpty()) {
+                            val eventType = eventTypes.random()
+                            eventCount++
+                            generatedEvents.add(GameEvent.NatureEventOccurred(sectorId, eventType))
+                            
+                            when (eventType) {
+                                NatureEventType.ABUNDANT_HARVEST -> {
+                                    currentTerr = currentTerr.copy(food = currentTerr.food + 15)
+                                }
+                                NatureEventType.VOLUNTEERS -> {
+                                    val charTarget = charsHere.first()
+                                    val newSoldiers = (charTarget.soldiers + kotlin.random.Random.nextInt(2, 5)).coerceAtMost(100)
+                                    val idx = finalUpdatedChars.indexOfFirst { it.id == charTarget.id }
+                                    if (idx != -1) {
+                                        finalUpdatedChars[idx] = charTarget.copy(soldiers = newSoldiers)
+                                    }
+                                }
+                                NatureEventType.HURRICANE, NatureEventType.FLOOD -> {
+                                    val minProtection = if (MapData[sectorId]?.isCastle == true) 20 else 0
+                                    currentTerr = currentTerr.copy(
+                                        protection = (currentTerr.protection - 3).coerceAtLeast(minProtection),
+                                        cultivation = (currentTerr.cultivation - 3).coerceAtLeast(0)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    currentTerr
                 } else {
                     terr
                 }
+            }
+            var newMarketRate = gameState.marketRate
+            if (kotlin.random.Random.nextDouble() < 0.25) {
+                val fluctuation = kotlin.random.Random.nextDouble(-2.0, 2.0).toFloat()
+                newMarketRate = (newMarketRate + fluctuation).coerceIn(1.0f, 15.0f)
             }
             
             gameState = gameState.copy(
                 activeTeamTurn = newTeamTurn,
                 currentTurn = newTurnCount,
-                characters = updatedChars,
-                territories = updatedTerritories
+                characters = finalUpdatedChars,
+                territories = updatedTerritories,
+                marketRate = newMarketRate
             )
+            
+            generatedEvents.forEach { broadcastEvent(it) }
             
             if (gameState.currentTurn > gameState.maxTurns) {
                 gameState = gameState.copy(status = GameStatus.GAME_OVER)
@@ -795,6 +1058,15 @@ class GameSession(var gameState: GameState = GameState()) {
     }
     
     suspend fun broadcastState() {
+        // Refresh lastSeen for all currently connected players
+        val now = System.currentTimeMillis()
+        connections.keys.forEach { playerId ->
+            lastSeenTimestamps[playerId] = now
+        }
+        
+        // Check abandonment before broadcasting
+        checkAbandonmentTimeout()
+        
         val json = Json { encodeDefaults = true }
         connections.forEach { (playerId, session) ->
             val playerGameState = if (gameState.status == GameStatus.IN_PROGRESS) {

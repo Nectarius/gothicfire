@@ -1,6 +1,6 @@
 package models
 
-data class Territory(val id: String, val x: Int, val y: Int, val adjacentIds: List<String>, val isCastle: Boolean = false, val name: String? = null, val protection: Int = 0)
+data class Territory(val id: String, val x: Int, val y: Int, val adjacentIds: List<String>, val isCastle: Boolean = false, val name: String? = null, val protection: Int = if (isCastle) 20 else 5)
 
 val MapData = mapOf(
     "0" to Territory("0", 288, 144, listOf("3")),

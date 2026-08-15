@@ -1,11 +1,37 @@
 package models
 
 import kotlin.random.Random
+import kotlin.math.ln
+
+/**
+ * Applies diminishing returns to raw protection value.
+ * Uses a logarithmic curve so the first ~10 points of protection give good value,
+ * but stacking beyond that yields progressively less benefit.
+ * The effective protection is capped at [maxEffective] (default 15).
+ *
+ * Examples (with default scaleFactor=8.0, maxEffective=15):
+ *   protection=0  → 0.0
+ *   protection=5  → ~5.3
+ *   protection=10 → ~7.5
+ *   protection=15 → ~9.1
+ *   protection=20 → ~10.4
+ *   protection=30 → ~12.2
+ *   protection=50 → ~14.1
+ */
+fun effectiveProtection(rawProtection: Int, scaleFactor: Double = 8.0, maxEffective: Double = 25.0): Double {
+    if (rawProtection <= 0) return 0.0
+    // Below 20, protection is insignificant (e.g. max 1.9 score)
+    if (rawProtection < 20) return rawProtection * 0.1
+    // At 20+, use logarithmic scaling for significant impact
+    val effective = ln(1.0 + rawProtection.toDouble() / scaleFactor) * scaleFactor
+    return effective.coerceAtMost(maxEffective)
+}
 
 /**
  * Calculates the result of a fight between an attacker and a defender.
  * If a side has more than 10 times more soldiers than the other (and >0 soldiers), they defeat the enemy with 100% certainty.
- * Otherwise, Score = (Strength * 2) + Agility + (Wisdom * 0.5) + (Soldiers * 1.0) + [Protection if defender] + Random(1..20).
+ * Otherwise, Score = (Strength * 2) + Agility + (Wisdom * 0.5) + (Soldiers * 1.0) + [effectiveProtection if defender] + Random(1..20).
+ * Protection uses diminishing returns: first points are valuable, but stacking gives less and less benefit (capped at 15).
  * Returns the winning Character. In case of a tie, the defender wins.
  */
 data class FightOutcome(
@@ -23,7 +49,7 @@ data class FightOutcome(
  * Resolves a fight between an attacker and a defender, calculating the winner,
  * loser, and soldier casualties based on battle intensity and scores.
  */
-fun resolveFight(attacker: Character, defender: Character, locationProtection: Int = 0): FightOutcome {
+fun resolveFight(attacker: Character, defender: Character, locationProtection: Int = 0, attackerStrategy: BattleStrategy = BattleStrategy.NONE, attackerSiegeWeapons: Int = 0): FightOutcome {
     // 10x soldier overwhelming army rule
     if (attacker.soldiers > defender.soldiers * 10 && attacker.soldiers > 0) {
         val losses = kotlin.math.min(attacker.soldiers, (defender.soldiers * 0.05).toInt())
@@ -61,8 +87,12 @@ fun resolveFight(attacker: Character, defender: Character, locationProtection: I
     val rollA = Random.nextInt(1, 21)
     val rollD = Random.nextInt(1, 21)
     
-    val attackerScore = (attacker.strength * 2) + attacker.agility + (attacker.wisdom * 0.5) + (attacker.soldiers * 1.0) + rollA
-    val defenderScore = (defender.strength * 2) + defender.agility + (defender.wisdom * 0.5) + (defender.soldiers * 1.0) + locationProtection + rollD
+    val stratBonus = if (canUseStrategy(attacker, attackerStrategy)) strategyBonus(attacker, attackerStrategy) else 0.0
+    val siegeNegation = locationProtection >= 20 && attackerSiegeWeapons > 0
+    val defProtection = if (siegeNegation) 0.0 else effectiveProtection(locationProtection)
+    
+    val attackerScore = (attacker.strength * 2) + attacker.agility + (attacker.wisdom * 0.5) + (attacker.soldiers * 1.0) + stratBonus + rollA
+    val defenderScore = (defender.strength * 2) + defender.agility + (defender.wisdom * 0.5) + (defender.soldiers * 1.0) + defProtection + rollD
     
     val isAttackerWinner = attackerScore > defenderScore
     val (rawWinner, rawLoser) = if (isAttackerWinner) (attacker to defender) else (defender to attacker)
@@ -109,14 +139,14 @@ fun resolveFight(attacker: Character, defender: Character, locationProtection: I
 /**
  * Calculates the winning character of a fight for convenience.
  */
-fun calculateFightResult(attacker: Character, defender: Character, locationProtection: Int = 0): Character {
-    return resolveFight(attacker, defender, locationProtection).winner
+fun calculateFightResult(attacker: Character, defender: Character, locationProtection: Int = 0, attackerStrategy: BattleStrategy = BattleStrategy.NONE, attackerSiegeWeapons: Int = 0): Character {
+    return resolveFight(attacker, defender, locationProtection, attackerStrategy, attackerSiegeWeapons).winner
 }
 
 /**
  * Calculates the exact probability (0% to 100%) of the attacker winning the battle.
  */
-fun estimateWinChance(attacker: Character, defender: Character, locationProtection: Int = 0): Int {
+fun estimateWinChance(attacker: Character, defender: Character, locationProtection: Int = 0, attackerStrategy: BattleStrategy = BattleStrategy.NONE, attackerSiegeWeapons: Int = 0): Int {
     if (attacker.soldiers > defender.soldiers * 10 && attacker.soldiers > 0) {
         return 100
     }
@@ -124,8 +154,12 @@ fun estimateWinChance(attacker: Character, defender: Character, locationProtecti
         return 0
     }
     
-    val attackerBase = (attacker.strength * 2) + attacker.agility + (attacker.wisdom * 0.5) + (attacker.soldiers * 1.0)
-    val defenderBase = (defender.strength * 2) + defender.agility + (defender.wisdom * 0.5) + (defender.soldiers * 1.0) + locationProtection
+    val stratBonus = if (canUseStrategy(attacker, attackerStrategy)) strategyBonus(attacker, attackerStrategy) else 0.0
+    val siegeNegation = locationProtection >= 20 && attackerSiegeWeapons > 0
+    val defProtection = if (siegeNegation) 0.0 else effectiveProtection(locationProtection)
+    
+    val attackerBase = (attacker.strength * 2) + attacker.agility + (attacker.wisdom * 0.5) + (attacker.soldiers * 1.0) + stratBonus
+    val defenderBase = (defender.strength * 2) + defender.agility + (defender.wisdom * 0.5) + (defender.soldiers * 1.0) + defProtection
     
     var wins = 0
     for (a in 1..20) {

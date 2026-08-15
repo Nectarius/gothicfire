@@ -37,14 +37,18 @@ fun Route.gameSocket() {
                             is GameAction.SelectCharacters -> game.selectCharacters(playerId, action.templateIds)
                             is GameAction.ToggleReady -> game.toggleReady(playerId)
                             is GameAction.StartGame -> game.startGame(playerId)
-                            is GameAction.PlaceCharacter -> game.placeCharacter(playerId, action.targetSector, action.characterId)
-                            is GameAction.MoveCharacter -> game.moveCharacter(playerId, action.targetSector, action.characterId)
+                            is GameAction.PlaceCharacter -> game.placeCharacter(playerId, action.targetSector, action.characterId, action.strategy)
+                            is GameAction.MoveCharacter -> game.moveCharacter(playerId, action.targetSector, action.characterId, action.strategy)
                             is GameAction.SelectCastleAndReady -> game.selectCastleAndReady(playerId, action.castleId)
                             is GameAction.UpgradeTerritory -> game.upgradeTerritory(playerId, action.sectorId, action.upgradeType, action.characterId)
                             is GameAction.CollectResources -> game.collectResources(playerId, action.sectorId, action.characterId)
                             is GameAction.HireSoldiers -> game.hireSoldiers(playerId, action.count, action.characterId)
                             is GameAction.SearchScroll -> game.searchScroll(playerId, action.targetSector, action.characterId)
                             is GameAction.UseScroll -> game.useScroll(playerId, action.scrollId, action.characterId)
+                            is GameAction.BuySiegeWeapon -> game.buySiegeWeapon(playerId, action.characterId)
+                            is GameAction.TransferResources -> game.transferResources(playerId, action.fromCharId, action.toCharId, action.food, action.gold)
+                            is GameAction.MarketTrade -> game.marketTrade(playerId, action.characterId, action.buyFood, action.goldAmount)
+                            is GameAction.SkipTurn -> game.skipTurn(playerId, action.characterId)
                             is GameAction.JoinTeam -> {} // Handled above
                         }
                     } catch (e: Exception) {

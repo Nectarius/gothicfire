@@ -8,6 +8,8 @@ import models.GameState
 import models.GameAction
 import models.isAdjacentSector
 import models.MapData
+import dev.kilua.form.text.text
+import dev.kilua.form.select.*
 import models.ScrollType
 
 @Composable
@@ -114,6 +116,74 @@ fun IComponent.CharacterPanel(
                         }
                     }
                     
+                    if (activeChar.food < activeChar.soldiers && activeChar.soldiers > 0 && !activeChar.isDead) {
+                        div(className = "mt-05 p-05 bg-red-100 text-red border border-red rounded text-sm font-600 text-center") {
+                            textNode("⚠️ Starvation Warning: Your army will suffer desertion next turn!")
+                        }
+                    }
+                    
+                    if (!activeChar.isDead && !activeChar.hasActedThisTurn && isMyTurn) {
+                        var isTransferOpen by remember { mutableStateOf(false) }
+                        
+                        div(className = "d-flex gap-05 mt-1") {
+                            button("Rest (Skip Action)", className = "btn btn-sm btn-primary flex-1") {
+                                onClick { sendAction(GameAction.SkipTurn(activeChar.id)) }
+                            }
+                            if (myCharacters.count { !it.isDead } > 1 && !isTransferOpen) {
+                                button("Send Resources", className = "btn btn-sm btn-outline flex-1") {
+                                    title("Send Resources (1 Action)")
+                                    onClick { isTransferOpen = true }
+                                }
+                            }
+                        }
+                        
+                        if (isTransferOpen) {
+                            var transferTargetId by remember { mutableStateOf(myCharacters.first { it.id != activeChar.id && !it.isDead }.id) }
+                            var transferFood by remember { mutableStateOf("") }
+                            var transferGold by remember { mutableStateOf("") }
+                            
+                            div(className = "mt-1 p-1 border border-primary rounded bg-primary-100") {
+                                h4(className = "m-0 text-sm") { textNode("Transfer Resources") }
+                                
+                                div(className = "d-flex flex-col gap-05 mt-05 text-sm") {
+                                    select(className = "stat-input w-full") {
+                                        myCharacters.filter { it.id != activeChar.id && !it.isDead }.forEach { target ->
+                                            option(value = target.id, label = target.name, selected = target.id == transferTargetId)
+                                        }
+                                        onChange { e ->
+                                            transferTargetId = e.target.asDynamic().value as String
+                                        }
+                                    }
+                                    
+                                    div(className = "d-flex gap-05") {
+                                        text(value = transferFood, placeholder = "🌾 Food", className = "flex-1 w-full") {
+                                            onChange { e -> transferFood = e.target.asDynamic().value as String }
+                                        }
+                                        text(value = transferGold, placeholder = "💰 Gold", className = "flex-1 w-full") {
+                                            onChange { e -> transferGold = e.target.asDynamic().value as String }
+                                        }
+                                    }
+                                    
+                                    div(className = "d-flex gap-05 mt-05") {
+                                        button("Cancel", className = "btn btn-xs btn-outline flex-1") {
+                                            onClick { isTransferOpen = false }
+                                        }
+                                        button("Send", className = "btn btn-xs btn-primary flex-2") {
+                                            onClick {
+                                                val f = transferFood.toIntOrNull() ?: 0
+                                                val g = transferGold.toIntOrNull() ?: 0
+                                                if ((f > 0 || g > 0) && f <= activeChar.food && g <= activeChar.gold) {
+                                                    sendAction(GameAction.TransferResources(activeChar.id, transferTargetId, f, g))
+                                                    isTransferOpen = false
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if (!activeChar.isDead && activeChar.soldiers < 100 && activeChar.gold >= 10) {
                         div(className = "d-flex gap-05 mt-05 flex-wrap") {
                             val maxAffordable = kotlin.math.min(100 - activeChar.soldiers, activeChar.gold / 10)
@@ -133,6 +203,48 @@ fun IComponent.CharacterPanel(
                                     title("Recruit $maxAffordable soldiers for ${maxAffordable * 10} gold for ${activeChar.name}")
                                     onClick {
                                         sendAction(GameAction.HireSoldiers(maxAffordable, activeChar.id))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Market Section
+                    if (!activeChar.isDead && isMyTurn) {
+                        div(className = "market-section mt-05 pt-05") {
+                            val marketRate = gameState?.marketRate ?: 3.0f
+                            val displayRate = marketRate.asDynamic().toFixed(1) as String
+                            div(className = "d-flex justify-between items-center") {
+                                span(className = "font-600 text-sm") { textNode("⚖️ Market (Free Action)") }
+                                span(className = "text-xs text-primary") { 
+                                    textNode("Rate: 1💰 = $displayRate🌾")
+                                }
+                            }
+                            
+                            var tradeGoldAmount by remember { mutableStateOf("1") }
+                            
+                            div(className = "d-flex gap-05 mt-05 items-center") {
+                                text(value = tradeGoldAmount, placeholder = "Gold", className = "stat-input w-full flex-1") {
+                                    onChange { e -> tradeGoldAmount = e.target.asDynamic().value as String }
+                                }
+                                
+                                val goldVal = tradeGoldAmount.toIntOrNull() ?: 0
+                                val foodVal = (goldVal * marketRate).toInt()
+                                
+                                button("Buy Food", className = "btn btn-xs btn-primary flex-1") {
+                                    title("Spend $goldVal💰 to gain $foodVal🌾")
+                                    onClick {
+                                        if (goldVal > 0 && activeChar.gold >= goldVal) {
+                                            sendAction(GameAction.MarketTrade(activeChar.id, true, goldVal))
+                                        }
+                                    }
+                                }
+                                button("Sell Food", className = "btn btn-xs btn-outline flex-1") {
+                                    title("Spend $foodVal🌾 to gain $goldVal💰")
+                                    onClick {
+                                        if (goldVal > 0 && activeChar.food >= foodVal) {
+                                            sendAction(GameAction.MarketTrade(activeChar.id, false, goldVal))
+                                        }
                                     }
                                 }
                             }
