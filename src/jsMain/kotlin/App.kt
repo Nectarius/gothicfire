@@ -2,6 +2,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import dev.kilua.rpc.getService
 import dev.kilua.form.text.text
 import dev.kilua.form.text.textArea
@@ -19,6 +20,10 @@ import components.TurnHud
 import components.StrategicMap
 import components.GameLobby
 import components.KingdomOverviewPanel
+import components.GameHistoryPanel
+import components.NatureEventModal
+import components.MarketPanel
+import components.ArmyRecruitmentPanel
 import game.GameWebSocket
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -117,10 +122,6 @@ class App : Application() {
                     },
                     onNatureEvent = { event ->
                         activeNatureEvents = activeNatureEvents + event
-                        scope.launch {
-                            delay(4000)
-                            activeNatureEvents = activeNatureEvents.filter { it != event }
-                        }
                     },
                     onResourceTransferred = { event ->
                         activeTransfers = activeTransfers + event
@@ -130,6 +131,12 @@ class App : Application() {
                         }
                     }
                 )
+            }
+            
+            LaunchedEffect(currentTab, currentUser) {
+                if (currentTab == "map" && currentUser != null) {
+                    ws.connect()
+                }
             }
             
             // Fetch initial state
@@ -188,6 +195,9 @@ class App : Application() {
                         }
                         button("War Map", className = "btn ${if (currentTab == "map") "btn-primary" else "glass"}") {
                             onClick { currentTab = "map" }
+                        }
+                        button("Game History", className = "btn ${if (currentTab == "history") "btn-primary" else "glass"}") {
+                            onClick { currentTab = "history" }
                         }
                     }
                     
@@ -299,18 +309,47 @@ class App : Application() {
                                     }
                                 }
                             }
-                        } else if (gameState == null || gameState!!.status == models.GameStatus.LOBBY) {
+                        } else if (gameState == null || gameState!!.status == models.GameStatus.LOBBY || gameState!!.status == models.GameStatus.NOT_CREATED) {
                             GameLobby(ws = ws, gameState = gameState, yourPlayerId = yourPlayerId)
                         } else {
                             var selectedCharacterId by remember { mutableStateOf<String?>(null) }
                             
-                            TurnHud(playerId = yourPlayerId, gameState = gameState, sendAction = { ws.sendAction(it) })
+                            var showMarket by remember { mutableStateOf(false) }
+                            var showRecruitment by remember { mutableStateOf(false) }
+                            
+                            TurnHud(
+                                playerId = yourPlayerId, 
+                                gameState = gameState, 
+                                onOpenMarket = { showMarket = true },
+                                onOpenRecruitment = { showRecruitment = true },
+                                sendAction = { ws.sendAction(it) }
+                            )
                             
                             // Scroll notification toast
                             if (scrollNotification.isNotBlank()) {
                                 div(className = "scroll-notification-toast glass") {
                                     textNode(scrollNotification)
                                 }
+                            }
+                            
+                            if (showMarket) {
+                                MarketPanel(
+                                    playerId = yourPlayerId,
+                                    gameState = gameState!!,
+                                    selectedCharacterId = selectedCharacterId,
+                                    onClose = { showMarket = false },
+                                    sendAction = { ws.sendAction(it) }
+                                )
+                            }
+                            
+                            if (showRecruitment) {
+                                ArmyRecruitmentPanel(
+                                    playerId = yourPlayerId,
+                                    gameState = gameState!!,
+                                    selectedCharacterId = selectedCharacterId,
+                                    onClose = { showRecruitment = false },
+                                    sendAction = { ws.sendAction(it) }
+                                )
                             }
                             
                             div(className = "war-map-layout") {
@@ -340,6 +379,20 @@ class App : Application() {
                                 sendAction = { ws.sendAction(it) }
                             )
                         }
+                    } else if (currentTab == "history") {
+                        // Game History Tab
+                        GameHistoryPanel(appService = appService)
+                    }
+                    
+                    if (activeNatureEvents.isNotEmpty()) {
+                        val currentEvent = activeNatureEvents.first()
+                        NatureEventModal(
+                            event = currentEvent,
+                            gameState = gameState,
+                            onClose = {
+                                activeNatureEvents = activeNatureEvents.filter { it != currentEvent }
+                            }
+                        )
                     }
                 }
             }

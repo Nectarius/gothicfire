@@ -10,10 +10,24 @@ enum class Team {
 
 @Serializable
 enum class GameStatus {
+    NOT_CREATED,
     LOBBY,
     IN_PROGRESS,
     GAME_OVER
 }
+
+@Serializable
+data class GameResultSummary(
+    val gameId: String,
+    val winningTeamName: String?,
+    val winningTeamColor: String?,
+    val totalTurns: Int,
+    val finishedAt: Long,
+    val redTeamName: String?,
+    val blueTeamName: String?,
+    val redPlayers: List<String>,
+    val bluePlayers: List<String>
+)
 
 /**
  * Pre-battle strategy the attacker can choose before engaging.
@@ -35,39 +49,54 @@ enum class BattleStrategy {
 /** Checks whether a character meets the requirements to use a given strategy. */
 fun canUseStrategy(character: Character, strategy: BattleStrategy): Boolean = when (strategy) {
     BattleStrategy.NONE -> true
-    BattleStrategy.ARCANE_PHALANX -> character.soldiers > 5
-    BattleStrategy.HAMMER_AND_SPELL -> character.agility >= 6 && character.soldiers > 3
-    BattleStrategy.SPELL_INFUSED_VOLLEY -> character.wisdom >= 6 && character.soldiers > 5
+    BattleStrategy.ARCANE_PHALANX -> character.archon >= 6 && character.army.total() > 5
+    BattleStrategy.HAMMER_AND_SPELL -> character.warlord >= 6 && character.army.total() > 3
+    BattleStrategy.SPELL_INFUSED_VOLLEY -> character.vanguard >= 6 && character.army.total() > 5
 }
 
 /**
  * Returns the combat score bonus for the chosen strategy.
- * The bonus scales slightly with the relevant stat so investing in stats still matters.
- *
- * ARCANE_PHALANX:       +3 base + (strength * 0.3)  — rewards tanky frontline builds
- * HAMMER_AND_SPELL:     +3 base + (agility * 0.3)   — rewards mobile flanking builds
- * SPELL_INFUSED_VOLLEY: +3 base + (wisdom * 0.3)    — rewards magical ranged builds
  */
 fun strategyBonus(character: Character, strategy: BattleStrategy): Double = when (strategy) {
     BattleStrategy.NONE -> 0.0
-    BattleStrategy.ARCANE_PHALANX -> 3.0 + (character.strength * 0.3)
-    BattleStrategy.HAMMER_AND_SPELL -> 3.0 + (character.agility * 0.3)
-    BattleStrategy.SPELL_INFUSED_VOLLEY -> 3.0 + (character.wisdom * 0.3)
+    BattleStrategy.ARCANE_PHALANX -> 3.0 + (character.archon * 0.3)
+    BattleStrategy.HAMMER_AND_SPELL -> 3.0 + (character.warlord * 0.3)
+    BattleStrategy.SPELL_INFUSED_VOLLEY -> 3.0 + (character.vanguard * 0.3)
 }
+
+@Serializable
+enum class ArmyType {
+    LIGHT_INFANTRY,
+    ARCHERS,
+    HEAVY_INFANTRY,
+    MAGES
+}
+
+@Serializable
+data class Army(
+    val mages: Int = 0,
+    val heavyInfantry: Int = 0,
+    val lightInfantry: Int = 0,
+    val archers: Int = 0
+) {
+    fun total(): Int = mages + heavyInfantry + lightInfantry + archers
+}
+
 @Serializable
 data class Character(
     val id: String,
     val playerId: String,
     val name: String,
-    val strength: Int,
-    val agility: Int,
-    val wisdom: Int,
+    val warlord: Int = 0,
+    val intellect: Int = 0,
+    val vanguard: Int = 0,
+    val archon: Int = 0,
     val currentSector: String? = null,
     val hasActedThisTurn: Boolean = false,
     val isDead: Boolean = false,
     val food: Int = 0,
     val gold: Int = 0,
-    val soldiers: Int = 0,
+    val army: Army = Army(),
     val siegeWeapons: Int = 0,
     val scrolls: List<Scroll> = emptyList()
 )
@@ -100,13 +129,24 @@ data class TerritoryState(
 )
 
 @Serializable
+data class TeamInfo(
+    val id: Team,
+    val name: String,
+    val color: String,
+    val creatorId: String
+)
+
+@Serializable
 data class GameState(
-    val status: GameStatus = GameStatus.LOBBY,
+    val status: GameStatus = GameStatus.NOT_CREATED,
+    val gameName: String? = null,
+    val creatorPlayerId: String? = null,
+    val teamInfos: Map<Team, TeamInfo> = emptyMap(),
     val players: List<Player> = emptyList(),
     val characters: List<Character> = emptyList(),
     val activeTeamTurn: Team = Team.RED,
     val currentTurn: Int = 1,
-    val maxTurns: Int = 20,
+    val maxTurns: Int = 80,
     val winningTeam: Team? = null,
     val teamCastles: Map<Team, String> = emptyMap(),
     val territories: Map<String, TerritoryState> = emptyMap(),

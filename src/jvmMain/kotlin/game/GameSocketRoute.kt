@@ -16,6 +16,9 @@ fun Route.gameSocket() {
     val json = Json { ignoreUnknownKeys = true }
     
     webSocket("/game-socket") {
+        val observerId = java.util.UUID.randomUUID().toString()
+        GameSessionManager.addObserver(observerId, this)
+        
         try {
             incoming.consumeEach { frame ->
                 if (frame is Frame.Text) {
@@ -23,7 +26,14 @@ fun Route.gameSocket() {
                     try {
                         val action = json.decodeFromString<GameAction>(text)
                         
-                        // Handle join separately
+                        if (action is GameAction.CreateGame) {
+                            GameSessionManager.createGame(action.playerName, action.gameName, this)
+                            return@consumeEach
+                        }
+                        if (action is GameAction.CreateTeam) {
+                            GameSessionManager.createTeam(action.team, action.name, action.color, action.playerName, this)
+                            return@consumeEach
+                        }
                         if (action is GameAction.JoinTeam) {
                             GameSessionManager.joinTeam(action.playerName, action.team, this)
                             return@consumeEach
@@ -33,7 +43,7 @@ fun Route.gameSocket() {
                         val (game, playerId) = GameSessionManager.connectionToGame[this] ?: return@consumeEach
                         
                         when (action) {
-                            is GameAction.CreateCharacter -> game.createCharacter(playerId, action.name, action.strength, action.agility, action.wisdom)
+                            is GameAction.CreateCharacter -> game.createCharacter(playerId, action.name, action.warlord, action.intellect, action.vanguard, action.archon)
                             is GameAction.SelectCharacters -> game.selectCharacters(playerId, action.templateIds)
                             is GameAction.ToggleReady -> game.toggleReady(playerId)
                             is GameAction.StartGame -> game.startGame(playerId)
@@ -42,13 +52,14 @@ fun Route.gameSocket() {
                             is GameAction.SelectCastleAndReady -> game.selectCastleAndReady(playerId, action.castleId)
                             is GameAction.UpgradeTerritory -> game.upgradeTerritory(playerId, action.sectorId, action.upgradeType, action.characterId)
                             is GameAction.CollectResources -> game.collectResources(playerId, action.sectorId, action.characterId)
-                            is GameAction.HireSoldiers -> game.hireSoldiers(playerId, action.count, action.characterId)
+                            is GameAction.RecruitArmy -> game.recruitArmy(playerId, action.unitType, action.count, action.characterId)
                             is GameAction.SearchScroll -> game.searchScroll(playerId, action.targetSector, action.characterId)
                             is GameAction.UseScroll -> game.useScroll(playerId, action.scrollId, action.characterId)
                             is GameAction.BuySiegeWeapon -> game.buySiegeWeapon(playerId, action.characterId)
                             is GameAction.TransferResources -> game.transferResources(playerId, action.fromCharId, action.toCharId, action.food, action.gold)
                             is GameAction.MarketTrade -> game.marketTrade(playerId, action.characterId, action.buyFood, action.goldAmount)
                             is GameAction.SkipTurn -> game.skipTurn(playerId, action.characterId)
+                            is GameAction.EndGame -> game.endGame(playerId)
                             is GameAction.JoinTeam -> {} // Handled above
                         }
                     } catch (e: Exception) {
@@ -57,6 +68,7 @@ fun Route.gameSocket() {
                 }
             }
         } finally {
+            GameSessionManager.removeObserver(observerId)
             GameSessionManager.disconnect(this)
         }
     }

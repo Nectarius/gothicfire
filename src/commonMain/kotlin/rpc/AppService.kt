@@ -15,4 +15,6 @@ interface AppService {
     
     suspend fun getDiscussions(): List<Discussion>
     suspend fun postDiscussion(content: String): Discussion
+    
+    suspend fun getGameHistory(): List<models.GameResultSummary>
 }

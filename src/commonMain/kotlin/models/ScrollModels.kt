@@ -4,14 +4,15 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class ScrollType {
-    STRENGTH,
-    WISDOM,
-    AGILITY
+    WARLORD,
+    INTELLECT,
+    VANGUARD,
+    ARCHON
 }
 
 @Serializable
 data class Scroll(
     val id: String,
     val type: ScrollType,
-    val boostAmount: Int = 3
+    val boostAmount: Int
 )

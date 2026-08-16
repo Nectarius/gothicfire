@@ -8,6 +8,10 @@ import io.ktor.server.sessions.*
 import models.Discussion
 import models.Note
 import models.UserSession
+import models.GameResultSummary
+import models.GameState
+import models.Team
+import kotlinx.serialization.json.Json
 import java.util.UUID
 
 class AppServiceImpl(private val call: ApplicationCall) : AppService {
@@ -58,5 +62,45 @@ class AppServiceImpl(private val call: ApplicationCall) : AppService {
         )
         MongoConfig.discussions.insertOne(discussion)
         return discussion
+    }
+
+    override suspend fun getGameHistory(): List<GameResultSummary> {
+        val historyCollection = MongoConfig.database.getCollection("game_turn_history")
+        val docs = historyCollection.find(Filters.eq("trigger", "GAME_OVER"))
+            .sort(com.mongodb.client.model.Sorts.descending("savedAt"))
+            .toList()
+        
+        val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+        
+        return docs.mapNotNull { doc ->
+            try {
+                val gameId = doc.getString("gameId") ?: "unknown"
+                val stateJson = doc.getString("gameStateJson") ?: return@mapNotNull null
+                val savedAt = doc.getLong("savedAt") ?: 0L
+                val state = json.decodeFromString<GameState>(stateJson)
+                
+                val redTeam = state.teamInfos[Team.RED]
+                val blueTeam = state.teamInfos[Team.BLUE]
+                
+                val winningTeamInfo = state.winningTeam?.let { state.teamInfos[it] }
+                
+                val redPlayers = state.players.filter { it.team == Team.RED }.map { it.name }
+                val bluePlayers = state.players.filter { it.team == Team.BLUE }.map { it.name }
+                
+                GameResultSummary(
+                    gameId = gameId,
+                    winningTeamName = winningTeamInfo?.name ?: state.winningTeam?.name,
+                    winningTeamColor = winningTeamInfo?.color,
+                    totalTurns = state.currentTurn,
+                    finishedAt = savedAt,
+                    redTeamName = redTeam?.name,
+                    blueTeamName = blueTeam?.name,
+                    redPlayers = redPlayers,
+                    bluePlayers = bluePlayers
+                )
+            } catch (e: Exception) {
+                null
+            }
+        }
     }
 }

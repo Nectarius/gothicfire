@@ -74,8 +74,6 @@ fun IComponent.StrategicMap(
                 val topPerc = (territory.y / 1095.0) * 100
 
                 val cellClasses = mutableListOf("territory-node")
-                if (terrOwnerTeam == Team.RED) cellClasses.add("territory-node-owned-red")
-                if (terrOwnerTeam == Team.BLUE) cellClasses.add("territory-node-owned-blue")
                 if (isSectorSelected) cellClasses.add("territory-node-selected")
                 if (isValidMoveTarget) cellClasses.add("territory-node-valid-move")
                 if (isValidPlacementTarget) cellClasses.add("territory-node-valid-place")
@@ -99,6 +97,15 @@ fun IComponent.StrategicMap(
                 div(className = cellClasses.joinToString(" ")) {
                     style("left", "$leftPerc%")
                     style("top", "$topPerc%")
+                    
+                    if (terrOwnerTeam != null) {
+                        val teamInfo = gameState?.teamInfos?.get(terrOwnerTeam)
+                        if (teamInfo != null) {
+                            style("border", "2px solid ${teamInfo.color} !important")
+                            style("backgroundColor", "${teamInfo.color}66 !important")
+                            style("boxShadow", "0 0 10px ${teamInfo.color}b3")
+                        }
+                    }
                     style("position", "absolute")
                     style("transform", "translate(-50%, -50%)")
                     
@@ -116,21 +123,7 @@ fun IComponent.StrategicMap(
                         }
                     }
                     
-                    // Render active nature events for this sector
-                    val natureEvent = activeNatureEvents.find { it.sectorId == sector }
-                    if (natureEvent != null) {
-                        val isPositive = natureEvent.type == models.NatureEventType.ABUNDANT_HARVEST || natureEvent.type == models.NatureEventType.VOLUNTEERS
-                        val toastClass = if (isPositive) "nature-event-positive" else "nature-event-negative"
-                        val eventText = when (natureEvent.type) {
-                            models.NatureEventType.ABUNDANT_HARVEST -> "🌾 Abundant Harvest!"
-                            models.NatureEventType.VOLUNTEERS -> "🎺 Volunteers!"
-                            models.NatureEventType.HURRICANE -> "🌪️ Hurricane!"
-                            models.NatureEventType.FLOOD -> "🌊 Flood!"
-                        }
-                        div(className = "nature-event-toast $toastClass") {
-                            textNode(eventText)
-                        }
-                    }
+                    // Active nature events are now handled as modals in App.kt
                     
                     // Render resource transfers for this sector
                     val transferOut = activeTransfers.find { it.fromSectorId == sector }
@@ -245,11 +238,11 @@ fun IComponent.StrategicMap(
                     div(className = "unit-marker $markerClass $selectedClass $actedClass") {
                         style("left", "$leftPerc%")
                         style("top", "$topPerc%")
-                        title("${char.name} [${owner?.name ?: "Unknown"}] (STR:${char.strength} AGI:${char.agility} WIS:${char.wisdom} | Army: ⚔️${char.soldiers} | Bag: 🌾${char.food} 🪙${char.gold})${if (char.hasActedThisTurn) " [ACTED]" else ""}")
+                        title("${char.name} [${owner?.name ?: "Unknown"}] (WAR:${char.warlord} INT:${char.intellect} VAN:${char.vanguard} ARC:${char.archon} | Army: ⚔️${char.army.total()} | Bag: 🌾${char.food} 🪙${char.gold})${if (char.hasActedThisTurn) " [ACTED]" else ""}")
                         img(src = "/knight_icon.png?v=4", alt = "Knight", className = "unit-marker-img")
-                        if (char.soldiers > 0) {
+                        if (char.army.total() > 0) {
                             span(className = "unit-marker-army-badge") {
-                                textNode("${char.soldiers}")
+                                textNode("${char.army.total()}")
                             }
                         }
                         
@@ -294,8 +287,8 @@ fun IComponent.StrategicMap(
                     else -> "chance-low"
                 }
                 
-                val isAttacker10x = battleChar.soldiers > enemyChar.soldiers * 10 && battleChar.soldiers > 0
-                val isDefender10x = enemyChar.soldiers > battleChar.soldiers * 10 && enemyChar.soldiers > 0
+                val isAttacker10x = battleChar.army.total() > enemyChar.army.total() * 10 && battleChar.army.total() > 0
+                val isDefender10x = enemyChar.army.total() > battleChar.army.total() * 10 && enemyChar.army.total() > 0
                 
                 div(className = "territory-modal-backdrop") {
                     onClick {
@@ -357,19 +350,19 @@ fun IComponent.StrategicMap(
                                 div(className = "combatant-stats mt-05") {
                                     div(className = "stat-row") {
                                         span { textNode("💪 STR") }
-                                        span { textNode("${battleChar.strength}") }
+                                        span { textNode("${battleChar.warlord}") }
                                     }
                                     div(className = "stat-row") {
                                         span { textNode("🏃 AGI") }
-                                        span { textNode("${battleChar.agility}") }
+                                        span { textNode("${battleChar.vanguard}") }
                                     }
                                     div(className = "stat-row") {
                                         span { textNode("🧠 WIS") }
-                                        span { textNode("${battleChar.wisdom}") }
+                                        span { textNode("${battleChar.intellect}") }
                                     }
                                     div(className = "stat-row font-600 text-warning") {
                                         span { textNode("⚔️ Army") }
-                                        span { textNode("${battleChar.soldiers}") }
+                                        span { textNode("${battleChar.army.total()}") }
                                     }
                                 }
                             }
@@ -383,19 +376,19 @@ fun IComponent.StrategicMap(
                                 div(className = "combatant-stats mt-05") {
                                     div(className = "stat-row") {
                                         span { textNode("💪 STR") }
-                                        span { textNode("${enemyChar.strength}") }
+                                        span { textNode("${enemyChar.warlord}") }
                                     }
                                     div(className = "stat-row") {
                                         span { textNode("🏃 AGI") }
-                                        span { textNode("${enemyChar.agility}") }
+                                        span { textNode("${enemyChar.vanguard}") }
                                     }
                                     div(className = "stat-row") {
                                         span { textNode("🧠 WIS") }
-                                        span { textNode("${enemyChar.wisdom}") }
+                                        span { textNode("${enemyChar.intellect}") }
                                     }
                                     div(className = "stat-row font-600 text-warning") {
                                         span { textNode("⚔️ Army") }
-                                        span { textNode("${enemyChar.soldiers}") }
+                                        span { textNode("${enemyChar.army.total()}") }
                                     }
                                     if (locationProtection > 0) {
                                         div(className = "stat-row text-xs text-gray") {
@@ -517,9 +510,10 @@ fun IComponent.StrategicMap(
                                 div(className = "d-flex flex-col gap-03") {
                                     for (scroll in battleChar.scrolls) {
                                         val (icon, label) = when (scroll.type) {
-                                            ScrollType.STRENGTH -> "💪" to "Strength"
-                                            ScrollType.AGILITY -> "🏃" to "Agility"
-                                            ScrollType.WISDOM -> "🧠" to "Wisdom"
+                                            ScrollType.WARLORD -> "⚔️" to "Warlord"
+                                            ScrollType.INTELLECT -> "🧠" to "Intellect"
+                                            ScrollType.VANGUARD -> "🛡️" to "Vanguard"
+                                            ScrollType.ARCHON -> "🔮" to "Archon"
                                         }
                                         div(className = "battle-scroll-row d-flex justify-between items-center") {
                                             span(className = "text-xs") { textNode("$icon $label Scroll (+${scroll.boostAmount})") }

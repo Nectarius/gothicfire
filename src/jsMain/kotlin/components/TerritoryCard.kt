@@ -71,13 +71,26 @@ fun IComponent.TerritoryCard(
             }
             
             // Ownership Status Banner
-            val (ownerText, ownerClass) = when {
-                isOwner -> "Owned by You (${myPlayer?.team?.name ?: ""})" to (if (myPlayer?.team == Team.RED) "owner-banner-red" else "owner-banner-blue")
-                ownerPlayer != null && ownerPlayer.team == myPlayer?.team -> "Owned by Ally (${ownerPlayer.name})" to (if (ownerPlayer.team == Team.RED) "owner-banner-red" else "owner-banner-blue")
-                ownerPlayer != null -> "Controlled by Enemy (${ownerPlayer.name} - ${ownerTeam?.name ?: ""})" to (if (ownerTeam == Team.RED) "owner-banner-red" else "owner-banner-blue")
-                else -> "Unclaimed Wilderness" to "owner-banner-neutral"
+            val myTeamName = myPlayer?.team?.let { gameState.teamInfos[it]?.name } ?: "Your Team"
+            val ownerTeamName = ownerTeam?.let { gameState.teamInfos[it]?.name } ?: "Enemy Team"
+            
+            val ownerText = when {
+                isOwner -> "Owned by You ($myTeamName)"
+                ownerPlayer != null && ownerPlayer.team == myPlayer?.team -> "Owned by Ally (${ownerPlayer.name})"
+                ownerPlayer != null -> "Controlled by Enemy (${ownerPlayer.name} - $ownerTeamName)"
+                else -> "Unclaimed Wilderness"
             }
+            
+            val ownerClass = if (ownerTeam == null) "owner-banner-neutral" else ""
             div(className = "owner-banner $ownerClass mb-1") {
+                if (ownerTeam != null) {
+                    val teamColor = gameState.teamInfos[ownerTeam]?.color
+                    if (teamColor != null) {
+                        style("background", "${teamColor}1a") // 10% opacity
+                        style("borderLeft", "4px solid $teamColor")
+                        style("color", teamColor)
+                    }
+                }
                 span(className = "font-600 text-sm") { textNode(ownerText) }
             }
             
@@ -106,7 +119,7 @@ fun IComponent.TerritoryCard(
                 h4(className = "m-0 mb-05 text-sm text-gray") { textNode("Territory Management Actions") }
                 
                 div(className = "d-flex flex-col gap-05") {
-                    val boostAmount = if (activeChar != null) 1 + (activeChar.wisdom / 2) else 2
+                    val boostAmount = if (activeChar != null) activeChar.intellect.coerceIn(2, 7) else 2
                     div(className = "d-flex gap-1") {
                         button("🌱 Cultivate (+$boostAmount)", className = "btn btn-outline flex-1 ${if (!canAct) "btn-disabled" else ""}") {
                             val heroName = activeChar?.name ?: "Hero"
@@ -187,49 +200,11 @@ fun IComponent.TerritoryCard(
                     div(className = "d-flex justify-between items-center mb-05") {
                         h4(className = "m-0 text-sm") { textNode("⚔️ Recruit Army for ${activeChar.name}") }
                         span(className = "text-xs text-primary font-600") {
-                            textNode("Army: ${activeChar.soldiers}/100 | Gold: ${activeChar.gold}🪙")
+                            textNode("Army: ${activeChar.army.total()}/100 | Gold: ${activeChar.gold}🪙")
                         }
                     }
-                    
-                    p(className = "text-xs text-dark-gray m-0 mb-05") {
-                        textNode("Cost: 10🪙 per soldier | Upkeep: 1🌾 per soldier/turn")
-                    }
-                    
-                    val maxPossible = kotlin.math.min(100 - activeChar.soldiers, activeChar.gold / 10)
-                    
-                    div(className = "d-flex gap-05 flex-wrap") {
-                        for (count in listOf(1, 5, 10, 25)) {
-                            val cost = count * 10
-                            val canAfford = activeChar.gold >= cost && activeChar.soldiers + count <= 100
-                            button("+$count (${cost}🪙)", className = "btn btn-sm btn-outline flex-1 ${if (!canAfford) "btn-disabled" else ""}") {
-                                title("Recruit $count soldiers for $cost gold for ${activeChar.name}")
-                                onClick {
-                                    if (canAfford) {
-                                        sendAction(GameAction.HireSoldiers(count, activeChar.id))
-                                    }
-                                }
-                            }
-                        }
-                        
-                        if (maxPossible > 0 && maxPossible !in listOf(1, 5, 10, 25)) {
-                            val maxCost = maxPossible * 10
-                            button("Max +$maxPossible (${maxCost}🪙)", className = "btn btn-sm btn-primary flex-1") {
-                                title("Recruit maximum affordable ($maxPossible) soldiers for $maxCost gold for ${activeChar.name}")
-                                onClick {
-                                    sendAction(GameAction.HireSoldiers(maxPossible, activeChar.id))
-                                }
-                            }
-                        }
-                    }
-                    
-                    if (activeChar.soldiers >= 100) {
-                        p(className = "text-xs text-warning m-0 mt-05 text-center") {
-                            textNode("Maximum army capacity reached (100 soldiers).")
-                        }
-                    } else if (activeChar.gold < 10) {
-                        p(className = "text-xs text-dark-gray m-0 mt-05 text-center") {
-                            textNode("Need at least 10 Gold in ${activeChar.name}'s bag to recruit soldiers.")
-                        }
+                    p(className = "text-xs text-dark-gray m-0 mb-05 text-center") {
+                        textNode("Use the Character Panel to recruit your army.")
                     }
                     
                     if (territoryDef?.isCastle == true) {

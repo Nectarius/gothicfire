@@ -31,6 +31,39 @@ object GameSessionManager {
     // Map of WebSocket session to its GameSession and playerId
     val connectionToGame = mutableMapOf<DefaultWebSocketSession, Pair<GameSession, String>>()
 
+    suspend fun createGame(playerName: String, gameName: String, wsSession: DefaultWebSocketSession) {
+        val gameToJoin = mutex.withLock {
+            if (globalSession.gameState.status == GameStatus.GAME_OVER || globalSession.gameState.status == GameStatus.NOT_CREATED) {
+                val oldObservers = globalSession.observers.toMap()
+                val oldConnections = globalSession.connections.toMap()
+                
+                globalSession = GameSession()
+                
+                globalSession.observers.putAll(oldObservers)
+                oldConnections.forEach { (_, session) ->
+                    globalSession.observers[java.util.UUID.randomUUID().toString()] = session
+                }
+                
+                globalSession.createGame(playerName, gameName)
+            }
+            globalSession
+        }
+        // Don't add to connectionToGame yet because they don't have a Player entity in the game state (they haven't joined a team)
+        // But we broadcast the state to them through observers!
+    }
+    
+    suspend fun createTeam(team: Team, name: String, color: String, playerName: String, wsSession: DefaultWebSocketSession) {
+        val incomingId = UUID.randomUUID().toString()
+        val gameToJoin = mutex.withLock { globalSession }
+        
+        val effectivePlayerId = gameToJoin.createTeamAndJoin(incomingId, team, name, color, playerName, wsSession)
+        if (effectivePlayerId != null) {
+            mutex.withLock {
+                connectionToGame[wsSession] = Pair(gameToJoin, effectivePlayerId)
+            }
+        }
+    }
+
     suspend fun joinTeam(playerName: String, team: Team, wsSession: DefaultWebSocketSession) {
         val incomingId = UUID.randomUUID().toString()
         val gameToJoin = mutex.withLock {
@@ -46,6 +79,16 @@ object GameSessionManager {
                 connectionToGame[wsSession] = Pair(gameToJoin, effectivePlayerId)
             }
         }
+    }
+    
+    suspend fun addObserver(observerId: String, wsSession: DefaultWebSocketSession) {
+        val game = mutex.withLock { globalSession }
+        game.addObserver(observerId, wsSession)
+    }
+
+    suspend fun removeObserver(observerId: String) {
+        val game = mutex.withLock { globalSession }
+        game.removeObserver(observerId)
     }
     
     suspend fun disconnect(wsSession: DefaultWebSocketSession) {

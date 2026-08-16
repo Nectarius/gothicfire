@@ -1,4 +1,6 @@
-package models
+import re
+
+content = """package models
 
 import kotlin.random.Random
 import kotlin.math.ln
@@ -193,3 +195,9 @@ fun estimateWinChance(attacker: Character, defender: Character, locationProtecti
     }
     return kotlin.math.round((wins.toDouble() / 400.0) * 100.0).toInt().coerceIn(0, 100)
 }
+"""
+
+with open("src/commonMain/kotlin/models/FightLogic.kt", "w") as f:
+    f.write(content)
+
+print("FightLogic.kt updated")

@@ -98,25 +98,34 @@ fun IComponent.CharacterPanel(
                             )
                         }
                     }
-                    div(className = "d-flex gap-1 text-sm mt-05 text-gray") {
-                        span { textNode("STR: ${activeChar.strength}") }
-                        span { textNode("AGI: ${activeChar.agility}") }
-                        span { textNode("WIS: ${activeChar.wisdom}") }
+                    div(className = "d-flex gap-1 text-sm mt-05 text-gray flex-wrap") {
+                        span { textNode("⚔️ WAR: ${activeChar.warlord}") }
+                        span { textNode("🧠 INT: ${activeChar.intellect}") }
+                        span { textNode("🛡️ VAN: ${activeChar.vanguard}") }
+                        span { textNode("🔮 ARC: ${activeChar.archon}") }
                     }
                     div(className = "d-flex gap-1 text-sm mt-05 text-primary font-600") {
                         span { textNode("🌾 Food: ${activeChar.food}") }
                         span { textNode("🪙 Gold: ${activeChar.gold}") }
                     }
                     div(className = "d-flex justify-between items-center text-sm mt-05") {
-                        span(className = "font-600 text-warning") { textNode("⚔️ Army: ${activeChar.soldiers}/100") }
-                        if (activeChar.soldiers > 0) {
+                        span(className = "font-600 text-warning") { textNode("⚔️ Army: ${activeChar.army.total()}/100") }
+                        if (activeChar.army.total() > 0) {
                             span(className = "text-xs text-dark-gray") {
-                                textNode("Upkeep: ${activeChar.soldiers}🌾/turn")
+                                textNode("Upkeep: ${activeChar.army.total()}🌾/turn")
                             }
                         }
                     }
+                    if (activeChar.army.total() > 0) {
+                        div(className = "d-flex gap-1 text-xs text-gray mt-02") {
+                            span { textNode("L: ${activeChar.army.lightInfantry}") }
+                            span { textNode("A: ${activeChar.army.archers}") }
+                            span { textNode("H: ${activeChar.army.heavyInfantry}") }
+                            span { textNode("M: ${activeChar.army.mages}") }
+                        }
+                    }
                     
-                    if (activeChar.food < activeChar.soldiers && activeChar.soldiers > 0 && !activeChar.isDead) {
+                    if (activeChar.food < activeChar.army.total() && activeChar.army.total() > 0 && !activeChar.isDead) {
                         div(className = "mt-05 p-05 bg-red-100 text-red border border-red rounded text-sm font-600 text-center") {
                             textNode("⚠️ Starvation Warning: Your army will suffer desertion next turn!")
                         }
@@ -184,72 +193,7 @@ fun IComponent.CharacterPanel(
                         }
                     }
 
-                    if (!activeChar.isDead && activeChar.soldiers < 100 && activeChar.gold >= 10) {
-                        div(className = "d-flex gap-05 mt-05 flex-wrap") {
-                            val maxAffordable = kotlin.math.min(100 - activeChar.soldiers, activeChar.gold / 10)
-                            for (count in listOf(1, 5, 10)) {
-                                val cost = count * 10
-                                if (activeChar.gold >= cost && activeChar.soldiers + count <= 100) {
-                                    button("+$count Men", className = "btn btn-xs btn-outline flex-1") {
-                                        title("Recruit $count soldiers for $cost gold for ${activeChar.name}")
-                                        onClick {
-                                            sendAction(GameAction.HireSoldiers(count, activeChar.id))
-                                        }
-                                    }
-                                }
-                            }
-                            if (maxAffordable > 0) {
-                                button("Max ($maxAffordable)", className = "btn btn-xs btn-primary flex-1") {
-                                    title("Recruit $maxAffordable soldiers for ${maxAffordable * 10} gold for ${activeChar.name}")
-                                    onClick {
-                                        sendAction(GameAction.HireSoldiers(maxAffordable, activeChar.id))
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Market Section
-                    if (!activeChar.isDead && isMyTurn) {
-                        div(className = "market-section mt-05 pt-05") {
-                            val marketRate = gameState?.marketRate ?: 3.0f
-                            val displayRate = marketRate.asDynamic().toFixed(1) as String
-                            div(className = "d-flex justify-between items-center") {
-                                span(className = "font-600 text-sm") { textNode("⚖️ Market (Free Action)") }
-                                span(className = "text-xs text-primary") { 
-                                    textNode("Rate: 1💰 = $displayRate🌾")
-                                }
-                            }
-                            
-                            var tradeGoldAmount by remember { mutableStateOf("1") }
-                            
-                            div(className = "d-flex gap-05 mt-05 items-center") {
-                                text(value = tradeGoldAmount, placeholder = "Gold", className = "stat-input w-full flex-1") {
-                                    onChange { e -> tradeGoldAmount = e.target.asDynamic().value as String }
-                                }
-                                
-                                val goldVal = tradeGoldAmount.toIntOrNull() ?: 0
-                                val foodVal = (goldVal * marketRate).toInt()
-                                
-                                button("Buy Food", className = "btn btn-xs btn-primary flex-1") {
-                                    title("Spend $goldVal💰 to gain $foodVal🌾")
-                                    onClick {
-                                        if (goldVal > 0 && activeChar.gold >= goldVal) {
-                                            sendAction(GameAction.MarketTrade(activeChar.id, true, goldVal))
-                                        }
-                                    }
-                                }
-                                button("Sell Food", className = "btn btn-xs btn-outline flex-1") {
-                                    title("Spend $foodVal🌾 to gain $goldVal💰")
-                                    onClick {
-                                        if (goldVal > 0 && activeChar.food >= foodVal) {
-                                            sendAction(GameAction.MarketTrade(activeChar.id, false, goldVal))
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+
                     
                     // Scroll Inventory Section
                     if (!activeChar.isDead) {
@@ -265,9 +209,10 @@ fun IComponent.CharacterPanel(
                                 div(className = "d-flex flex-col gap-02 mt-03") {
                                     for (scroll in activeChar.scrolls) {
                                         val (icon, label) = when (scroll.type) {
-                                            ScrollType.STRENGTH -> "💪" to "Strength"
-                                            ScrollType.AGILITY -> "🏃" to "Agility"
-                                            ScrollType.WISDOM -> "🧠" to "Wisdom"
+                                            ScrollType.WARLORD -> "⚔️" to "Warlord"
+                                            ScrollType.INTELLECT -> "🧠" to "Intellect"
+                                            ScrollType.VANGUARD -> "🛡️" to "Vanguard"
+                                            ScrollType.ARCHON -> "🔮" to "Archon"
                                         }
                                         div(className = "scroll-item d-flex justify-between items-center") {
                                             span(className = "text-xs") {

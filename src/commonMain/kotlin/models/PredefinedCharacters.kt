@@ -6,57 +6,100 @@ import kotlinx.serialization.Serializable
 data class CharacterTemplate(
     val templateId: String,
     val name: String,
-    val title: String,
-    val strength: Int,
-    val agility: Int,
-    val wisdom: Int,
-    val description: String
+    val warlord: Int,
+    val intellect: Int,
+    val vanguard: Int,
+    val archon: Int,
+    val isMage: Boolean = false,
+    val isArcher: Boolean = false,
+    val isSoldier: Boolean = false
 )
 
-val PredefinedCharacters: List<CharacterTemplate> = listOf(
-    CharacterTemplate(
-        templateId = "hero",
-        name = "Nameless Hero",
-        title = "Chosen of Innos",
-        strength = 14,
-        agility = 13,
-        wisdom = 13,
-        description = "A versatile warrior and tactician capable of adapting to any combat situation."
-    ),
-    CharacterTemplate(
-        templateId = "diego",
-        name = "Diego",
-        title = "Master Shadow",
-        strength = 10,
-        agility = 20,
-        wisdom = 10,
-        description = "A cunning shadow with unmatched dexterity, speed, and strategic awareness."
-    ),
-    CharacterTemplate(
-        templateId = "gorn",
-        name = "Gorn",
-        title = "Mercenary Berserker",
-        strength = 22,
-        agility = 10,
-        wisdom = 8,
-        description = "A ferocious front-line champion possessing devastating physical power."
-    ),
+val PredefinedCharacters = listOf(
+    // Mages
     CharacterTemplate(
         templateId = "milten",
         name = "Milten",
-        title = "Magician of Fire",
-        strength = 8,
-        agility = 10,
-        wisdom = 22,
-        description = "A devoted scholar of the circle of fire, wielding ancient wisdom."
+        warlord = 3,
+        intellect = 10,
+        vanguard = 2,
+        archon = 10,
+        isMage = true
     ),
     CharacterTemplate(
-        templateId = "lester",
-        name = "Lester",
-        title = "Brotherhood Novice",
-        strength = 12,
-        agility = 12,
-        wisdom = 16,
-        description = "A calm meditative monk with balanced combat training and strong mental fortitude."
+        templateId = "nefarius",
+        name = "Nefarius",
+        warlord = 2,
+        intellect = 8,
+        vanguard = 4,
+        archon = 8,
+        isMage = true
+    ),
+    CharacterTemplate(
+        templateId = "torrez",
+        name = "Torrez",
+        warlord = 4,
+        intellect = 9,
+        vanguard = 2,
+        archon = 9,
+        isMage = true
+    ),
+    
+    // Archers / Hunters
+    CharacterTemplate(
+        templateId = "cavalorn",
+        name = "Cavalorn",
+        warlord = 4,
+        intellect = 4,
+        vanguard = 9,
+        archon = 2,
+        isArcher = true
+    ),
+    CharacterTemplate(
+        templateId = "bosper",
+        name = "Bosper",
+        warlord = 2,
+        intellect = 6,
+        vanguard = 8,
+        archon = 1,
+        isArcher = true
+    ),
+    CharacterTemplate(
+        templateId = "bartok",
+        name = "Bartok",
+        warlord = 3,
+        intellect = 3,
+        vanguard = 10,
+        archon = 1,
+        isArcher = true
+    ),
+    
+    // Soldiers / Mercenaries
+    CharacterTemplate(
+        templateId = "lordhagen",
+        name = "Lord Hagen",
+        warlord = 10,
+        intellect = 6,
+        vanguard = 8,
+        archon = 2,
+        isSoldier = true
+    ),
+    CharacterTemplate(
+        templateId = "lee",
+        name = "Lee",
+        warlord = 9,
+        intellect = 5,
+        vanguard = 9,
+        archon = 1,
+        isSoldier = true
+    ),
+    CharacterTemplate(
+        templateId = "lares",
+        name = "Lares",
+        warlord = 6,
+        intellect = 6,
+        vanguard = 10,
+        archon = 2,
+        isSoldier = true
     )
 )

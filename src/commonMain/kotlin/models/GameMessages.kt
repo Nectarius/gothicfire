@@ -5,10 +5,16 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed class GameAction {
     @Serializable
+    data class CreateGame(val playerName: String, val gameName: String) : GameAction()
+
+    @Serializable
+    data class CreateTeam(val team: Team, val name: String, val color: String, val playerName: String) : GameAction()
+    
+    @Serializable
     data class JoinTeam(val team: Team, val playerName: String) : GameAction()
     
     @Serializable
-    data class CreateCharacter(val name: String, val strength: Int, val agility: Int, val wisdom: Int) : GameAction()
+    data class CreateCharacter(val name: String, val warlord: Int, val intellect: Int, val vanguard: Int, val archon: Int) : GameAction()
     
     @Serializable
     data class SelectCharacters(val templateIds: List<String>) : GameAction()
@@ -35,7 +41,7 @@ sealed class GameAction {
     data class CollectResources(val sectorId: String, val characterId: String? = null) : GameAction()
     
     @Serializable
-    data class HireSoldiers(val count: Int, val characterId: String? = null) : GameAction()
+    data class RecruitArmy(val count: Int, val characterId: String? = null, val unitType: ArmyType) : GameAction()
     
     @Serializable
     data class SearchScroll(val targetSector: String, val characterId: String? = null) : GameAction()
@@ -51,9 +57,12 @@ sealed class GameAction {
 
     @Serializable
     data class MarketTrade(val characterId: String, val buyFood: Boolean, val goldAmount: Int) : GameAction()
-
+    
     @Serializable
     data class SkipTurn(val characterId: String) : GameAction()
+    
+    @Serializable
+    data object EndGame : GameAction()
 }
 
 @Serializable
@@ -84,7 +93,7 @@ sealed class GameEvent {
     data class ScrollSearchFailed(val characterId: String, val characterName: String, val sectorId: String) : GameEvent()
     
     @Serializable
-    data class NatureEventOccurred(val sectorId: String, val type: NatureEventType) : GameEvent()
+    data class NatureEventOccurred(val sectorId: String, val eventType: NatureEventType) : GameEvent()
     
     @Serializable
     data class ResourceTransferred(val fromCharId: String, val toCharId: String, val fromSectorId: String, val toSectorId: String, val food: Int, val gold: Int) : GameEvent()

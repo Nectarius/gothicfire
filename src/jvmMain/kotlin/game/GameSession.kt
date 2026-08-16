@@ -22,6 +22,50 @@ class GameSession(var gameState: GameState = GameState()) {
     // WebSockets connected to this session
     val connections = mutableMapOf<String, DefaultWebSocketSession>()
     
+    // Observers who are connected but not yet on a team
+    val observers = mutableMapOf<String, DefaultWebSocketSession>()
+    
+    suspend fun addObserver(observerId: String, session: DefaultWebSocketSession) {
+        mutex.withLock {
+            observers[observerId] = session
+        }
+        broadcastState()
+    }
+    
+    suspend fun removeObserver(observerId: String) {
+        mutex.withLock {
+            observers.remove(observerId)
+        }
+    }
+    
+    suspend fun createGame(playerName: String, gameName: String) {
+        mutex.withLock {
+            if (gameState.status == GameStatus.NOT_CREATED || gameState.status == GameStatus.GAME_OVER) {
+                gameState = gameState.copy(
+                    status = GameStatus.LOBBY,
+                    gameName = gameName,
+                    creatorPlayerId = playerName,
+                    teamInfos = emptyMap()
+                )
+            }
+        }
+        broadcastState()
+    }
+    
+    suspend fun createTeamAndJoin(incomingPlayerId: String, team: Team, name: String, color: String, playerName: String, session: DefaultWebSocketSession): String? {
+        mutex.withLock {
+            if (gameState.status != GameStatus.LOBBY) return null
+            if (gameState.teamInfos.containsKey(team)) return null // already created
+            
+            val newTeamInfo = TeamInfo(id = team, name = name, color = color, creatorId = incomingPlayerId)
+            gameState = gameState.copy(
+                teamInfos = gameState.teamInfos + (team to newTeamInfo)
+            )
+        }
+        // Now automatically join the team
+        return joinTeam(incomingPlayerId, playerName, team, session)
+    }
+    
     // Tracks when each player was last seen (connected via WebSocket).
     // Updated on join/reconnect and on every broadcastState for connected players.
     // Set to current time on disconnect so we can measure how long they've been gone.
@@ -43,6 +87,10 @@ class GameSession(var gameState: GameState = GameState()) {
                     connections[effectivePlayerId] = session
                     lastSeenTimestamps[effectivePlayerId] = System.currentTimeMillis()
                     success = true
+                    val observerId = observers.entries.find { it.value == session }?.key
+                    if (observerId != null) {
+                        observers.remove(observerId)
+                    }
                     logger.info("Reconnected player '{}' (id={}) to active game.", existingPlayer.name, effectivePlayerId)
                 } else {
                     // Block new players from joining an active game
@@ -66,6 +114,11 @@ class GameSession(var gameState: GameState = GameState()) {
                     broadcastError(incomingPlayerId, "Team $team is full.")
                     connections.remove(incomingPlayerId)
                     return@withLock
+                }
+                
+                val observerId = observers.entries.find { it.value == session }?.key
+                if (observerId != null) {
+                    observers.remove(observerId)
                 }
                 
                 // If player already exists, they might be rejoining, otherwise add them
@@ -113,17 +166,16 @@ class GameSession(var gameState: GameState = GameState()) {
      */
     private suspend fun checkAbandonmentTimeout() {
         mutex.withLock {
-            if (gameState.status != GameStatus.IN_PROGRESS) return
+            if (gameState.status == GameStatus.NOT_CREATED) return
             
-            if (connections.isEmpty()) {
-                logger.info("All players have disconnected. Game ends in a draw.")
-                gameState = gameState.copy(
-                    status = GameStatus.GAME_OVER,
-                    winningTeam = null
-                )
+            if (connections.isEmpty() && observers.isEmpty()) {
+                logger.info("All players and observers have disconnected. Game ends and resets.")
+                gameState = GameState()
                 db.GameRepository.saveGameState(state = gameState, trigger = "ALL_DISCONNECTED")
                 return@withLock
             }
+            
+            if (gameState.status != GameStatus.IN_PROGRESS) return
             
             val now = System.currentTimeMillis()
             
@@ -190,6 +242,11 @@ class GameSession(var gameState: GameState = GameState()) {
     suspend fun startGame(playerId: String) {
         mutex.withLock {
             if (gameState.status != GameStatus.LOBBY) return
+            
+            val player = gameState.players.find { it.id == playerId }
+            if (player?.name != gameState.creatorPlayerId) return@withLock
+            
+            if (gameState.teamInfos.size != 2) return@withLock
             
             // Check if at least one player on each team
             val hasRed = gameState.players.any { it.team == Team.RED }
@@ -281,9 +338,10 @@ class GameSession(var gameState: GameState = GameState()) {
                     id = UUID.randomUUID().toString(),
                     playerId = playerId,
                     name = template.name,
-                    strength = template.strength,
-                    agility = template.agility,
-                    wisdom = template.wisdom
+                    warlord = template.warlord,
+                    intellect = template.intellect,
+                    vanguard = template.vanguard,
+                    archon = template.archon
                 )
             }
             
@@ -292,7 +350,7 @@ class GameSession(var gameState: GameState = GameState()) {
         broadcastState()
     }
 
-    suspend fun createCharacter(playerId: String, name: String, strength: Int, agility: Int, wisdom: Int) {
+    suspend fun createCharacter(playerId: String, name: String, warlord: Int, intellect: Int, vanguard: Int, archon: Int) {
         mutex.withLock {
             if (gameState.status != GameStatus.LOBBY) return
             
@@ -306,9 +364,10 @@ class GameSession(var gameState: GameState = GameState()) {
                 id = UUID.randomUUID().toString(),
                 playerId = playerId,
                 name = name,
-                strength = strength,
-                agility = agility,
-                wisdom = wisdom
+                warlord = warlord,
+                intellect = intellect,
+                vanguard = vanguard,
+                archon = archon
             )
             
             gameState = gameState.copy(characters = gameState.characters + char)
@@ -428,7 +487,7 @@ class GameSession(var gameState: GameState = GameState()) {
                                 it.copy(
                                     currentSector = targetSector,
                                     hasActedThisTurn = true,
-                                    soldiers = outcome.winnerRemainingSoldiers,
+                                    army = outcome.winnerRemainingArmy,
                                     food = it.food + lootedFood,
                                     gold = it.gold + lootedGold
                                 )
@@ -436,16 +495,16 @@ class GameSession(var gameState: GameState = GameState()) {
                                 it.copy(
                                     currentSector = null,
                                     hasActedThisTurn = true,
-                                    soldiers = 0,
+                                    army = Army(),
                                     isDead = true
                                 )
                             }
                         }
                         occupant.id -> {
                             if (!outcome.isAttackerWinner) {
-                                it.copy(soldiers = outcome.winnerRemainingSoldiers) // stays where it is, with updated army count
+                                it.copy(army = outcome.winnerRemainingArmy) // stays where it is, with updated army count
                             } else {
-                                it.copy(currentSector = null, soldiers = 0, isDead = true)
+                                it.copy(currentSector = null, army = Army(), isDead = true)
                             }
                         }
                         else -> it
@@ -568,7 +627,7 @@ class GameSession(var gameState: GameState = GameState()) {
                                 it.copy(
                                     currentSector = targetSector,
                                     hasActedThisTurn = true,
-                                    soldiers = outcome.winnerRemainingSoldiers,
+                                    army = outcome.winnerRemainingArmy,
                                     food = it.food + lootedFood,
                                     gold = it.gold + lootedGold
                                 )
@@ -576,16 +635,16 @@ class GameSession(var gameState: GameState = GameState()) {
                                 it.copy(
                                     currentSector = null,
                                     hasActedThisTurn = true,
-                                    soldiers = 0,
+                                    army = Army(),
                                     isDead = true
                                 )
                             }
                         }
                         occupant.id -> {
                             if (!outcome.isAttackerWinner) {
-                                it.copy(soldiers = outcome.winnerRemainingSoldiers) // stays where it is, with updated soldier count
+                                it.copy(army = outcome.winnerRemainingArmy) // stays where it is, with updated soldier count
                             } else {
-                                it.copy(currentSector = null, soldiers = 0, isDead = true)
+                                it.copy(currentSector = null, army = Army(), isDead = true)
                             }
                         }
                         else -> it
@@ -652,7 +711,7 @@ class GameSession(var gameState: GameState = GameState()) {
             if (territory.ownerPlayerId != playerId && territory.ownerTeam != player.team) return // Only owner or team owner can upgrade
             
             val updatedTerritories = gameState.territories.toMutableMap()
-            val boostAmount = 1 + (char.wisdom / 2)
+            val boostAmount = char.intellect.coerceIn(2, 7)
             val newTerritory = when (upgradeType.uppercase()) {
                 "CULTIVATION" -> territory.copy(cultivation = territory.cultivation + boostAmount)
                 "PROTECTION" -> territory.copy(protection = territory.protection + boostAmount)
@@ -706,7 +765,7 @@ class GameSession(var gameState: GameState = GameState()) {
         broadcastState()
     }
     
-    suspend fun hireSoldiers(playerId: String, count: Int, characterId: String? = null) {
+    suspend fun recruitArmy(playerId: String, unitType: ArmyType, count: Int, characterId: String? = null) {
         mutex.withLock {
             if (gameState.status != GameStatus.IN_PROGRESS) return
             if (count !in 1..100) return
@@ -715,14 +774,41 @@ class GameSession(var gameState: GameState = GameState()) {
                 gameState.characters.find { it.id == characterId && it.playerId == playerId }
             } else null) ?: gameState.characters.find { it.playerId == playerId && !it.isDead } ?: return
             if (char.isDead) return
-            if (char.soldiers + count > 100) return
+            if (char.army.total() + count > 100) return
             
-            val cost = count * 10
+            val sectorId = char.currentSector ?: return
+            val territory = gameState.territories[sectorId] ?: return
+            val protection = territory.protection
+            
+            val price = when(unitType) {
+                ArmyType.MAGES -> 80
+                ArmyType.HEAVY_INFANTRY -> 50
+                ArmyType.ARCHERS -> 40
+                ArmyType.LIGHT_INFANTRY -> 30
+            }
+            
+            val requiredProtection = when(unitType) {
+                ArmyType.MAGES -> 30
+                ArmyType.HEAVY_INFANTRY -> 20
+                ArmyType.ARCHERS -> 10
+                ArmyType.LIGHT_INFANTRY -> 0
+            }
+            
+            if (protection < requiredProtection) return
+            
+            val cost = count * price
             if (char.gold < cost) return
+            
+            val newArmy = when(unitType) {
+                ArmyType.MAGES -> char.army.copy(mages = char.army.mages + count)
+                ArmyType.HEAVY_INFANTRY -> char.army.copy(heavyInfantry = char.army.heavyInfantry + count)
+                ArmyType.ARCHERS -> char.army.copy(archers = char.army.archers + count)
+                ArmyType.LIGHT_INFANTRY -> char.army.copy(lightInfantry = char.army.lightInfantry + count)
+            }
             
             val newChars = gameState.characters.map {
                 if (it.id == char.id) {
-                    it.copy(gold = it.gold - cost, soldiers = it.soldiers + count)
+                    it.copy(gold = it.gold - cost, army = newArmy)
                 } else {
                     it
                 }
@@ -831,12 +917,13 @@ class GameSession(var gameState: GameState = GameState()) {
             
             val newChars = gameState.characters.map {
                 if (it.id == char.id) {
-                    val boosted = when (scroll.type) {
-                        ScrollType.STRENGTH -> it.copy(strength = it.strength + scroll.boostAmount)
-                        ScrollType.AGILITY -> it.copy(agility = it.agility + scroll.boostAmount)
-                        ScrollType.WISDOM -> it.copy(wisdom = it.wisdom + scroll.boostAmount)
+                    val updatedChar = when (scroll.type) {
+                        ScrollType.WARLORD -> it.copy(warlord = it.warlord + scroll.boostAmount)
+                        ScrollType.INTELLECT -> it.copy(intellect = it.intellect + scroll.boostAmount)
+                        ScrollType.VANGUARD -> it.copy(vanguard = it.vanguard + scroll.boostAmount)
+                        ScrollType.ARCHON -> it.copy(archon = it.archon + scroll.boostAmount)
                     }
-                    boosted.copy(scrolls = boosted.scrolls.filter { s -> s.id != scrollId })
+                    updatedChar.copy(scrolls = updatedChar.scrolls.filter { s -> s.id != scrollId })
                 } else it
             }
             
@@ -914,17 +1001,18 @@ class GameSession(var gameState: GameState = GameState()) {
             val char = gameState.characters.find { it.id == characterId && it.playerId == playerId } ?: return
             if (char.isDead) return
             
-            val rate = gameState.marketRate
-            val foodAmount = (goldAmount * rate).toInt()
-            
             val newChars = gameState.characters.map { c ->
                 if (c.id == char.id) {
                     if (buyFood) {
-                        if (c.gold < goldAmount) return@withLock
-                        c.copy(gold = c.gold - goldAmount, food = c.food + foodAmount)
+                        // Buy 1 Food for 1 Gold
+                        val cost = goldAmount
+                        if (c.gold < cost) return@withLock
+                        c.copy(gold = c.gold - cost, food = c.food + goldAmount)
                     } else {
-                        if (c.food < foodAmount) return@withLock
-                        c.copy(food = c.food - foodAmount, gold = c.gold + goldAmount)
+                        // Sell 2 Food for 1 Gold (goldAmount is how much gold we want to get)
+                        val foodCost = goldAmount * 2
+                        if (c.food < foodCost) return@withLock
+                        c.copy(food = c.food - foodCost, gold = c.gold + goldAmount)
                     }
                 } else c
             }
@@ -952,18 +1040,29 @@ class GameSession(var gameState: GameState = GameState()) {
             // Process upkeep for the team whose turn is ending and reset action status
             val updatedChars = gameState.characters.map { char ->
                 if (char.playerId in activeTeamPlayerIds) {
-                    if (!char.isDead && char.soldiers > 0) {
-                        val foodNeeded = char.soldiers // 1 food per soldier per turn, no gold
-                        val (newFood, remainingSoldiers) = if (char.food >= foodNeeded) {
-                            (char.food - foodNeeded) to char.soldiers
+                    if (!char.isDead && char.army.total() > 0) {
+                        val foodNeeded = char.army.total()
+                        val (newFood, remainingArmy) = if (char.food >= foodNeeded) {
+                            (char.food - foodNeeded) to char.army
                         } else {
-                            // Ran out of food: only feed as many soldiers as available food
-                            0 to char.food
+                            val lossRate = 0.25
+                            val m = kotlin.math.round(char.army.mages * lossRate).toInt()
+                            val h = kotlin.math.round(char.army.heavyInfantry * lossRate).toInt()
+                            val l = kotlin.math.round(char.army.lightInfantry * lossRate).toInt()
+                            val a = kotlin.math.round(char.army.archers * lossRate).toInt()
+                            
+                            val shrunkArmy = Army(
+                                mages = kotlin.math.max(0, char.army.mages - m),
+                                heavyInfantry = kotlin.math.max(0, char.army.heavyInfantry - h),
+                                lightInfantry = kotlin.math.max(0, char.army.lightInfantry - l),
+                                archers = kotlin.math.max(0, char.army.archers - a)
+                            )
+                            0 to shrunkArmy
                         }
                         
                         char.copy(
                             food = newFood,
-                            soldiers = remainingSoldiers,
+                            army = remainingArmy,
                             hasActedThisTurn = false
                         )
                     } else {
@@ -1000,10 +1099,13 @@ class GameSession(var gameState: GameState = GameState()) {
                                 }
                                 NatureEventType.VOLUNTEERS -> {
                                     val charTarget = charsHere.first()
-                                    val newSoldiers = (charTarget.soldiers + kotlin.random.Random.nextInt(2, 5)).coerceAtMost(100)
+                                    val newCount = kotlin.random.Random.nextInt(2, 5)
+                                    val space = 100 - charTarget.army.total()
+                                    val actualAdd = kotlin.math.max(0, kotlin.math.min(newCount, space))
+                                    val newArmy = charTarget.army.copy(lightInfantry = charTarget.army.lightInfantry + actualAdd)
                                     val idx = finalUpdatedChars.indexOfFirst { it.id == charTarget.id }
                                     if (idx != -1) {
-                                        finalUpdatedChars[idx] = charTarget.copy(soldiers = newSoldiers)
+                                        finalUpdatedChars[idx] = charTarget.copy(army = newArmy)
                                     }
                                 }
                                 NatureEventType.HURRICANE, NatureEventType.FLOOD -> {
@@ -1057,6 +1159,18 @@ class GameSession(var gameState: GameState = GameState()) {
         }
     }
     
+    suspend fun endGame(playerId: String) {
+        mutex.withLock {
+            val player = gameState.players.find { it.id == playerId }
+            if (player?.name != null && player.name == gameState.creatorPlayerId) {
+                logger.info("Game forcibly ended by creator ${player.name}")
+                gameState = GameState()
+                db.GameRepository.saveGameState(state = gameState, trigger = "CREATOR_ENDED")
+            }
+        }
+        broadcastState()
+    }
+    
     suspend fun broadcastState() {
         // Refresh lastSeen for all currently connected players
         val now = System.currentTimeMillis()
@@ -1068,6 +1182,17 @@ class GameSession(var gameState: GameState = GameState()) {
         checkAbandonmentTimeout()
         
         val json = Json { encodeDefaults = true }
+        
+        observers.forEach { (observerId, session) ->
+            val event = GameEvent.GameStateUpdated(gameState, "")
+            val eventStr = json.encodeToString<GameEvent>(event)
+            try {
+                session.send(Frame.Text(eventStr))
+            } catch (e: Exception) {
+                logger.error("Error broadcasting to observer {}: {}", observerId, e.message)
+            }
+        }
+        
         connections.forEach { (playerId, session) ->
             val playerGameState = if (gameState.status == GameStatus.IN_PROGRESS) {
                 val visibleChars = gameState.characters.filter { char ->
@@ -1090,6 +1215,15 @@ class GameSession(var gameState: GameState = GameState()) {
     suspend fun broadcastEvent(event: GameEvent) {
         val json = Json { encodeDefaults = true }
         val eventStr = json.encodeToString<GameEvent>(event)
+        
+        observers.forEach { (observerId, session) ->
+            try {
+                session.send(Frame.Text(eventStr))
+            } catch (e: Exception) {
+                logger.error("Error broadcasting event to observer {}: {}", observerId, e.message)
+            }
+        }
+        
         connections.forEach { (playerId, session) ->
             try {
                 session.send(Frame.Text(eventStr))

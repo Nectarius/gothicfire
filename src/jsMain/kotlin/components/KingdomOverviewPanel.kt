@@ -29,7 +29,7 @@ fun IComponent.KingdomOverviewPanel(
     val totalTerritoryFood = myTerritories.sumOf { it.food }
     val totalTerritoryGold = myTerritories.sumOf { it.gold }
     val totalTerritoryProtection = myTerritories.sumOf { it.protection }
-    val totalArmy = myCharacters.sumOf { it.soldiers }
+    val totalArmy = myCharacters.sumOf { it.army.total() }
     val totalScrolls = myCharacters.sumOf { it.scrolls.size }
     
     var activeSubTab by remember { mutableStateOf("territories") } // "territories" or "heroes"
@@ -128,7 +128,7 @@ fun IComponent.KingdomOverviewPanel(
                                 span(className = "text-dark-gray") { textNode("Garrison: ") }
                                 if (stationedHero != null) {
                                     span(className = if (isMyStationedHero) "text-primary font-600" else "text-gray") {
-                                        textNode("🛡️ ${stationedHero.name} (⚔️${stationedHero.soldiers})")
+                                        textNode("🛡️ ${stationedHero.name} (⚔️${stationedHero.army.total()})")
                                     }
                                 } else {
                                     span(className = "text-dark-gray italic") { textNode("Ungarrisoned") }
@@ -176,18 +176,18 @@ fun IComponent.KingdomOverviewPanel(
                             // Stats & Resources Grid
                             div(className = "hero-stats-overview mb-05") {
                                 div(className = "d-flex justify-between text-xs text-gray") {
-                                    span { textNode("💪 STR: ${char.strength}") }
-                                    span { textNode("🏃 AGI: ${char.agility}") }
-                                    span { textNode("🧠 WIS: ${char.wisdom}") }
+                                    span { textNode("⚔️ WAR: ${char.warlord}") }
+                                    span { textNode("🛡️ VAN: ${char.vanguard}") }
+                                    span { textNode("🧠 INT: ${char.intellect}") }
                                 }
                                 div(className = "d-flex justify-between text-xs mt-03") {
                                     span(className = "text-primary") { textNode("🌾 Bag: ${char.food}") }
                                     span(className = "text-warning") { textNode("🪙 Bag: ${char.gold}") }
-                                    span(className = "text-warning font-600") { textNode("⚔️ Army: ${char.soldiers}/100") }
+                                    span(className = "text-warning font-600") { textNode("⚔️ Army: ${char.army.total()}/100") }
                                 }
-                                if (char.soldiers > 0) {
+                                if (char.army.total() > 0) {
                                     div(className = "text-xs text-dark-gray mt-02") {
-                                        textNode("Upkeep: ${char.soldiers}🌾/turn")
+                                        textNode("Upkeep: ${char.army.total()}🌾/turn")
                                     }
                                 }
                             }
@@ -203,9 +203,10 @@ fun IComponent.KingdomOverviewPanel(
                                     div(className = "d-flex flex-col gap-03") {
                                         for (scroll in char.scrolls) {
                                             val (icon, label) = when (scroll.type) {
-                                                ScrollType.STRENGTH -> "💪" to "Strength"
-                                                ScrollType.AGILITY -> "🏃" to "Agility"
-                                                ScrollType.WISDOM -> "🧠" to "Wisdom"
+                                                ScrollType.WARLORD -> "⚔️" to "Warlord"
+                                                ScrollType.INTELLECT -> "🧠" to "Intellect"
+                                                ScrollType.VANGUARD -> "🛡️" to "Vanguard"
+                                                ScrollType.ARCHON -> "🔮" to "Archon"
                                             }
                                             div(className = "hero-scroll-row d-flex justify-between items-center") {
                                                 span(className = "text-xs") {

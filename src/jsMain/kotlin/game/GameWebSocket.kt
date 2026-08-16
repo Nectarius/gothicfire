@@ -20,8 +20,12 @@ class GameWebSocket(
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     fun connect(onConnected: () -> Unit = {}) {
-        if (ws != null) return
-        
+        if (ws != null) {
+            if (ws?.readyState == WebSocket.OPEN) {
+                onConnected()
+            }
+            return
+        }
         val protocol = if (kotlinx.browser.window.location.protocol == "https:") "wss:" else "ws:"
         val host = kotlinx.browser.window.location.host
         val url = "$protocol//$host/game-socket"
