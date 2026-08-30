@@ -52,6 +52,11 @@ object GameSessionManager {
         // But we broadcast the state to them through observers!
     }
     
+    suspend fun cancelGame(playerName: String, wsSession: DefaultWebSocketSession) {
+        val gameToJoin = mutex.withLock { globalSession }
+        gameToJoin.cancelGame(playerName)
+    }
+    
     suspend fun createTeam(team: Team, name: String, color: String, playerName: String, wsSession: DefaultWebSocketSession) {
         val incomingId = UUID.randomUUID().toString()
         val gameToJoin = mutex.withLock { globalSession }
@@ -64,7 +69,7 @@ object GameSessionManager {
         }
     }
     
-    suspend fun startPvEGame(playerId: String, gameName: String, allowSecondPlayer: Boolean, playerTeam: Team, chosenHeroes: List<String>, chosenCastle: String, wsSession: DefaultWebSocketSession) {
+    suspend fun startPvEGame(playerId: String, gameName: String, allowSecondPlayer: Boolean, playerTeam: Team, playerTeamColor: String, playerTeamName: String, chosenHeroes: List<String>, chosenCastle: String, wsSession: DefaultWebSocketSession) {
         val gameToJoin = mutex.withLock {
             if (globalSession.gameState.status == GameStatus.GAME_OVER || globalSession.gameState.status == GameStatus.NOT_CREATED) {
                 val oldObservers = globalSession.observers.toMap()
@@ -79,7 +84,7 @@ object GameSessionManager {
             globalSession
         }
         
-        gameToJoin.startPvEGame(playerId, gameName, allowSecondPlayer, playerTeam, chosenHeroes, chosenCastle)
+        gameToJoin.startPvEGame(playerId, gameName, allowSecondPlayer, playerTeam, playerTeamColor, playerTeamName, chosenHeroes, chosenCastle)
         // Auto-join the player
         val effectivePlayerId = gameToJoin.joinPvEGame(playerId, playerId, chosenHeroes, wsSession)
         if (effectivePlayerId != null) {

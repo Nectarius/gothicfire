@@ -54,6 +54,17 @@ class GameSession(var gameState: GameState = GameState()) {
         broadcastState()
     }
     
+    suspend fun cancelGame(playerName: String) {
+        mutex.withLock {
+            if (gameState.status == GameStatus.LOBBY && gameState.creatorPlayerId == playerName) {
+                logger.info("Game cancelled by creator $playerName")
+                gameState = GameState()
+            }
+        }
+        broadcastState()
+    }
+    
+
     suspend fun createTeamAndJoin(incomingPlayerId: String, team: Team, name: String, color: String, playerName: String, session: DefaultWebSocketSession): String? {
         mutex.withLock {
             if (gameState.status != GameStatus.LOBBY) return null
@@ -317,7 +328,7 @@ class GameSession(var gameState: GameState = GameState()) {
         }
     }
     
-    suspend fun startPvEGame(playerId: String, gameName: String, allowSecondPlayer: Boolean, playerTeam: Team, chosenHeroes: List<String>, chosenCastle: String) {
+    suspend fun startPvEGame(playerId: String, gameName: String, allowSecondPlayer: Boolean, playerTeam: Team, playerTeamColor: String, playerTeamName: String, chosenHeroes: List<String>, chosenCastle: String) {
         mutex.withLock {
             if (gameState.status == GameStatus.IN_PROGRESS || gameState.status == GameStatus.GAME_OVER) return@withLock
             
@@ -335,7 +346,7 @@ class GameSession(var gameState: GameState = GameState()) {
                 isPvE = true
             )
             
-            val humanTeamInfo = TeamInfo(id = playerTeam, name = if (playerTeam == Team.RED) "Red Team" else "Blue Team", color = if (playerTeam == Team.RED) "#ef4444" else "#3b82f6", creatorId = playerId)
+            val humanTeamInfo = TeamInfo(id = playerTeam, name = playerTeamName, color = playerTeamColor, creatorId = playerId)
             val botTeamInfo = TeamInfo(id = Team.YELLOW, name = "Enemy", color = "#eab308", creatorId = "BOT")
             
             gameState = gameState.copy(teamInfos = mapOf(playerTeam to humanTeamInfo, Team.YELLOW to botTeamInfo))

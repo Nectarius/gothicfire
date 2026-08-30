@@ -370,7 +370,11 @@ fun IComponent.StrategicMap(
                             // Defender Box
                             div(className = "combatant-card defender-card glass") {
                                 div(className = "combatant-header") {
-                                    span(className = "font-600 text-red") { textNode(enemyChar.name) }
+                                    val enemyColor = enemyPlayer?.team?.let { gameState?.teamInfos?.get(it)?.color } ?: "#ff4444"
+                                    span(className = "font-600") { 
+                                        style("color", enemyColor)
+                                        textNode(enemyChar.name) 
+                                    }
                                     span(className = "text-xs text-gray") { textNode(enemyPlayer?.name ?: "Enemy") }
                                 }
                                 div(className = "combatant-stats mt-05") {

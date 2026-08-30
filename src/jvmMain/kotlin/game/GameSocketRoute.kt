@@ -30,6 +30,10 @@ fun Route.gameSocket() {
                             GameSessionManager.createGame(action.playerName, action.gameName, this)
                             return@consumeEach
                         }
+                        if (action is GameAction.CancelGame) {
+                            GameSessionManager.cancelGame(action.playerName, this)
+                            return@consumeEach
+                        }
                         if (action is GameAction.CreateTeam) {
                             GameSessionManager.createTeam(action.team, action.name, action.color, action.playerName, this)
                             return@consumeEach
@@ -39,7 +43,7 @@ fun Route.gameSocket() {
                             return@consumeEach
                         }
                         if (action is GameAction.StartPvEGame) {
-                            GameSessionManager.startPvEGame(action.playerName, action.gameName, action.allowSecondPlayer, action.playerTeam, action.chosenHeroes, action.chosenCastle, this)
+                            GameSessionManager.startPvEGame(action.playerName, action.gameName, action.allowSecondPlayer, action.playerTeam, action.playerTeamColor, action.playerTeamName, action.chosenHeroes, action.chosenCastle, this)
                             return@consumeEach
                         }
                         if (action is GameAction.JoinPvEGame) {

@@ -6,6 +6,9 @@ import kotlinx.serialization.Serializable
 sealed class GameAction {
     @Serializable
     data class CreateGame(val playerName: String, val gameName: String) : GameAction()
+    
+    @Serializable
+    data class CancelGame(val playerName: String) : GameAction()
 
     @Serializable
     data class CreateTeam(val team: Team, val name: String, val color: String, val playerName: String) : GameAction()
@@ -14,7 +17,7 @@ sealed class GameAction {
     data class JoinTeam(val team: Team, val playerName: String) : GameAction()
     
     @Serializable
-    data class StartPvEGame(val playerName: String, val gameName: String, val allowSecondPlayer: Boolean, val playerTeam: Team, val chosenHeroes: List<String>, val chosenCastle: String) : GameAction()
+    data class StartPvEGame(val playerName: String, val gameName: String, val allowSecondPlayer: Boolean, val playerTeam: Team, val playerTeamColor: String, val playerTeamName: String, val chosenHeroes: List<String>, val chosenCastle: String) : GameAction()
     
     @Serializable
     data class JoinPvEGame(val playerName: String, val chosenHeroes: List<String>) : GameAction()

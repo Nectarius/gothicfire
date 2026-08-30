@@ -28,18 +28,21 @@ fun isYellowish(hex: String): Boolean {
 }
 
 val predefinedColors = listOf(
-    "#ef4444" to "Red",
-    "#3b82f6" to "Blue",
-    "#22c55e" to "Green",
-    "#eab308" to "Yellow",
-    "#a855f7" to "Purple",
-    "#f97316" to "Orange",
-    "#14b8a6" to "Teal",
-    "#ec4899" to "Pink",
-    "#6366f1" to "Indigo",
-    "#84cc16" to "Lime",
-    "#06b6d4" to "Cyan",
-    "#f43f5e" to "Rose"
+    "#D32F2F" to "Crimson Red",
+    "#1976D2" to "Cobalt Blue",
+    "#2E7D32" to "Emerald Green",
+    "#F57C00" to "Blaze Orange",
+    "#7B1FA2" to "Royal Purple",
+    "#00BCD4" to "Electric Cyan",
+    "#E91E63" to "Magenta Pink",
+    "#00796B" to "Teal / Sea Green",
+    "#A0522D" to "Burnt Copper",
+    "#FFFFFF" to "Pure White",
+    "#212121" to "Charcoal Black",
+    "#B388FF" to "Lavender / Violet",
+    "#64DD17" to "Lime Green",
+    "#FF6F61" to "Coral / Salmon",
+    "#607D8B" to "Slate Blue / Steel"
 )
 
 @Composable
@@ -63,6 +66,8 @@ fun IComponent.GameLobby(
     var pveAllowSecond by remember { mutableStateOf(false) }
     var pveSelectedHeroes by remember { mutableStateOf(listOf<String>()) }
     var pveSelectedCastle by remember { mutableStateOf("14") }
+    var pveTeamColor by remember { mutableStateOf(predefinedColors[0].first) }
+    var pveColorError by remember { mutableStateOf(false) }
 
     
     div(className = "lobby-container glass p-4 text-center w-full") {
@@ -106,11 +111,49 @@ fun IComponent.GameLobby(
                     
                     div(className = "mb-2") {
                         p(className = "m-0 mb-05") { textNode("1. Choose Team:") }
-                        select(className = "w-full max-w-xs") {
+                        select(className = "w-full max-w-xs mb-1") {
                             option(value = "RED", label = "Red Team")
                             option(value = "BLUE", label = "Blue Team")
                             onChange { 
                                 pveTeam = if (this.value == "BLUE") Team.BLUE else Team.RED 
+                                // Auto-update color based on standard team if user hasn't chosen one
+                                if (this.value == "BLUE" && pveTeamColor == predefinedColors[0].first) {
+                                    pveTeamColor = predefinedColors[1].first
+                                } else if (this.value == "RED" && pveTeamColor == predefinedColors[1].first) {
+                                    pveTeamColor = predefinedColors[0].first
+                                }
+                            }
+                        }
+                        
+                        p(className = "m-0 mb-05") { textNode("Team Color:") }
+                        div(className = "color-palette d-flex flex-wrap justify-start gap-05 mb-1") {
+                            for (c in predefinedColors) {
+                                div(className = "color-swatch ${if (pveTeamColor.uppercase() == c.first.uppercase()) "selected" else ""}") {
+                                    style("background-color", c.first)
+                                    title(c.second)
+                                    onClick {
+                                        pveTeamColor = c.first
+                                        pveColorError = false
+                                    }
+                                }
+                            }
+                        }
+                        
+                        div(className = "d-flex flex-col items-start mb-1") {
+                            label(className = "text-xs text-gray mb-05") { textNode("Custom Color:") }
+                            colorPicker(value = pveTeamColor, className = "w-full max-w-xs") {
+                                onInput {
+                                    val newColor = this.value ?: "#ef4444"
+                                    if (isYellowish(newColor)) {
+                                        pveColorError = true
+                                    } else {
+                                        pveColorError = false
+                                        pveTeamColor = newColor
+                                    }
+                                }
+                            }
+                            if (pveColorError) {
+                                p(className = "text-red text-xs mt-05 mb-0") { textNode("Yellow is reserved for the AI.") }
                             }
                         }
                     }
@@ -178,14 +221,16 @@ fun IComponent.GameLobby(
                         }
                     }
                     
-                    val canStart = pveSelectedHeroes.size == 2
-                    button("Start Game!", className = "btn btn-primary w-full ${if (!canStart) "btn-disabled" else ""}") {
+                    button("Start Co-op Campaign", className = "btn btn-primary w-full p-2 text-lg ${if (pveSelectedHeroes.size != 2 || pveColorError) "btn-disabled" else ""}") {
                         onClick {
-                            if (canStart) {
+                            if (playerName.isNotBlank() && gameNameInput.isNotBlank() && pveSelectedHeroes.size == 2 && !pveColorError) {
                                 ws.connect {
-                                    ws.sendAction(GameAction.StartPvEGame(
-                                        playerName, gameNameInput, pveAllowSecond, pveTeam, pveSelectedHeroes, pveSelectedCastle
-                                    ))
+                                    val colorName = predefinedColors.find { it.first.uppercase() == pveTeamColor.uppercase() }?.second ?: if (pveTeam == Team.RED) "Red Team" else "Blue Team"
+                                    ws.sendAction(
+                                        GameAction.StartPvEGame(
+                                            playerName, gameNameInput, pveAllowSecond, pveTeam, pveTeamColor, colorName, pveSelectedHeroes, pveSelectedCastle
+                                        )
+                                    )
                                 }
                                 creatingPvE = false
                             }
@@ -258,8 +303,21 @@ fun IComponent.GameLobby(
                             onInput { teamName = this.value ?: "" }
                         }
                         
+                        div(className = "color-palette d-flex flex-wrap justify-center gap-05 mb-1") {
+                            for (c in predefinedColors) {
+                                div(className = "color-swatch ${if (teamColor.uppercase() == c.first.uppercase()) "selected" else ""}") {
+                                    style("background-color", c.first)
+                                    title(c.second)
+                                    onClick {
+                                        teamColor = c.first
+                                        colorError = false
+                                    }
+                                }
+                            }
+                        }
+                        
                         div(className = "d-flex flex-col items-center mb-1") {
-                            label(className = "text-xs text-gray mb-05") { textNode("Team Color:") }
+                            label(className = "text-xs text-gray mb-05") { textNode("Custom Color:") }
                             colorPicker(value = teamColor, className = "w-full max-w-xs") {
                                 onInput {
                                     val newColor = this.value ?: "#ef4444"
@@ -316,8 +374,21 @@ fun IComponent.GameLobby(
                             onInput { teamName = this.value ?: "" }
                         }
                         
+                        div(className = "color-palette d-flex flex-wrap justify-center gap-05 mb-1") {
+                            for (c in predefinedColors) {
+                                div(className = "color-swatch ${if (teamColor.uppercase() == c.first.uppercase()) "selected" else ""}") {
+                                    style("background-color", c.first)
+                                    title(c.second)
+                                    onClick {
+                                        teamColor = c.first
+                                        colorError = false
+                                    }
+                                }
+                            }
+                        }
+                        
                         div(className = "d-flex flex-col items-center mb-1") {
-                            label(className = "text-xs text-gray mb-05") { textNode("Team Color:") }
+                            label(className = "text-xs text-gray mb-05") { textNode("Custom Color:") }
                             colorPicker(value = teamColor, className = "w-full max-w-xs") {
                                 onInput {
                                     val newColor = this.value ?: "#3b82f6"
@@ -498,6 +569,17 @@ fun IComponent.GameLobby(
                         onClick {
                             ws.sendAction(GameAction.ToggleReady)
                         }
+                    }
+                }
+            }
+        }
+        
+        if (gameState != null && gameState.status == GameStatus.LOBBY && gameState.creatorPlayerId == currentName) {
+            div(className = "d-flex justify-center mt-2 mb-1") {
+                button("Cancel Game", className = "btn btn-outline text-red") {
+                    title("Cancel the current game and return to the main menu.")
+                    onClick {
+                        ws.sendAction(GameAction.CancelGame(currentName))
                     }
                 }
             }
