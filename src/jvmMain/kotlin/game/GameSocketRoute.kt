@@ -38,6 +38,14 @@ fun Route.gameSocket() {
                             GameSessionManager.joinTeam(action.playerName, action.team, this)
                             return@consumeEach
                         }
+                        if (action is GameAction.StartPvEGame) {
+                            GameSessionManager.startPvEGame(action.playerName, action.gameName, action.allowSecondPlayer, action.playerTeam, action.chosenHeroes, action.chosenCastle, this)
+                            return@consumeEach
+                        }
+                        if (action is GameAction.JoinPvEGame) {
+                            GameSessionManager.joinPvEGame(action.playerName, action.chosenHeroes, this)
+                            return@consumeEach
+                        }
                         
                         // Handle active game actions
                         val (game, playerId) = GameSessionManager.connectionToGame[this] ?: return@consumeEach

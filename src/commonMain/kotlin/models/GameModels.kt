@@ -5,7 +5,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class Team {
     RED,
-    BLUE
+    BLUE,
+    YELLOW
 }
 
 @Serializable
@@ -25,8 +26,10 @@ data class GameResultSummary(
     val finishedAt: Long,
     val redTeamName: String?,
     val blueTeamName: String?,
+    val yellowTeamName: String? = null,
     val redPlayers: List<String>,
-    val bluePlayers: List<String>
+    val bluePlayers: List<String>,
+    val yellowPlayers: List<String> = emptyList()
 )
 
 /**
@@ -106,7 +109,8 @@ data class Player(
     val id: String,
     val name: String,
     val team: Team,
-    val isReady: Boolean = false
+    val isReady: Boolean = false,
+    val isBot: Boolean = false
 )
 
 @Serializable
@@ -150,5 +154,6 @@ data class GameState(
     val winningTeam: Team? = null,
     val teamCastles: Map<Team, String> = emptyMap(),
     val territories: Map<String, TerritoryState> = emptyMap(),
-    val marketRate: Float = 3.0f
+    val marketRate: Float = 3.0f,
+    val isPvE: Boolean = false
 )

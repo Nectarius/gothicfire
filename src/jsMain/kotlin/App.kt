@@ -24,10 +24,19 @@ import components.GameHistoryPanel
 import components.NatureEventModal
 import components.MarketPanel
 import components.ArmyRecruitmentPanel
+import components.EventPopupModal
+import components.VictoryPopupModal
 import game.GameWebSocket
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import models.GameEvent
+
+data class PopupEvent(
+    val title: String,
+    val icon: String,
+    val message: String,
+    val colorClass: String = "text-primary"
+)
 
 class App : Application() {
     private val appService = getService<AppService>()
@@ -70,9 +79,16 @@ class App : Application() {
             var yourPlayerId by remember { mutableStateOf("") }
             var wsError by remember { mutableStateOf("") }
             var activeFight by remember { mutableStateOf<GameEvent.FightOccurred?>(null) }
-            var scrollNotification by remember { mutableStateOf("") }
+            var activePopups by remember { mutableStateOf<List<PopupEvent>>(emptyList()) }
             var activeNatureEvents by remember { mutableStateOf<List<GameEvent.NatureEventOccurred>>(emptyList()) }
             var activeTransfers by remember { mutableStateOf<List<GameEvent.ResourceTransferred>>(emptyList()) }
+            
+            var victoryAcknowledged by remember { mutableStateOf(false) }
+            LaunchedEffect(gameState?.status) {
+                if (gameState?.status == models.GameStatus.GAME_OVER) {
+                    victoryAcknowledged = false
+                }
+            }
             
             val ws = remember {
                 GameWebSocket(
@@ -97,28 +113,36 @@ class App : Application() {
                             models.BattleStrategy.SPELL_INFUSED_VOLLEY -> " 🔥 Spell-Infused Volley!"
                             else -> ""
                         }
-                        scrollNotification = "⚔️ Battle at Sector ${fightEvent.sectorId}! $winnerName defeated $loserName$casualtyInfo$strategyLabel"
+                        
+                        activePopups = activePopups + PopupEvent(
+                            title = "Battle Report",
+                            icon = "⚔️",
+                            message = "Battle at Sector ${fightEvent.sectorId}!\n$winnerName defeated $loserName$casualtyInfo$strategyLabel",
+                            colorClass = "text-red"
+                        )
+                        
                         scope.launch {
                             delay(3500)
                             if (activeFight == fightEvent) {
                                 activeFight = null
                             }
-                            scrollNotification = ""
                         }
                     },
                     onScrollFound = { event ->
-                        scrollNotification = "📜 ${event.characterName} found a ${event.scroll.type.name} scroll! (+${event.scroll.boostAmount})"
-                        scope.launch {
-                            delay(3000)
-                            scrollNotification = ""
-                        }
+                        activePopups = activePopups + PopupEvent(
+                            title = "Scroll Discovered",
+                            icon = "📜",
+                            message = "${event.characterName} found a ${event.scroll.type.name} scroll! (+${event.scroll.boostAmount})",
+                            colorClass = "text-primary"
+                        )
                     },
                     onScrollSearchFailed = { event ->
-                        scrollNotification = "🔍 ${event.characterName} searched but found nothing..."
-                        scope.launch {
-                            delay(2500)
-                            scrollNotification = ""
-                        }
+                        activePopups = activePopups + PopupEvent(
+                            title = "Search Failed",
+                            icon = "🔍",
+                            message = "${event.characterName} searched but found nothing...",
+                            colorClass = "text-gray"
+                        )
                     },
                     onNatureEvent = { event ->
                         activeNatureEvents = activeNatureEvents + event
@@ -325,12 +349,7 @@ class App : Application() {
                                 sendAction = { ws.sendAction(it) }
                             )
                             
-                            // Scroll notification toast
-                            if (scrollNotification.isNotBlank()) {
-                                div(className = "scroll-notification-toast glass") {
-                                    textNode(scrollNotification)
-                                }
-                            }
+                            // Scroll notification popup is handled via activePopups
                             
                             if (showMarket) {
                                 MarketPanel(
@@ -384,6 +403,16 @@ class App : Application() {
                         GameHistoryPanel(appService = appService)
                     }
                     
+                    if (activePopups.isNotEmpty()) {
+                        val currentPopup = activePopups.first()
+                        EventPopupModal(
+                            event = currentPopup,
+                            onClose = {
+                                activePopups = activePopups.filter { it != currentPopup }
+                            }
+                        )
+                    }
+                    
                     if (activeNatureEvents.isNotEmpty()) {
                         val currentEvent = activeNatureEvents.first()
                         NatureEventModal(
@@ -392,6 +421,13 @@ class App : Application() {
                             onClose = {
                                 activeNatureEvents = activeNatureEvents.filter { it != currentEvent }
                             }
+                        )
+                    }
+                    
+                    if (gameState != null && gameState!!.status == models.GameStatus.GAME_OVER && !victoryAcknowledged) {
+                        VictoryPopupModal(
+                            gameState = gameState!!,
+                            onClose = { victoryAcknowledged = true }
                         )
                     }
                 }

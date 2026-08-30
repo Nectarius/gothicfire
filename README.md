@@ -28,3 +28,6 @@ Access the application at `http://localhost:8081`.
 # Run JVM server locally
 ./gradlew jvmRun
 ```
+
+# Run JVM JS frontend locally
+./gradlew jsBrowserDevelopmentRun --continuous

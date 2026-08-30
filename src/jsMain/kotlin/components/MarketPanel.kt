@@ -70,11 +70,15 @@ fun IComponent.MarketPanel(
                 
                 // Trade Mode Toggle
                 div(className = "d-flex justify-center gap-1 mb-2") {
-                    button("Buy Food", className = "btn ${if (tradeMode == "BUY_FOOD") "btn-primary" else "glass"}") {
+                    button(className = "btn trade-mode-btn ${if (tradeMode == "BUY_FOOD") "active" else "glass"} flex-1 d-flex flex-col items-center p-2") {
                         onClick { tradeMode = "BUY_FOOD" }
+                        span(className = "text-2xl mb-05") { textNode("🌾") }
+                        span(className = "font-600") { textNode("Buy Food") }
                     }
-                    button("Sell Food", className = "btn ${if (tradeMode == "SELL_FOOD") "btn-primary" else "glass"}") {
+                    button(className = "btn trade-mode-btn ${if (tradeMode == "SELL_FOOD") "active" else "glass"} flex-1 d-flex flex-col items-center p-2") {
                         onClick { tradeMode = "SELL_FOOD" }
+                        span(className = "text-2xl mb-05") { textNode("🪙") }
+                        span(className = "font-600") { textNode("Sell Food") }
                     }
                 }
                 
@@ -87,10 +91,16 @@ fun IComponent.MarketPanel(
                         val actualGold = goldAmount.coerceIn(1, if (maxAffordable > 0) maxAffordable else 1)
                         val foodGained = actualGold
                         
-                        div(className = "d-flex justify-center items-center gap-1 mb-1") {
-                            span(className = "text-warning text-md") { textNode("-$actualGold 🪙") }
-                            span { textNode(" ➡️ ") }
-                            span(className = "text-primary text-md font-600") { textNode("+$foodGained 🌾") }
+                        div(className = "trade-exchange-box glass p-2 mb-2 d-flex justify-center items-center gap-2") {
+                            div(className = "text-center") {
+                                span(className = "text-warning text-xl font-600 d-block") { textNode("-$actualGold") }
+                                span(className = "text-sm text-gray") { textNode("Gold") }
+                            }
+                            span(className = "text-2xl") { textNode("➡️") }
+                            div(className = "text-center") {
+                                span(className = "text-primary text-xl font-600 d-block") { textNode("+$foodGained") }
+                                span(className = "text-sm text-gray") { textNode("Food") }
+                            }
                         }
                         
                         range(value = actualGold, min = 1, max = if (maxAffordable > 0) maxAffordable else 1, className = "w-full mb-1") {
@@ -113,10 +123,16 @@ fun IComponent.MarketPanel(
                         val actualGold = goldAmount.coerceIn(1, if (maxGoldPossible > 0) maxGoldPossible else 1)
                         val foodCost = actualGold * 2
                         
-                        div(className = "d-flex justify-center items-center gap-1 mb-1") {
-                            span(className = "text-primary text-md") { textNode("-$foodCost 🌾") }
-                            span { textNode(" ➡️ ") }
-                            span(className = "text-warning text-md font-600") { textNode("+$actualGold 🪙") }
+                        div(className = "trade-exchange-box glass p-2 mb-2 d-flex justify-center items-center gap-2") {
+                            div(className = "text-center") {
+                                span(className = "text-primary text-xl font-600 d-block") { textNode("-$foodCost") }
+                                span(className = "text-sm text-gray") { textNode("Food") }
+                            }
+                            span(className = "text-2xl") { textNode("➡️") }
+                            div(className = "text-center") {
+                                span(className = "text-warning text-xl font-600 d-block") { textNode("+$actualGold") }
+                                span(className = "text-sm text-gray") { textNode("Gold") }
+                            }
                         }
                         
                         range(value = actualGold, min = 1, max = if (maxGoldPossible > 0) maxGoldPossible else 1, className = "w-full mb-1") {

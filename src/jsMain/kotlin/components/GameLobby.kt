@@ -6,6 +6,7 @@ import dev.kilua.core.IComponent
 import dev.kilua.form.text.text
 import dev.kilua.form.select.*
 import dev.kilua.html.*
+import dev.kilua.form.color.colorPicker
 import game.GameWebSocket
 import models.GameAction
 import models.GameState
@@ -13,6 +14,18 @@ import models.GameStatus
 import models.PredefinedCharacters
 import models.Team
 import models.MapData
+
+fun isYellowish(hex: String): Boolean {
+    if (hex.length != 7) return false
+    try {
+        val r = hex.substring(1, 3).toInt(16)
+        val g = hex.substring(3, 5).toInt(16)
+        val b = hex.substring(5, 7).toInt(16)
+        return r > 180 && g > 180 && b < 100
+    } catch (e: Exception) {
+        return false
+    }
+}
 
 val predefinedColors = listOf(
     "#ef4444" to "Red",
@@ -44,6 +57,13 @@ fun IComponent.GameLobby(
     val currentName = myPlayer?.name ?: playerName
     
     var viewingTeams by remember { mutableStateOf(false) }
+
+    var creatingPvE by remember { mutableStateOf(false) }
+    var pveTeam by remember { mutableStateOf(Team.RED) }
+    var pveAllowSecond by remember { mutableStateOf(false) }
+    var pveSelectedHeroes by remember { mutableStateOf(listOf<String>()) }
+    var pveSelectedCastle by remember { mutableStateOf("14") }
+
     
     div(className = "lobby-container glass p-4 text-center w-full") {
         h1(className = "m-0 mb-2") { textNode("Gothic Fire Team Battle") }
@@ -55,22 +75,131 @@ fun IComponent.GameLobby(
                     onInput { gameNameInput = this.value ?: "" }
                 }
             }
+            
             div(className = "d-flex justify-center items-center gap-1 mb-2") {
                 text(value = playerName, placeholder = "Your Name", className = "w-full max-w-sm text-center") {
                     onInput { playerName = this.value ?: "" }
                 }
             }
-            button("Create New Game", className = "btn btn-primary") {
-                onClick {
-                    if (playerName.isNotBlank() && gameNameInput.isNotBlank()) {
-                        ws.connect {
-                            ws.sendAction(GameAction.CreateGame(playerName, gameNameInput))
+            div(className = "d-flex justify-center gap-1") {
+                button("Create Multiplayer", className = "btn btn-primary") {
+                    onClick {
+                        if (playerName.isNotBlank() && gameNameInput.isNotBlank()) {
+                            ws.connect {
+                                ws.sendAction(GameAction.CreateGame(playerName, gameNameInput))
+                            }
+                        }
+                    }
+                }
+                button("Play vs Computer", className = "btn bg-yellow text-dark-gray") {
+                    onClick {
+                        if (playerName.isNotBlank() && gameNameInput.isNotBlank()) {
+                            creatingPvE = true
                         }
                     }
                 }
             }
+
+            if (creatingPvE) {
+                div(className = "glass p-4 mt-2 text-left") {
+                    h2(className = "text-primary mt-0") { textNode("PvE Setup") }
+                    
+                    div(className = "mb-2") {
+                        p(className = "m-0 mb-05") { textNode("1. Choose Team:") }
+                        select(className = "w-full max-w-xs") {
+                            option(value = "RED", label = "Red Team")
+                            option(value = "BLUE", label = "Blue Team")
+                            onChange { 
+                                pveTeam = if (this.value == "BLUE") Team.BLUE else Team.RED 
+                            }
+                        }
+                    }
+                    
+                    div(className = "mb-2") {
+                        p(className = "m-0 mb-05") { textNode("2. Co-op Mode:") }
+                        div(className = "d-flex items-center gap-1") {
+                            button(if (pveAllowSecond) "ENABLED (2 Humans)" else "DISABLED (Solo Mode)", className = "btn ${if (pveAllowSecond) "btn-primary" else "bg-dark-gray text-gray"}") {
+                                onClick { pveAllowSecond = !pveAllowSecond }
+                            }
+                        }
+                    }
+                    
+                    div(className = "mb-2") {
+                        p(className = "m-0 mb-05") { textNode("3. Choose 2 Heroes (${pveSelectedHeroes.size}/2):") }
+                        div(className = "hero-grid") {
+                            for (hero in PredefinedCharacters) {
+                                val isSelected = hero.templateId in pveSelectedHeroes
+                                val selectionIndex = if (isSelected) pveSelectedHeroes.indexOf(hero.templateId) + 1 else null
+                                div(className = "hero-card ${if (isSelected) "selected" else ""}") {
+                                    if (selectionIndex != null) {
+                                        span(className = "hero-selection-badge") {
+                                            textNode("HERO #$selectionIndex")
+                                        }
+                                    }
+                                    h3(className = "m-0 text-gold text-base") { textNode(hero.name) }
+                                    
+                                    div(className = "hero-stats-row mt-1") {
+                                        span(className = "hero-stat-pill text-red") { textNode("WAR: ${hero.warlord}") }
+                                        span(className = "hero-stat-pill text-blue") { textNode("INT: ${hero.intellect}") }
+                                        span(className = "hero-stat-pill text-green") { textNode("VAN: ${hero.vanguard}") }
+                                        span(className = "hero-stat-pill text-purple") { textNode("ARC: ${hero.archon}") }
+                                    }
+                                    
+                                    val roleStr = when {
+                                        hero.isMage -> "Mage"
+                                        hero.isArcher -> "Archer / Hunter"
+                                        hero.isSoldier -> "Soldier / Mercenary"
+                                        else -> "Hero"
+                                    }
+                                    p(className = "text-xs text-gray mt-1 mb-0") {
+                                        textNode("Role: $roleStr")
+                                    }
+                                    
+                                    onClick {
+                                        pveSelectedHeroes = if (isSelected) {
+                                            pveSelectedHeroes - hero.templateId
+                                        } else {
+                                            if (pveSelectedHeroes.size < 2) pveSelectedHeroes + hero.templateId else listOf(pveSelectedHeroes[1], hero.templateId)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    div(className = "mb-2") {
+                        p(className = "m-0 mb-05") { textNode("4. Choose Castle:") }
+                        val availableCastles = MapData.values.filter { it.isCastle }
+                        select(className = "w-full max-w-xs") {
+                            for (c in availableCastles) {
+                                option(value = c.id, label = c.name ?: "Castle ${c.id}")
+                            }
+                            onChange { pveSelectedCastle = this.value ?: "14" }
+                        }
+                    }
+                    
+                    val canStart = pveSelectedHeroes.size == 2
+                    button("Start Game!", className = "btn btn-primary w-full ${if (!canStart) "btn-disabled" else ""}") {
+                        onClick {
+                            if (canStart) {
+                                ws.connect {
+                                    ws.sendAction(GameAction.StartPvEGame(
+                                        playerName, gameNameInput, pveAllowSecond, pveTeam, pveSelectedHeroes, pveSelectedCastle
+                                    ))
+                                }
+                                creatingPvE = false
+                            }
+                        }
+                    }
+                    button("Cancel", className = "btn bg-red-light text-red w-full mt-1") {
+                        onClick { creatingPvE = false }
+                    }
+                }
+            }
+
             return@div
         }
+
         
         if (myPlayer == null) {
             // Not joined yet
@@ -83,13 +212,27 @@ fun IComponent.GameLobby(
                         onInput { playerName = this.value ?: "" }
                     }
                 }
-                button("Join Game", className = "btn btn-primary") {
-                    onClick {
-                        if (playerName.isNotBlank()) {
-                            viewingTeams = true
+                
+                if (gameState.isPvE) {
+                    if (gameState.players.count { !it.isBot } < 2) {
+                        button("Join Co-op (PvE)", className = "btn btn-primary mt-1") {
+                            onClick {
+                                if (playerName.isNotBlank()) {
+                                    viewingTeams = true
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    button("Join Game", className = "btn btn-primary") {
+                        onClick {
+                            if (playerName.isNotBlank()) {
+                                viewingTeams = true
+                            }
                         }
                     }
                 }
+
                 return@div
             }
             
@@ -109,19 +252,33 @@ fun IComponent.GameLobby(
                         h3(className = "text-red m-0 mb-1") { textNode("Create Team 1") }
                         var teamName by remember { mutableStateOf("") }
                         var teamColor by remember { mutableStateOf(predefinedColors[0].first) }
+                        var colorError by remember { mutableStateOf(false) }
                         
                         text(value = teamName, placeholder = "Team Name", className = "w-full mb-1 text-center") {
                             onInput { teamName = this.value ?: "" }
                         }
-                        select(className = "w-full mb-1 text-center") {
-                            for (c in predefinedColors) {
-                                option(value = c.first, label = c.second)
+                        
+                        div(className = "d-flex flex-col items-center mb-1") {
+                            label(className = "text-xs text-gray mb-05") { textNode("Team Color:") }
+                            colorPicker(value = teamColor, className = "w-full max-w-xs") {
+                                onInput {
+                                    val newColor = this.value ?: "#ef4444"
+                                    if (isYellowish(newColor)) {
+                                        colorError = true
+                                    } else {
+                                        colorError = false
+                                        teamColor = newColor
+                                    }
+                                }
                             }
-                            onChange { teamColor = this.value ?: predefinedColors[0].first }
+                            if (colorError) {
+                                p(className = "text-red text-xs mt-05 mb-0") { textNode("Yellow is reserved for the AI.") }
+                            }
                         }
-                        button("Create Team", className = "btn btn-primary w-full") {
+                        
+                        button("Create Team", className = "btn btn-primary w-full ${if(colorError) "btn-disabled" else ""}") {
                             onClick {
-                                if (playerName.isNotBlank() && teamName.isNotBlank()) {
+                                if (playerName.isNotBlank() && teamName.isNotBlank() && !colorError) {
                                     ws.connect {
                                         ws.sendAction(GameAction.CreateTeam(Team.RED, teamName, teamColor, playerName))
                                     }
@@ -153,19 +310,33 @@ fun IComponent.GameLobby(
                         h3(className = "text-blue m-0 mb-1") { textNode("Create Team 2") }
                         var teamName by remember { mutableStateOf("") }
                         var teamColor by remember { mutableStateOf(predefinedColors[1].first) }
+                        var colorError by remember { mutableStateOf(false) }
                         
                         text(value = teamName, placeholder = "Team Name", className = "w-full mb-1 text-center") {
                             onInput { teamName = this.value ?: "" }
                         }
-                        select(className = "w-full mb-1 text-center") {
-                            for (c in predefinedColors) {
-                                option(value = c.first, label = c.second)
+                        
+                        div(className = "d-flex flex-col items-center mb-1") {
+                            label(className = "text-xs text-gray mb-05") { textNode("Team Color:") }
+                            colorPicker(value = teamColor, className = "w-full max-w-xs") {
+                                onInput {
+                                    val newColor = this.value ?: "#3b82f6"
+                                    if (isYellowish(newColor)) {
+                                        colorError = true
+                                    } else {
+                                        colorError = false
+                                        teamColor = newColor
+                                    }
+                                }
                             }
-                            onChange { teamColor = this.value ?: predefinedColors[1].first }
+                            if (colorError) {
+                                p(className = "text-red text-xs mt-05 mb-0") { textNode("Yellow is reserved for the AI.") }
+                            }
                         }
-                        button("Create Team", className = "btn btn-primary w-full") {
+                        
+                        button("Create Team", className = "btn btn-primary w-full ${if(colorError) "btn-disabled" else ""}") {
                             onClick {
-                                if (playerName.isNotBlank() && teamName.isNotBlank()) {
+                                if (playerName.isNotBlank() && teamName.isNotBlank() && !colorError) {
                                     ws.connect {
                                         ws.sendAction(GameAction.CreateTeam(Team.BLUE, teamName, teamColor, playerName))
                                     }
@@ -245,16 +416,30 @@ fun IComponent.GameLobby(
                 
                 div(className = "d-flex justify-center mt-2") {
                     val canConfirm = selectedHeroIds.size == 2
-                    button(
-                        "Confirm Selection (${selectedHeroIds.size}/2)",
-                        className = "btn btn-primary ${if (!canConfirm) "btn-disabled" else ""}"
-                    ) {
-                        onClick {
-                            if (canConfirm) {
-                                ws.sendAction(GameAction.SelectCharacters(selectedHeroIds))
+                    if (gameState.isPvE) {
+                        button(
+                            "Join Battle (${selectedHeroIds.size}/2)",
+                            className = "btn btn-primary ${if (!canConfirm) "btn-disabled" else ""}"
+                        ) {
+                            onClick {
+                                if (canConfirm) {
+                                    ws.sendAction(GameAction.JoinPvEGame(playerName, selectedHeroIds))
+                                }
+                            }
+                        }
+                    } else {
+                        button(
+                            "Confirm Selection (${selectedHeroIds.size}/2)",
+                            className = "btn btn-primary ${if (!canConfirm) "btn-disabled" else ""}"
+                        ) {
+                            onClick {
+                                if (canConfirm) {
+                                    ws.sendAction(GameAction.SelectCharacters(selectedHeroIds))
+                                }
                             }
                         }
                     }
+
                 }
             } else {
                 h3(className = "mb-1 text-primary") { textNode("Heroes Selected!") }
@@ -339,8 +524,9 @@ fun IComponent.GameLobby(
                 for (p in redPlayers) {
                     val pChars = gameState.characters.filter { it.playerId == p.id }
                     val heroesStr = if (pChars.isNotEmpty()) " (${pChars.joinToString(", ") { it.name }})" else ""
+                    val botIndicator = if (p.isBot) " 🤖" else ""
                     div(className = "d-flex justify-between items-center w-full mt-05") {
-                        span { textNode("${p.name}$heroesStr") }
+                        span { textNode("${p.name}$botIndicator$heroesStr") }
                         if (p.isReady) {
                             span(className = "text-sm text-primary font-600") { textNode("READY") }
                         } else {
@@ -369,8 +555,9 @@ fun IComponent.GameLobby(
                 for (p in bluePlayers) {
                     val pChars = gameState.characters.filter { it.playerId == p.id }
                     val heroesStr = if (pChars.isNotEmpty()) " (${pChars.joinToString(", ") { it.name }})" else ""
+                    val botIndicator = if (p.isBot) " 🤖" else ""
                     div(className = "d-flex justify-between items-center w-full mt-05") {
-                        span { textNode("${p.name}$heroesStr") }
+                        span { textNode("${p.name}$botIndicator$heroesStr") }
                         if (p.isReady) {
                             span(className = "text-sm text-primary font-600") { textNode("READY") }
                         } else {
@@ -381,6 +568,40 @@ fun IComponent.GameLobby(
             }
         }
         
+        
+            // YELLOW TEAM (PvE Enemy)
+            if (gameState.isPvE) {
+                div(className = "glass flex-col items-center p-2 w-full") {
+                    val yellowTeamInfo = gameState.teamInfos[Team.YELLOW]
+                    val yellowCastleId = gameState.teamCastles[Team.YELLOW]
+                    val yellowCastleName = yellowCastleId?.let { MapData[it]?.name ?: "Castle $it" } ?: "No base chosen"
+                    if (yellowTeamInfo != null) {
+                        h3(className = "m-0 mb-1") { 
+                            style("color", yellowTeamInfo.color)
+                            textNode(yellowTeamInfo.name.uppercase()) 
+                        }
+                    } else {
+                        h3(className = "text-gray m-0 mb-1") { textNode("ENEMY TEAM") }
+                    }
+                    
+                    p(className = "text-xs text-gray mt-0 mb-1") { textNode("Base: $yellowCastleName") }
+                    val yellowPlayers = gameState.players.filter { it.team == Team.YELLOW }
+                    for (p in yellowPlayers) {
+                        val pChars = gameState.characters.filter { it.playerId == p.id }
+                        val heroesStr = if (pChars.isNotEmpty()) " (${pChars.joinToString(", ") { it.name }})" else ""
+                        val botIndicator = if (p.isBot) " 🤖" else ""
+                        div(className = "d-flex justify-between items-center w-full mt-05") {
+                            span { textNode("${p.name}$botIndicator$heroesStr") }
+                            if (p.isReady) {
+                                span(className = "text-sm text-primary font-600") { textNode("READY") }
+                            } else {
+                                span(className = "text-sm text-gray") { textNode("NOT READY") }
+                            }
+                        }
+                    }
+                }
+            }
+
         if (gameState.creatorPlayerId == currentName) {
             val allReady = gameState.players.isNotEmpty() && gameState.players.all { it.isReady }
             val hasTwoTeams = gameState.teamInfos.size == 2

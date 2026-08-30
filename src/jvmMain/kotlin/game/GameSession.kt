@@ -3,6 +3,8 @@ package game
 import io.ktor.websocket.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import models.*
@@ -179,8 +181,8 @@ class GameSession(var gameState: GameState = GameState()) {
             
             val now = System.currentTimeMillis()
             
-            for (team in listOf(Team.RED, Team.BLUE)) {
-                val teamPlayerIds = gameState.players.filter { it.team == team }.map { it.id }
+            for (team in listOf(Team.RED, Team.BLUE, Team.YELLOW)) {
+                val teamPlayerIds = gameState.players.filter { it.team == team && !it.isBot }.map { it.id }
                 if (teamPlayerIds.isEmpty()) continue
                 
                 // Check if ALL players on this team are disconnected AND have been gone for 2+ hours
@@ -313,6 +315,165 @@ class GameSession(var gameState: GameState = GameState()) {
         } else {
             broadcastState()
         }
+    }
+    
+    suspend fun startPvEGame(playerId: String, gameName: String, allowSecondPlayer: Boolean, playerTeam: Team, chosenHeroes: List<String>, chosenCastle: String) {
+        mutex.withLock {
+            if (gameState.status == GameStatus.IN_PROGRESS || gameState.status == GameStatus.GAME_OVER) return@withLock
+            
+            // Validate chosen heroes
+            val distinctHeroIds = chosenHeroes.distinct().take(2)
+            if (distinctHeroIds.size != 2) return@withLock
+            val chosenTemplates = distinctHeroIds.mapNotNull { id -> PredefinedCharacters.find { it.templateId == id } }
+            if (chosenTemplates.size != 2) return@withLock
+            
+            // Set up lobby
+            gameState = GameState(
+                status = GameStatus.LOBBY,
+                gameName = gameName,
+                creatorPlayerId = playerId,
+                isPvE = true
+            )
+            
+            val humanTeamInfo = TeamInfo(id = playerTeam, name = if (playerTeam == Team.RED) "Red Team" else "Blue Team", color = if (playerTeam == Team.RED) "#ef4444" else "#3b82f6", creatorId = playerId)
+            val botTeamInfo = TeamInfo(id = Team.YELLOW, name = "Enemy", color = "#eab308", creatorId = "BOT")
+            
+            gameState = gameState.copy(teamInfos = mapOf(playerTeam to humanTeamInfo, Team.YELLOW to botTeamInfo))
+            
+            val humanPlayer = Player(id = playerId, name = playerId, team = playerTeam, isReady = true) // Name will be overridden by caller if needed
+            val botPlayer = Player(id = "bot_1", name = "Computer", team = Team.YELLOW, isReady = true, isBot = true)
+            
+            gameState = gameState.copy(players = listOf(humanPlayer, botPlayer))
+            
+            val newChars = chosenTemplates.map { template ->
+                Character(
+                    id = UUID.randomUUID().toString(),
+                    playerId = playerId,
+                    name = template.name,
+                    warlord = template.warlord,
+                    intellect = template.intellect,
+                    vanguard = template.vanguard,
+                    archon = template.archon
+                )
+            }.toMutableList()
+            
+            val botCharacterCount = if (allowSecondPlayer) 3 else 2
+            val availableTemplates = PredefinedCharacters.filter { it.templateId !in distinctHeroIds }.shuffled()
+            val botTemplates = availableTemplates.take(botCharacterCount)
+            
+            for (template in botTemplates) {
+                newChars.add(
+                    Character(
+                        id = UUID.randomUUID().toString(),
+                        playerId = botPlayer.id,
+                        name = template.name,
+                        warlord = template.warlord,
+                        intellect = template.intellect,
+                        vanguard = template.vanguard,
+                        archon = template.archon
+                    )
+                )
+            }
+            gameState = gameState.copy(characters = newChars)
+            
+            val defaultCastles = MapData.values.filter { it.isCastle }.map { it.id }
+            val botCastle = defaultCastles.firstOrNull { it != chosenCastle } ?: "14"
+            
+            gameState = gameState.copy(teamCastles = mapOf(playerTeam to chosenCastle, Team.YELLOW to botCastle))
+            
+            // Now start the game directly
+            val initialTerritories = MapData.mapValues { (sectorId, territory) ->
+                TerritoryState(
+                    sectorId = sectorId,
+                    ownerPlayerId = null,
+                    ownerTeam = null,
+                    cultivation = 10,
+                    protection = if (territory.isCastle) 20 else 5,
+                    food = 0,
+                    gold = 0
+                )
+            }.toMutableMap()
+            
+            val updatedCharacters = gameState.characters.map { char ->
+                val p = gameState.players.find { it.id == char.playerId }
+                val t = p?.team ?: Team.RED
+                val cSector = gameState.teamCastles[t] ?: "14"
+                
+                val cTerr = initialTerritories[cSector]
+                if (cTerr != null && cTerr.ownerPlayerId == null) {
+                    initialTerritories[cSector] = cTerr.copy(
+                        ownerPlayerId = char.playerId,
+                        ownerTeam = t
+                    )
+                }
+                
+                char.copy(
+                    currentSector = cSector,
+                    hasActedThisTurn = false
+                )
+            }
+            
+            gameState = gameState.copy(
+                status = GameStatus.IN_PROGRESS,
+                activeTeamTurn = playerTeam, // Human goes first
+                currentTurn = 1,
+                territories = initialTerritories,
+                characters = updatedCharacters
+            )
+        }
+        broadcastState()
+    }
+    
+    suspend fun joinPvEGame(playerId: String, playerName: String, chosenHeroes: List<String>, session: io.ktor.websocket.DefaultWebSocketSession): String? {
+        var effectivePlayerId = playerId
+        mutex.withLock {
+            if (gameState.status != GameStatus.IN_PROGRESS || !gameState.isPvE) return@withLock
+            
+            val humanTeam = gameState.teamInfos.keys.find { it != Team.YELLOW } ?: return@withLock
+            val existingHumanPlayers = gameState.players.filter { it.team == humanTeam && !it.isBot }
+            
+            // Cannot join if there are already 2 human players (allowSecondPlayer maxed out implicitly)
+            if (existingHumanPlayers.size >= 2 && existingHumanPlayers.none { it.id == playerId }) return@withLock
+            
+            val existingPlayer = existingHumanPlayers.find { it.id == playerId }
+            if (existingPlayer != null) {
+                // Reconnect
+                effectivePlayerId = existingPlayer.id
+                connections[effectivePlayerId] = session
+                lastSeenTimestamps[effectivePlayerId] = System.currentTimeMillis()
+            } else {
+                // New player joining existing game
+                val distinctHeroIds = chosenHeroes.distinct().take(2)
+                if (distinctHeroIds.size != 2) return@withLock
+                val chosenTemplates = distinctHeroIds.mapNotNull { id -> PredefinedCharacters.find { it.templateId == id } }
+                if (chosenTemplates.size != 2) return@withLock
+                
+                val newPlayer = Player(id = playerId, name = playerName, team = humanTeam, isReady = true)
+                gameState = gameState.copy(players = gameState.players + newPlayer)
+                
+                val castleSector = gameState.teamCastles[humanTeam] ?: "14"
+                
+                val newChars = chosenTemplates.map { template ->
+                    Character(
+                        id = UUID.randomUUID().toString(),
+                        playerId = playerId,
+                        name = template.name,
+                        warlord = template.warlord,
+                        intellect = template.intellect,
+                        vanguard = template.vanguard,
+                        archon = template.archon,
+                        currentSector = castleSector,
+                        hasActedThisTurn = false
+                    )
+                }
+                gameState = gameState.copy(characters = gameState.characters + newChars)
+                
+                connections[playerId] = session
+                lastSeenTimestamps[playerId] = System.currentTimeMillis()
+            }
+        }
+        broadcastState()
+        return effectivePlayerId
     }
     
     suspend fun selectCharacters(playerId: String, templateIds: List<String>) {
@@ -512,18 +673,29 @@ class GameSession(var gameState: GameState = GameState()) {
                 }
                 
                 gameState = gameState.copy(characters = newChars, territories = newTerritories)
-                
                 val redPlayerIds = gameState.players.filter { it.team == Team.RED }.map { it.id }.toSet()
                 val bluePlayerIds = gameState.players.filter { it.team == Team.BLUE }.map { it.id }.toSet()
                 
                 val allRedDead = redPlayerIds.isNotEmpty() && gameState.characters.filter { it.playerId in redPlayerIds }.all { it.isDead }
                 val allBlueDead = bluePlayerIds.isNotEmpty() && gameState.characters.filter { it.playerId in bluePlayerIds }.all { it.isDead }
+                val yellowPlayerIds = gameState.players.filter { it.team == Team.YELLOW }.map { it.id }.toSet()
+                val allYellowDead = yellowPlayerIds.isNotEmpty() && gameState.characters.filter { it.playerId in yellowPlayerIds }.all { it.isDead }
                 
                 val castleOwner = gameState.teamCastles.entries.find { it.value == targetSector }?.key
                 val isCastleCapturedByAttacker = outcome.isAttackerWinner && castleOwner != null && castleOwner != player.team
                 
                 if (isCastleCapturedByAttacker) {
                     gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = player.team)
+                } else if (gameState.isPvE) {
+                    val humanTeam = gameState.teamInfos.keys.find { it != Team.YELLOW } ?: Team.RED
+                    val humanPlayerIds = gameState.players.filter { it.team == humanTeam }.map { it.id }.toSet()
+                    val allHumanDead = humanPlayerIds.isNotEmpty() && gameState.characters.filter { it.playerId in humanPlayerIds }.all { it.isDead }
+                    
+                    if (allYellowDead) {
+                        gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = humanTeam)
+                    } else if (allHumanDead) {
+                        gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = Team.YELLOW)
+                    }
                 } else if (allBlueDead) {
                     gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = Team.RED)
                 } else if (allRedDead) {
@@ -652,18 +824,29 @@ class GameSession(var gameState: GameState = GameState()) {
                 }
                 
                 gameState = gameState.copy(characters = newChars, territories = newTerritories)
-                
                 val redPlayerIds = gameState.players.filter { it.team == Team.RED }.map { it.id }.toSet()
                 val bluePlayerIds = gameState.players.filter { it.team == Team.BLUE }.map { it.id }.toSet()
                 
                 val allRedDead = redPlayerIds.isNotEmpty() && gameState.characters.filter { it.playerId in redPlayerIds }.all { it.isDead }
                 val allBlueDead = bluePlayerIds.isNotEmpty() && gameState.characters.filter { it.playerId in bluePlayerIds }.all { it.isDead }
+                val yellowPlayerIds = gameState.players.filter { it.team == Team.YELLOW }.map { it.id }.toSet()
+                val allYellowDead = yellowPlayerIds.isNotEmpty() && gameState.characters.filter { it.playerId in yellowPlayerIds }.all { it.isDead }
                 
                 val castleOwner = gameState.teamCastles.entries.find { it.value == targetSector }?.key
                 val isCastleCapturedByAttacker = outcome.isAttackerWinner && castleOwner != null && castleOwner != player.team
                 
                 if (isCastleCapturedByAttacker) {
                     gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = player.team)
+                } else if (gameState.isPvE) {
+                    val humanTeam = gameState.teamInfos.keys.find { it != Team.YELLOW } ?: Team.RED
+                    val humanPlayerIds = gameState.players.filter { it.team == humanTeam }.map { it.id }.toSet()
+                    val allHumanDead = humanPlayerIds.isNotEmpty() && gameState.characters.filter { it.playerId in humanPlayerIds }.all { it.isDead }
+                    
+                    if (allYellowDead) {
+                        gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = humanTeam)
+                    } else if (allHumanDead) {
+                        gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = Team.YELLOW)
+                    }
                 } else if (allBlueDead) {
                     gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = Team.RED)
                 } else if (allRedDead) {
@@ -1034,8 +1217,24 @@ class GameSession(var gameState: GameState = GameState()) {
         
         if (activeTeamChars.isNotEmpty() && activeTeamChars.all { it.hasActedThisTurn }) {
             // End turn
-            val newTeamTurn = if (gameState.activeTeamTurn == Team.RED) Team.BLUE else Team.RED
-            val newTurnCount = if (gameState.activeTeamTurn == Team.BLUE) gameState.currentTurn + 1 else gameState.currentTurn
+            val newTeamTurn = if (gameState.isPvE) {
+                if (gameState.activeTeamTurn == Team.YELLOW) {
+                    gameState.teamInfos.keys.find { it != Team.YELLOW } ?: Team.RED
+                } else {
+                    Team.YELLOW
+                }
+            } else {
+                if (gameState.activeTeamTurn == Team.RED) Team.BLUE else Team.RED
+            }
+            
+            // currentTurn increments when the team that went second ends their turn.
+            // For standard game, RED goes first, BLUE goes second.
+            // For PvE, human goes first, YELLOW goes second.
+            val newTurnCount = if ((gameState.isPvE && gameState.activeTeamTurn == Team.YELLOW) || (!gameState.isPvE && gameState.activeTeamTurn == Team.BLUE)) {
+                gameState.currentTurn + 1
+            } else {
+                gameState.currentTurn
+            }
             
             // Process upkeep for the team whose turn is ending and reset action status
             val updatedChars = gameState.characters.map { char ->
@@ -1085,8 +1284,12 @@ class GameSession(var gameState: GameState = GameState()) {
                     
                     val charsHere = finalUpdatedChars.filter { it.currentSector == sectorId && !it.isDead }
                     
-                    // Only trigger events on territories where characters are present, with a 15% chance
-                    if (charsHere.isNotEmpty() && eventCount < 5 && kotlin.random.Random.nextDouble() < 0.15) {
+                    // Only trigger events on territories where HUMAN characters are present, with a 15% chance
+                    val humanCharsHere = charsHere.filter { ch ->
+                        val p = gameState.players.find { it.id == ch.playerId }
+                        p?.isBot != true
+                    }
+                    if (humanCharsHere.isNotEmpty() && eventCount < 5 && kotlin.random.Random.nextDouble() < 0.15) {
                         val eventTypes = NatureEventType.values().toMutableList()
                         if (eventTypes.isNotEmpty()) {
                             val eventType = eventTypes.random()
@@ -1144,6 +1347,15 @@ class GameSession(var gameState: GameState = GameState()) {
                 db.GameRepository.saveGameState(state = gameState, trigger = "GAME_OVER")
             } else {
                 db.GameRepository.saveGameState(state = gameState, trigger = "TURN_END")
+            }
+            
+            if (gameState.status == GameStatus.IN_PROGRESS) {
+                val nextActiveTeam = gameState.activeTeamTurn
+                if (gameState.isPvE && nextActiveTeam == Team.YELLOW) {
+                    kotlinx.coroutines.GlobalScope.launch {
+                        AiPlayerManager.executeBotTurn(this@GameSession)
+                    }
+                }
             }
         }
     }

@@ -73,19 +73,20 @@ fun IComponent.ArmyRecruitmentPanel(
                 
                 // Unit Selection
                 val unitOptions = listOf(
-                    Triple(ArmyType.LIGHT_INFANTRY, "Light Infantry", 30 to 0), // Type, Name, Cost to Protection
-                    Triple(ArmyType.ARCHERS, "Archers", 40 to 10),
-                    Triple(ArmyType.HEAVY_INFANTRY, "Heavy Infantry", 50 to 20),
-                    Triple(ArmyType.MAGES, "Mages", 80 to 30)
+                    Triple(ArmyType.LIGHT_INFANTRY, "Light Infantry" to "🗡️", 30 to 0), // Type, Name/Icon, Cost to Protection
+                    Triple(ArmyType.ARCHERS, "Archers" to "🏹", 40 to 10),
+                    Triple(ArmyType.HEAVY_INFANTRY, "Heavy Infantry" to "🛡️", 50 to 20),
+                    Triple(ArmyType.MAGES, "Mages" to "🔮", 80 to 30)
                 )
                 
                 div(className = "d-flex flex-col gap-1 mb-2") {
-                    for ((type, name, reqs) in unitOptions) {
+                    for ((type, info, reqs) in unitOptions) {
+                        val (name, icon) = info
                         val (cost, reqProtection) = reqs
                         val canRecruitType = currentProtection >= reqProtection
                         val isSelected = selectedUnitType == type
                         
-                        div(className = "glass p-2 d-flex align-items-center justify-between ${if (isSelected) "border-primary" else ""} ${if (!canRecruitType) "opacity-50" else "cursor-pointer"}") {
+                        div(className = "unit-card glass p-2 d-flex align-items-center justify-between ${if (isSelected) "active" else ""} ${if (!canRecruitType) "opacity-50" else "cursor-pointer"}") {
                             onClick {
                                 if (canRecruitType) {
                                     selectedUnitType = type
@@ -93,16 +94,20 @@ fun IComponent.ArmyRecruitmentPanel(
                                 }
                             }
                             
-                            // Left side: Radio button & Name
+                            // Left side: Icon & Name
                             div(className = "d-flex align-items-center gap-1") {
-                                // Simple text-based radio button
-                                span { textNode(if (isSelected) "🔘" else "⚪") }
-                                h4(className = "m-0 text-sm") { textNode(name) }
+                                span(className = "unit-icon text-3xl") { textNode(icon) }
+                                div(className = "d-flex flex-col") {
+                                    h4(className = "m-0 text-md ${if (isSelected) "text-primary" else ""}") { textNode(name) }
+                                    if (isSelected) {
+                                        span(className = "text-xs text-primary font-600") { textNode("Selected") }
+                                    }
+                                }
                             }
                             
                             // Right side: Cost & Reqs
-                            div(className = "text-right") {
-                                p(className = "m-0 text-xs text-warning") { textNode("$cost 🪙") }
+                            div(className = "text-right d-flex flex-col justify-center") {
+                                p(className = "m-0 text-sm text-warning font-600") { textNode("$cost 🪙") }
                                 if (!canRecruitType) {
                                     p(className = "m-0 text-xs text-red font-600") { textNode("Requires $reqProtection 🛡️") }
                                 } else if (reqProtection > 0) {

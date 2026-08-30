@@ -7,6 +7,7 @@ import dev.kilua.html.*
 import models.GameEvent
 import models.NatureEventType
 import models.GameState
+import models.MapData
 
 @Composable
 fun IComponent.NatureEventModal(
@@ -14,7 +15,7 @@ fun IComponent.NatureEventModal(
     gameState: GameState?,
     onClose: () -> Unit
 ) {
-    val territoryName = gameState?.territories?.get(event.sectorId)?.let { gameState.teamCastles.entries.find { c -> c.value == event.sectorId }?.key?.name + " Castle" } ?: "Sector ${event.sectorId}"
+    val territoryName = MapData[event.sectorId]?.name ?: "Sector ${event.sectorId}"
     
     val (icon, title, description, colorClass) = when (event.eventType) {
         NatureEventType.ABUNDANT_HARVEST -> listOf("🌾", "Abundant Harvest", "A bountiful harvest has occurred! Food production in this territory is greatly increased for the turn.", "text-green")

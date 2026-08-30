@@ -63,6 +63,43 @@ object GameSessionManager {
             }
         }
     }
+    
+    suspend fun startPvEGame(playerId: String, gameName: String, allowSecondPlayer: Boolean, playerTeam: Team, chosenHeroes: List<String>, chosenCastle: String, wsSession: DefaultWebSocketSession) {
+        val gameToJoin = mutex.withLock {
+            if (globalSession.gameState.status == GameStatus.GAME_OVER || globalSession.gameState.status == GameStatus.NOT_CREATED) {
+                val oldObservers = globalSession.observers.toMap()
+                val oldConnections = globalSession.connections.toMap()
+                
+                globalSession = GameSession()
+                globalSession.observers.putAll(oldObservers)
+                oldConnections.forEach { (_, session) ->
+                    globalSession.observers[java.util.UUID.randomUUID().toString()] = session
+                }
+            }
+            globalSession
+        }
+        
+        gameToJoin.startPvEGame(playerId, gameName, allowSecondPlayer, playerTeam, chosenHeroes, chosenCastle)
+        // Auto-join the player
+        val effectivePlayerId = gameToJoin.joinPvEGame(playerId, playerId, chosenHeroes, wsSession)
+        if (effectivePlayerId != null) {
+            mutex.withLock {
+                connectionToGame[wsSession] = Pair(gameToJoin, effectivePlayerId)
+            }
+        }
+    }
+
+    suspend fun joinPvEGame(playerName: String, chosenHeroes: List<String>, wsSession: DefaultWebSocketSession) {
+        val incomingId = UUID.randomUUID().toString()
+        val gameToJoin = mutex.withLock { globalSession }
+        
+        val effectivePlayerId = gameToJoin.joinPvEGame(incomingId, playerName, chosenHeroes, wsSession)
+        if (effectivePlayerId != null) {
+            mutex.withLock {
+                connectionToGame[wsSession] = Pair(gameToJoin, effectivePlayerId)
+            }
+        }
+    }
 
     suspend fun joinTeam(playerName: String, team: Team, wsSession: DefaultWebSocketSession) {
         val incomingId = UUID.randomUUID().toString()

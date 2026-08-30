@@ -14,6 +14,12 @@ sealed class GameAction {
     data class JoinTeam(val team: Team, val playerName: String) : GameAction()
     
     @Serializable
+    data class StartPvEGame(val playerName: String, val gameName: String, val allowSecondPlayer: Boolean, val playerTeam: Team, val chosenHeroes: List<String>, val chosenCastle: String) : GameAction()
+    
+    @Serializable
+    data class JoinPvEGame(val playerName: String, val chosenHeroes: List<String>) : GameAction()
+    
+    @Serializable
     data class CreateCharacter(val name: String, val warlord: Int, val intellect: Int, val vanguard: Int, val archon: Int) : GameAction()
     
     @Serializable
