@@ -31,3 +31,8 @@ Access the application at `http://localhost:8081`.
 
 # Run JVM JS frontend locally
 ./gradlew jsBrowserDevelopmentRun --continuous
+
+
+# K3S
+sudo k3s ctr images import gothicfire.tar 
+kubectl rollout restart deployment gothicfire-app -n gothicfire

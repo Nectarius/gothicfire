@@ -98,6 +98,7 @@ class App : Application() {
             
             var victoryAcknowledged by remember { mutableStateOf(false) }
             var observingPlayPvE by remember { mutableStateOf(false) }
+            var mapFullscreen by remember { mutableStateOf(false) }
             LaunchedEffect(gameState?.status) {
                 if (gameState?.status == models.GameStatus.GAME_OVER) {
                     victoryAcknowledged = false
@@ -200,47 +201,49 @@ class App : Application() {
                 }
             }
 
-            // Navbar
-            nav(className = "navbar glass") {
-                div(className = "navbar-brand") {
-                    textNode(t("nav.brand"))
-                }
-                div(className = "d-flex items-center gap-20") {
-                    // Language Switcher
-                    div(className = "d-flex items-center gap-05") {
-                        val activeLang = I18n.currentLanguage.value
-                        button("EN", className = "btn btn-xs language-btn ${if (activeLang == Language.EN) "btn-primary" else "glass"}") {
-                            title("Switch to English")
-                            onClick { I18n.setLanguage(Language.EN) }
-                        }
-                        button("ΕΛ", className = "btn btn-xs language-btn ${if (activeLang == Language.EL) "btn-primary" else "glass"}") {
-                            title("Αλλαγή σε Ελληνικά")
-                            onClick { I18n.setLanguage(Language.EL) }
-                        }
-                        button("RU", className = "btn btn-xs language-btn ${if (activeLang == Language.RU) "btn-primary" else "glass"}") {
-                            title("Переключить на Русский")
-                            onClick { I18n.setLanguage(Language.RU) }
-                        }
+            // Navbar — hidden in fullscreen map mode
+            if (!mapFullscreen) {
+                nav(className = "navbar glass") {
+                    div(className = "navbar-brand") {
+                        textNode(t("nav.brand"))
                     }
+                    div(className = "d-flex items-center gap-20") {
+                        // Language Switcher
+                        div(className = "d-flex items-center gap-05") {
+                            val activeLang = I18n.currentLanguage.value
+                            button("EN", className = "btn btn-xs language-btn ${if (activeLang == Language.EN) "btn-primary" else "glass"}") {
+                                title("Switch to English")
+                                onClick { I18n.setLanguage(Language.EN) }
+                            }
+                            button("ΕΛ", className = "btn btn-xs language-btn ${if (activeLang == Language.EL) "btn-primary" else "glass"}") {
+                                title("Αλλαγή σε Ελληνικά")
+                                onClick { I18n.setLanguage(Language.EL) }
+                            }
+                            button("RU", className = "btn btn-xs language-btn ${if (activeLang == Language.RU) "btn-primary" else "glass"}") {
+                                title("Переключить на Русский")
+                                onClick { I18n.setLanguage(Language.RU) }
+                            }
+                        }
 
-                    if (currentUser != null) {
-                        span { textNode(t("nav.welcome", currentUser?.name ?: "")) }
-                        a(href = "/logout", className = "btn btn-primary text-none") {
-                            textNode(t("nav.logout"))
-                        }
-                    } else {
-                        a(href = "/login", className = "btn btn-primary text-none") {
-                            textNode(t("nav.login_google"))
-                        }
-                        a(href = "/auth/twitter", className = "btn btn-primary text-none") {
-                            textNode(t("nav.login_twitter"))
+                        if (currentUser != null) {
+                            span { textNode(t("nav.welcome", currentUser?.name ?: "")) }
+                            a(href = "/logout", className = "btn btn-primary text-none") {
+                                textNode(t("nav.logout"))
+                            }
+                        } else {
+                            a(href = "/login", className = "btn btn-primary text-none") {
+                                textNode(t("nav.login_google"))
+                            }
+                            a(href = "/auth/twitter", className = "btn btn-primary text-none") {
+                                textNode(t("nav.login_twitter"))
+                            }
                         }
                     }
                 }
             }
 
             // Main Content
-            div(className = "container") {
+            div(className = if (mapFullscreen) "container container-fullscreen" else "container") {
                 if (currentUser == null) {
                     div(className = "glass card text-center p-4") {
                         h2 { textNode(t("notes.title")) }
@@ -249,19 +252,21 @@ class App : Application() {
                         }
                     }
                 } else {
-                    // Tabs
-                    div(className = "d-flex gap-1 mb-2") {
-                        button(t("nav.tab_notes"), className = "btn ${if (currentTab == "notes") "btn-primary" else "glass"}") {
-                            onClick { currentTab = "notes" }
-                        }
-                        button(t("nav.tab_discussions"), className = "btn ${if (currentTab == "discussions") "btn-primary" else "glass"}") {
-                            onClick { currentTab = "discussions" }
-                        }
-                        button(t("nav.tab_map"), className = "btn ${if (currentTab == "map") "btn-primary" else "glass"}") {
-                            onClick { currentTab = "map" }
-                        }
-                        button(t("nav.tab_history"), className = "btn ${if (currentTab == "history") "btn-primary" else "glass"}") {
-                            onClick { currentTab = "history" }
+                    // Tabs — hidden in fullscreen map mode
+                    if (!mapFullscreen) {
+                        div(className = "d-flex gap-1 mb-2") {
+                            button(t("nav.tab_notes"), className = "btn ${if (currentTab == "notes") "btn-primary" else "glass"}") {
+                                onClick { currentTab = "notes" }
+                            }
+                            button(t("nav.tab_discussions"), className = "btn ${if (currentTab == "discussions") "btn-primary" else "glass"}") {
+                                onClick { currentTab = "discussions" }
+                            }
+                            button(t("nav.tab_map"), className = "btn ${if (currentTab == "map") "btn-primary" else "glass"}") {
+                                onClick { currentTab = "map" }
+                            }
+                            button(t("nav.tab_history"), className = "btn ${if (currentTab == "history") "btn-primary" else "glass"}") {
+                                onClick { currentTab = "history" }
+                            }
                         }
                     }
                     
@@ -392,31 +397,34 @@ class App : Application() {
                             
                             var showMarket by remember { mutableStateOf(false) }
                             var showRecruitment by remember { mutableStateOf(false) }
+                            var panelOpen by remember { mutableStateOf(false) }
                             
-                            if (isObserver) {
-                                div(className = "glass card p-2 mb-1 d-flex justify-between items-center flex-wrap gap-1 border-yellow") {
-                                    div(className = "d-flex items-center gap-1") {
-                                        span(className = "text-xl") { textNode("👁️") }
-                                        div {
-                                            h4(className = "m-0 text-yellow") { textNode(t("lobby.observing_notice")) }
-                                            p(className = "m-0 text-sm text-gray") { textNode(t("lobby.observing_desc")) }
+                            if (!mapFullscreen) {
+                                if (isObserver) {
+                                    div(className = "glass card p-2 mb-1 d-flex justify-between items-center flex-wrap gap-1 border-yellow") {
+                                        div(className = "d-flex items-center gap-1") {
+                                            span(className = "text-xl") { textNode("👁️") }
+                                            div {
+                                                h4(className = "m-0 text-yellow") { textNode(t("lobby.observing_notice")) }
+                                                p(className = "m-0 text-sm text-gray") { textNode(t("lobby.observing_desc")) }
+                                            }
                                         }
-                                    }
-                                    button(t("lobby.play_pve_independent"), className = "btn bg-yellow text-dark-gray font-600") {
-                                        onClick {
-                                            observingPlayPvE = true
+                                        button(t("lobby.play_pve_independent"), className = "btn bg-yellow text-dark-gray font-600") {
+                                            onClick {
+                                                observingPlayPvE = true
+                                            }
                                         }
                                     }
                                 }
+                                
+                                TurnHud(
+                                    playerId = yourPlayerId, 
+                                    gameState = gameState, 
+                                    onOpenMarket = { showMarket = true },
+                                    onOpenRecruitment = { showRecruitment = true },
+                                    sendAction = { ws.sendAction(it) }
+                                )
                             }
-                            
-                            TurnHud(
-                                playerId = yourPlayerId, 
-                                gameState = gameState, 
-                                onOpenMarket = { showMarket = true },
-                                onOpenRecruitment = { showRecruitment = true },
-                                sendAction = { ws.sendAction(it) }
-                            )
                             
                             // Scroll notification popup is handled via activePopups
                             
@@ -440,14 +448,71 @@ class App : Application() {
                                 )
                             }
                             
-                            div(className = "war-map-layout") {
-                                CharacterPanel(
-                                    playerId = yourPlayerId, 
-                                    gameState = gameState, 
-                                    selectedCharacterId = selectedCharacterId,
-                                    onSelectCharacter = { selectedCharacterId = it },
-                                    sendAction = { ws.sendAction(it) }
-                                )
+                            // Mobile panel backdrop overlay
+                            div(className = "panel-backdrop${if (panelOpen) " panel-backdrop-visible" else ""}") {
+                                onClick { panelOpen = false }
+                            }
+                            
+                            // Mobile panel toggle button (floating action button)
+                            button(className = "panel-toggle-btn${if (panelOpen) " panel-btn-active" else ""}") {
+                                textNode(if (panelOpen) "✕" else "⚔️")
+                                onClick { panelOpen = !panelOpen }
+                            }
+                            
+                            // Fullscreen map mode: floating compact HUD
+                            if (mapFullscreen) {
+                                div(className = "fullscreen-hud") {
+                                    val myPlayer = gameState?.players?.find { it.id == yourPlayerId }
+                                    val isMyTurn = gameState?.activeTeamTurn == myPlayer?.team
+                                    val turnClass = if (isMyTurn) "turn-active" else "turn-waiting"
+                                    span(className = "turn-indicator $turnClass") {}
+                                    if (isMyTurn) {
+                                        val teamName = myPlayer?.team?.let { gameState?.teamInfos?.get(it)?.name } ?: t("hud.your_team")
+                                        span(className = "text-sm font-600 text-primary") { textNode(teamName) }
+                                    } else {
+                                        span(className = "text-sm text-gray") { textNode(t("hud.enemy_team")) }
+                                    }
+                                    span(className = "text-xs text-dark-gray") { 
+                                        textNode(" · T${gameState?.currentTurn ?: 1}/${gameState?.maxTurns ?: "?"}") 
+                                    }
+                                    button("⚔️", className = "btn btn-xs glass fullscreen-hud-btn") {
+                                        title(t("char.your_heroes"))
+                                        onClick { panelOpen = !panelOpen }
+                                    }
+                                }
+                            }
+                            
+                            // Fullscreen toggle button — always visible during gameplay
+                            button(className = "fullscreen-toggle-btn") {
+                                textNode(if (mapFullscreen) "✕" else "🗺️")
+                                title(if (mapFullscreen) "Exit fullscreen" else "Fullscreen map")
+                                onClick { 
+                                    mapFullscreen = !mapFullscreen
+                                    if (!mapFullscreen) panelOpen = false
+                                }
+                            }
+                            
+                            div(className = if (mapFullscreen) "war-map-layout war-map-fullscreen" else "war-map-layout") {
+                                if (!mapFullscreen) {
+                                    CharacterPanel(
+                                        playerId = yourPlayerId, 
+                                        gameState = gameState, 
+                                        selectedCharacterId = selectedCharacterId,
+                                        onSelectCharacter = { selectedCharacterId = it },
+                                        sendAction = { ws.sendAction(it) },
+                                        panelOpen = panelOpen
+                                    )
+                                } else {
+                                    // In fullscreen mode, CharacterPanel is a sliding drawer
+                                    CharacterPanel(
+                                        playerId = yourPlayerId, 
+                                        gameState = gameState, 
+                                        selectedCharacterId = selectedCharacterId,
+                                        onSelectCharacter = { selectedCharacterId = it },
+                                        sendAction = { ws.sendAction(it) },
+                                        panelOpen = panelOpen
+                                    )
+                                }
                                 StrategicMap(
                                     playerId = yourPlayerId, 
                                     gameState = gameState, 
@@ -460,12 +525,14 @@ class App : Application() {
                                 )
                             }
                             
-                            KingdomOverviewPanel(
-                                playerId = yourPlayerId,
-                                gameState = gameState,
-                                onSelectCharacter = { selectedCharacterId = it },
-                                sendAction = { ws.sendAction(it) }
-                            )
+                            if (!mapFullscreen) {
+                                KingdomOverviewPanel(
+                                    playerId = yourPlayerId,
+                                    gameState = gameState,
+                                    onSelectCharacter = { selectedCharacterId = it },
+                                    sendAction = { ws.sendAction(it) }
+                                )
+                            }
                         }
                     } else if (currentTab == "history") {
                         // Game History Tab

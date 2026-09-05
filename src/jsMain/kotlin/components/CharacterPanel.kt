@@ -19,7 +19,8 @@ fun IComponent.CharacterPanel(
     gameState: GameState?,
     selectedCharacterId: String?,
     onSelectCharacter: (String) -> Unit,
-    sendAction: (GameAction) -> Unit
+    sendAction: (GameAction) -> Unit,
+    panelOpen: Boolean = false
 ) {
     val myPlayer = gameState?.players?.find { it.id == playerId }
     val myCharacters = gameState?.characters?.filter { it.playerId == playerId } ?: emptyList()
@@ -30,7 +31,8 @@ fun IComponent.CharacterPanel(
         ?: myCharacters.find { !it.hasActedThisTurn && !it.isDead } 
         ?: myCharacters.firstOrNull()
     
-    div(className = "character-panel glass flex-col gap-1") {
+    val panelClass = "character-panel glass flex-col gap-1${if (panelOpen) " panel-visible" else ""}"
+    div(className = panelClass) {
         div(className = "d-flex justify-between items-center") {
             h3(className = "m-0") { textNode(t("char.your_heroes")) }
             span(className = "text-xs text-gray") {
