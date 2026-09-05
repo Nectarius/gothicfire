@@ -1,0 +1,687 @@
+package i18n
+
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.MutableState
+import kotlinx.browser.localStorage
+import kotlinx.browser.window
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+
+enum class Language(val code: String, val displayName: String, val flag: String) {
+    EN("en", "English", "🇬🇧"),
+    EL("el", "Ελληνικά", "🇬🇷");
+
+    companion object {
+        fun fromCode(code: String): Language {
+            return entries.find { it.code.equals(code, ignoreCase = true) } ?: EN
+        }
+    }
+}
+
+private val fallbackEn = mapOf(
+    "nav.brand" to "Gothic Fire",
+    "nav.welcome" to "Welcome, {0}",
+    "nav.logout" to "Logout",
+    "nav.login_google" to "Login with Google",
+    "nav.login_twitter" to "Login with X/Twitter",
+    "nav.tab_notes" to "Private Notes",
+    "nav.tab_discussions" to "Public Discussion",
+    "nav.tab_map" to "War Map",
+    "nav.tab_history" to "Game History",
+    "nav.language" to "Language",
+
+    "lobby.title" to "Gothic Fire Team Battle",
+    "lobby.no_game" to "No game is currently active.",
+    "lobby.game_name" to "Game Name",
+    "lobby.your_name" to "Your Name",
+    "lobby.create_multiplayer" to "Create Multiplayer",
+    "lobby.play_pve" to "Play vs Computer",
+    "lobby.pve_setup" to "PvE Setup",
+    "lobby.choose_team" to "1. Choose Team:",
+    "lobby.red_team" to "Red Team",
+    "lobby.blue_team" to "Blue Team",
+    "lobby.team_color" to "Team Color:",
+    "lobby.custom_color" to "Custom Color:",
+    "lobby.color_yellow_reserved" to "Yellow is reserved for the AI.",
+    "lobby.coop_mode" to "2. Co-op Mode:",
+    "lobby.coop_enabled" to "ENABLED (2 Humans)",
+    "lobby.coop_disabled" to "DISABLED (Solo Mode)",
+    "lobby.choose_heroes" to "3. Choose 2 Heroes ({0}/2):",
+    "lobby.hero_badge" to "HERO #{0}",
+    "lobby.role" to "Role: {0}",
+    "lobby.role_mage" to "Mage",
+    "lobby.role_archer" to "Archer / Hunter",
+    "lobby.role_soldier" to "Soldier / Mercenary",
+    "lobby.role_hero" to "Hero",
+    "lobby.choose_castle" to "4. Choose Castle:",
+    "lobby.start_coop" to "Start Co-op Campaign",
+    "lobby.cancel" to "Cancel",
+    "lobby.game_created_by" to "Game created by {0}",
+    "lobby.join_coop" to "Join Co-op (PvE)",
+    "lobby.join_game" to "Join Game",
+    "lobby.create_team_1" to "Create Team 1",
+    "lobby.create_team_2" to "Create Team 2",
+    "lobby.team_name" to "Team Name",
+    "lobby.create_team_btn" to "Create Team",
+    "lobby.join_team" to "Join {0} ({1}/5)",
+    "lobby.choose_2_heroes" to "Choose Your 2 Heroes ({0}/2)",
+    "lobby.choose_heroes_desc" to "Select 2 iconic heroes from the Colony to lead into battle.",
+    "lobby.join_battle_count" to "Join Battle ({0}/2)",
+    "lobby.confirm_selection_count" to "Confirm Selection ({0}/2)",
+    "lobby.heroes_selected" to "Heroes Selected!",
+    "lobby.choose_team_castle" to "Choose your Team's Castle:",
+    "lobby.ready" to "Ready",
+    "lobby.select_ready" to "Select & Ready",
+    "lobby.unready" to "Unready",
+    "lobby.cancel_game" to "Cancel Game",
+    "lobby.cancel_game_desc" to "Cancel the current game and return to the main menu.",
+    "lobby.base" to "Base: {0}",
+    "lobby.no_base" to "No base chosen",
+    "lobby.team_1_not_created" to "TEAM 1 (NOT CREATED)",
+    "lobby.team_2_not_created" to "TEAM 2 (NOT CREATED)",
+    "lobby.enemy_team" to "ENEMY TEAM",
+    "lobby.status_ready" to "READY",
+    "lobby.status_not_ready" to "NOT READY",
+    "lobby.start_game" to "Start Game",
+    "lobby.creator_waiting" to "You are the Creator. Waiting for both teams to be created and all players to be ready...",
+
+    "hud.turn" to "Turn {0} / {1}",
+    "hud.game_over_win" to "Game Over! {0} Wins!",
+    "hud.your_turn" to "Your Team's Turn ({0})",
+    "hud.waiting_team" to "Waiting for {0}...",
+    "hud.your_team" to "Your Team",
+    "hud.enemy_team" to "Enemy Team",
+    "hud.market" to "⚖️ Market",
+    "hud.market_tip" to "Trade gold for food, or food for gold.",
+    "hud.recruit" to "⚔️ Recruit Army",
+    "hud.recruit_tip" to "Hire soldiers to join your heroes.",
+    "hud.finish_game" to "🛑 Finish Game",
+    "hud.finish_game_tip" to "End and reset the game for everyone.",
+    "hud.turns_end_auto" to "Turns end automatically.",
+
+    "char.your_heroes" to "Your Heroes",
+    "char.acted_count" to "{0}/{1} Acted",
+    "char.status_defeated" to "Defeated",
+    "char.status_acted" to "Acted",
+    "char.status_sector" to "Sector {0}",
+    "char.status_at_sector" to "At Sector {0}",
+    "char.status_unplaced" to "Unplaced",
+    "char.status_unplaced_click" to "Unplaced (Click map to place)",
+    "char.stat_war" to "WAR",
+    "char.stat_int" to "INT",
+    "char.stat_van" to "VAN",
+    "char.stat_arc" to "ARC",
+    "char.res_food" to "🌾 Food: {0}",
+    "char.res_gold" to "🪙 Gold: {0}",
+    "char.army_count" to "⚔️ Army: {0}/100",
+    "char.upkeep" to "Upkeep: {0}🌾/turn",
+    "char.starvation_warning" to "⚠️ Starvation Warning: Your army will suffer desertion next turn!",
+    "char.rest_skip" to "Rest (Skip Action)",
+    "char.send_resources" to "Send Resources",
+    "char.send_resources_tip" to "Send Resources (1 Action)",
+    "char.transfer_title" to "Transfer Resources",
+    "char.transfer_food_placeholder" to "🌾 Food",
+    "char.transfer_gold_placeholder" to "💰 Gold",
+    "char.transfer_cancel" to "Cancel",
+    "char.transfer_send" to "Send",
+    "char.scrolls_title" to "📜 Scrolls",
+    "char.scrolls_held" to "{0} held",
+    "char.scroll_use" to "Use",
+    "char.scroll_use_tip" to "Permanently boost {0}'s {1} by +{2}",
+    "char.scrolls_empty" to "No scrolls. Search territories to find them!",
+    "char.no_heroes" to "You haven't selected any heroes.",
+
+    "scroll.warlord" to "Warlord",
+    "scroll.intellect" to "Intellect",
+    "scroll.vanguard" to "Vanguard",
+    "scroll.archon" to "Archon",
+
+    "unit.light_infantry" to "Light Infantry",
+    "unit.archers" to "Archers",
+    "unit.heavy_infantry" to "Heavy Infantry",
+    "unit.mages" to "Mages",
+    "unit.selected" to "Selected",
+    "unit.requires_prot" to "Requires {0} 🛡️",
+    "unit.req_prot" to "Req: {0} 🛡️",
+
+    "market.title" to "⚖️ Merchant Caravan",
+    "market.desc" to "Trade resources with the traveling merchants. The exchange rates are fixed.",
+    "market.no_heroes" to "You have no living heroes to trade with.",
+    "market.trading_hero" to "Trading Hero:",
+    "market.your_wealth" to "Your Wealth:",
+    "market.buy_food" to "Buy Food",
+    "market.sell_food" to "Sell Food",
+    "market.rate_buy" to "Rate: 1 Gold = 1 Food",
+    "market.rate_sell" to "Rate: 2 Food = 1 Gold",
+    "market.gold" to "Gold",
+    "market.food" to "Food",
+    "market.complete_trade" to "Complete Trade",
+
+    "recruit.title" to "⚔️ Army Recruitment",
+    "recruit.no_heroes" to "You have no living heroes to recruit for.",
+    "recruit.recruiting_hero" to "Recruiting Hero:",
+    "recruit.current_wealth" to "Current Wealth:",
+    "recruit.protection_level" to "Sector Protection Level:",
+    "recruit.summary" to "Recruit {0} units for {1} 🪙",
+    "recruit.confirm" to "Confirm Recruitment",
+    "recruit.army_full" to "Army is full (100/100).",
+    "recruit.not_enough_gold" to "Not enough gold to recruit this unit.",
+
+    "kingdom.title" to "👑 Kingdom & Realm Overview",
+    "kingdom.holdings_of" to "Holdings of {0}",
+    "kingdom.tab_territories" to "🏰 Controlled Territories ({0})",
+    "kingdom.tab_heroes" to "🧙 Heroes & Scrolls ({0} 📜)",
+    "kingdom.metric_territories" to "🏰 Territories",
+    "kingdom.metric_food" to "🌾 Territory Food",
+    "kingdom.metric_gold" to "🪙 Territory Gold",
+    "kingdom.metric_defense" to "🛡️ Total Defense",
+    "kingdom.metric_army" to "⚔️ Total Army",
+    "kingdom.metric_scrolls" to "📜 Found Scrolls",
+    "kingdom.food_yield" to "🌾 Food Yield: ",
+    "kingdom.gold_yield" to "🪙 Gold Yield: ",
+    "kingdom.garrison" to "Garrison: ",
+    "kingdom.ungarrisoned" to "Ungarrisoned",
+    "kingdom.empty_territories" to "🏰 You have not conquered any territories yet. Move your heroes to adjacent sectors to claim lands and harvest their resources!",
+    "kingdom.bag_food" to "🌾 Bag: {0}",
+    "kingdom.bag_gold" to "🪙 Bag: {0}",
+    "kingdom.scrolls_count" to "{0} scrolls",
+    "kingdom.scroll_item" to "{0} {1} Scroll (+{2})",
+    "kingdom.no_scrolls" to "No scrolls found yet.",
+    "kingdom.no_heroes" to "No heroes selected.",
+
+    "territory.owned_you" to "Owned by You ({0})",
+    "territory.owned_ally" to "Owned by Ally ({0})",
+    "territory.controlled_enemy" to "Controlled by Enemy ({0} - {1})",
+    "territory.wilderness" to "Unclaimed Wilderness",
+    "territory.cultivation" to "🌱 Cultivation",
+    "territory.protection" to "🛡️ Protection",
+    "territory.stored_food" to "🌾 Stored Food",
+    "territory.stored_gold" to "🪙 Stored Gold",
+    "territory.actions_title" to "Territory Management Actions",
+    "territory.cultivate" to "🌱 Cultivate (+{0})",
+    "territory.cultivate_tip" to "Spends {0}'s turn to increase Cultivation by +{1}",
+    "territory.fortify" to "🛡️ Fortify (+{0})",
+    "territory.fortify_tip" to "Spends {0}'s turn to increase Protection by +{1}",
+    "territory.search_scrolls" to "🔍 Search for Scrolls (25% chance)",
+    "territory.search_scrolls_tip" to "{0} spends their turn searching this territory for ancient scrolls. 25% chance to find one!",
+    "territory.collect_all" to "💰 Collect All Resources ({0}🌾, {1}🪙) -> {2}",
+    "territory.collect_need_hero" to "💰 Collect Resources (Hero Must Be Here)",
+    "territory.move_hero_collect" to "📍 Move a hero here to collect stored resources ({0}🌾, {1}🪙).",
+    "territory.already_acted" to "{0} has already acted this turn.",
+    "territory.wait_team_turn" to "Wait for your team's turn to spend actions.",
+    "territory.capture_tip" to "Capture this territory by moving your hero into it.",
+    "territory.recruit_army_for" to "⚔️ Recruit Army for {0}",
+    "territory.use_char_panel_recruit" to "Use the Character Panel to recruit your army.",
+    "territory.buy_siege" to "🏹 Buy Siege Weapons",
+    "territory.siege_count" to "Siege Weapons: {0}",
+    "territory.siege_desc" to "Cost: 50🪙 each | Spends turn | Negates high protection (20+)",
+    "territory.buy_siege_btn" to "+1 Siege Weapon (50🪙)",
+    "territory.siege_acted" to "Already acted this turn",
+    "territory.siege_buy_tip" to "Buy 1 Siege Weapon for 50 gold. Spends your turn.",
+
+    "battle.prep_title" to "⚔️ Battle Estimation: Sector {0}",
+    "battle.win_prob" to "Estimated Win Probability",
+    "battle.domination_attacker" to "⚡ Overwhelming Army (10x+ Soldiers): 100% Guaranteed Victory with minimal casualties (<5%)!",
+    "battle.domination_defender" to "💀 Overwhelming Enemy Army (10x+ Soldiers): Certain Defeat!",
+    "battle.cas_light" to "🛡️ Light casualties expected (~5-15% soldier losses)",
+    "battle.cas_med" to "⚔️ Heavy battle: Contested clash (~20-40% soldier losses)",
+    "battle.cas_heavy" to "⚠️ Brutal battle: Extreme danger of heavy army losses or defeat",
+    "battle.attacker_you" to "Attacker (You)",
+    "battle.stat_str" to "💪 STR",
+    "battle.stat_agi" to "🏃 AGI",
+    "battle.stat_wis" to "🧠 WIS",
+    "battle.stat_army" to "⚔️ Army",
+    "battle.stat_prot" to "🛡️ Protection",
+    "battle.strategy_title" to "🏴 Battle Strategy",
+    "battle.bonus_text" to "+{0} combat bonus",
+    "battle.select_strat_tip" to "Select a strategy for a combat bonus",
+    "battle.strat_phalanx" to "🛡️ Arcane Phalanx",
+    "battle.strat_phalanx_desc" to "Heavy infantry locks shields while archers and mages unleash coordinated volleys from behind.",
+    "battle.strat_phalanx_req" to "Need >5 troops",
+    "battle.strat_hammer" to "⚔️ Hammer and Spell",
+    "battle.strat_hammer_desc" to "Infantry pins the frontline while battle mages flank and deliver the catastrophic finishing strike.",
+    "battle.strat_hammer_req" to "Need AGI≥6 & >3 troops",
+    "battle.strat_volley" to "🔥 Spell-Infused Volley",
+    "battle.strat_volley_desc" to "Mages enchant arrows with fire and lightning to disintegrate the opposing force before melee.",
+    "battle.strat_volley_req" to "Need WIS≥6 & >5 troops",
+    "battle.scrolls_avail" to "📜 Available Scrolls (Boost stats before fight)",
+    "battle.scrolls_in_bag" to "{0} in bag",
+    "battle.scroll_apply" to "Apply (+{0})",
+    "battle.scroll_apply_tip" to "Consume scroll to immediately boost {0}'s {1} by +{2}",
+    "battle.no_scrolls" to "No scrolls available to boost stats.",
+    "battle.retreat" to "🏳️ Retreat / Cancel",
+    "battle.retreat_tip" to "Do not attack. Any scrolls already consumed will remain used.",
+    "battle.confirm_attack" to "⚔️ Confirm Attack",
+    "battle.confirm_attack_tip" to "Engage in battle at Sector {0}!",
+
+    "popup.acknowledge" to "Acknowledge",
+    "popup.battle_report" to "Battle Report",
+    "popup.battle_message" to "Battle at Sector {0}!\n{1} defeated {2}{3}{4}",
+    "popup.casualties_lost" to " (⚔️ -{0} soldiers lost)",
+    "popup.no_casualties" to " (No casualties)",
+    "popup.scroll_found_title" to "Scroll Discovered",
+    "popup.scroll_found_msg" to "{0} found a {1} scroll! (+{2})",
+    "popup.scroll_failed_title" to "Search Failed",
+    "popup.scroll_failed_msg" to "{0} searched but found nothing...",
+
+    "nature.harvest_title" to "Abundant Harvest",
+    "nature.harvest_desc" to "A bountiful harvest has occurred! Food production in this territory is greatly increased for the turn.",
+    "nature.volunteers_title" to "Volunteers",
+    "nature.volunteers_desc" to "Brave locals have taken up arms! Light Infantry has joined the local army.",
+    "nature.hurricane_title" to "Hurricane",
+    "nature.hurricane_desc" to "A devastating hurricane has struck! Buildings are damaged and protection is reduced.",
+    "nature.flood_title" to "Flood",
+    "nature.flood_desc" to "Severe flooding has ruined the fields! Stored food in this territory has been washed away.",
+
+    "victory.title" to "Game Over!",
+    "victory.subtitle" to "{0} claims absolute victory!",
+    "victory.desc" to "The battle is won, and the realm bends to your will.",
+    "victory.return_map" to "Return to Map",
+
+    "history.title" to "Game History",
+    "history.error" to "Error loading history",
+    "history.loading" to "Loading history...",
+    "history.empty" to "No games have been finished yet.",
+    "history.empty_desc" to "Play a game to see the results here!",
+    "history.team_wins" to "🏆 {0} WINS!",
+    "history.draw" to "DRAW / NO WINNER",
+    "history.ended" to "Ended: {0}",
+    "history.turns" to "{0} Turns",
+    "history.no_players" to "No players",
+
+    "notes.title" to "Secure Notes & Global Discussions",
+    "notes.desc" to "Login to create your private notes and participate in the community discussion.",
+    "notes.add_note" to "Add Note",
+    "notes.save_note" to "Save Note",
+    "notes.delete" to "Delete",
+    "notes.join_discussion" to "Join the discussion",
+    "notes.mind_placeholder" to "What's on your mind?",
+    "notes.post" to "Post",
+    "notes.just_now" to "Just now",
+    "notes.title_placeholder" to "Title",
+    "notes.content_placeholder" to "Content",
+    "app.conn_error" to "Connection Error",
+    "app.reconnect" to "Reconnect",
+    "lobby.play_pve_independent" to "Play vs Computer (Solo/Co-op)",
+    "lobby.observing_notice" to "You are observing an active match.",
+    "lobby.observing_desc" to "Would you like to play your own game against the computer instead?",
+    "hud.leave_game" to "🚪 Leave Game",
+    "hud.leave_game_tip" to "Leave this match and return to the main menu or play vs computer.",
+    "nav.play_pve" to "⚔️ Play vs Computer"
+)
+
+private val fallbackEl = mapOf(
+    "nav.brand" to "Gothic Fire",
+    "nav.welcome" to "Καλώς ήρθατε, {0}",
+    "nav.logout" to "Αποσύνδεση",
+    "nav.login_google" to "Σύνδεση με Google",
+    "nav.login_twitter" to "Σύνδεση με X/Twitter",
+    "nav.tab_notes" to "Προσωπικές Σημειώσεις",
+    "nav.tab_discussions" to "Δημόσια Συζήτηση",
+    "nav.tab_map" to "Χάρτης Πολέμου",
+    "nav.tab_history" to "Ιστορικό Παιχνιδιού",
+    "nav.language" to "Γλώσσα",
+
+    "lobby.title" to "Ομαδική Μάχη Gothic Fire",
+    "lobby.no_game" to "Δεν υπάρχει ενεργό παιχνίδι αυτή τη στιγμή.",
+    "lobby.game_name" to "Όνομα Παιχνιδιού",
+    "lobby.your_name" to "Το Όνομά Σας",
+    "lobby.create_multiplayer" to "Δημιουργία Παιχνιδιού",
+    "lobby.play_pve" to "Παιχνίδι εναντίον Υπολογιστή",
+    "lobby.pve_setup" to "Ρύθμιση PvE",
+    "lobby.choose_team" to "1. Επιλογή Ομάδας:",
+    "lobby.red_team" to "Κόκκινη Ομάδα",
+    "lobby.blue_team" to "Μπλε Ομάδα",
+    "lobby.team_color" to "Χρώμα Ομάδας:",
+    "lobby.custom_color" to "Προσαρμοσμένο Χρώμα:",
+    "lobby.color_yellow_reserved" to "Το κίτρινο είναι δεσμευμένο για την ΤΝ (AI).",
+    "lobby.coop_mode" to "2. Συνεργατική Λειτουργία (Co-op):",
+    "lobby.coop_enabled" to "ΕΝΕΡΓΟΠΟΙΗΜΕΝΟ (2 Παίκτες)",
+    "lobby.coop_disabled" to "ΑΠΕΝΕΡΓΟΠΟΙΗΜΕΝΟ (Σόλο)",
+    "lobby.choose_heroes" to "3. Επιλέξτε 2 Ήρωες ({0}/2):",
+    "lobby.hero_badge" to "ΗΡΩΑΣ #{0}",
+    "lobby.role" to "Ρόλος: {0}",
+    "lobby.role_mage" to "Μάγος",
+    "lobby.role_archer" to "Τοξότης / Κυνηγός",
+    "lobby.role_soldier" to "Στρατιώτης / Μισθοφόρος",
+    "lobby.role_hero" to "Ήρωας",
+    "lobby.choose_castle" to "4. Επιλογή Κάστρου:",
+    "lobby.start_coop" to "Έναρξη Συνεργατικής Εκστρατείας",
+    "lobby.cancel" to "Ακύρωση",
+    "lobby.game_created_by" to "Το παιχνίδι δημιουργήθηκε από {0}",
+    "lobby.join_coop" to "Συμμετοχή σε Co-op (PvE)",
+    "lobby.join_game" to "Συμμετοχή στο Παιχνίδι",
+    "lobby.create_team_1" to "Δημιουργία Ομάδας 1",
+    "lobby.create_team_2" to "Δημιουργία Ομάδας 2",
+    "lobby.team_name" to "Όνομα Ομάδας",
+    "lobby.create_team_btn" to "Δημιουργία Ομάδας",
+    "lobby.join_team" to "Συμμετοχή στην {0} ({1}/5)",
+    "lobby.choose_2_heroes" to "Επιλέξτε τους 2 Ήρωές σας ({0}/2)",
+    "lobby.choose_heroes_desc" to "Επιλέξτε 2 εμβληματικούς ήρωες από την Αποικία για να οδηγήσετε στη μάχη.",
+    "lobby.join_battle_count" to "Συμμετοχή στη Μάχη ({0}/2)",
+    "lobby.confirm_selection_count" to "Επιβεβαίωση Επιλογής ({0}/2)",
+    "lobby.heroes_selected" to "Οι Ήρωες Επιλέχθηκαν!",
+    "lobby.choose_team_castle" to "Επιλέξτε το Κάστρο της Ομάδας σας:",
+    "lobby.ready" to "Έτοιμος",
+    "lobby.select_ready" to "Επιλογή & Έτοιμος",
+    "lobby.unready" to "Ακύρωση Ετοιμότητας",
+    "lobby.cancel_game" to "Ακύρωση Παιχνιδιού",
+    "lobby.cancel_game_desc" to "Ακύρωση του τρέχοντος παιχνιδιού και επιστροφή στο αρχικό μενού.",
+    "lobby.base" to "Βάση: {0}",
+    "lobby.no_base" to "Δεν έχει επιλεγεί βάση",
+    "lobby.team_1_not_created" to "ΟΜΑΔΑ 1 (ΔΕΝ ΕΧΕΙ ΔΗΜΙΟΥΡΓΗΘΕΙ)",
+    "lobby.team_2_not_created" to "ΟΜΑΔΑ 2 (ΔΕΝ ΕΧΕΙ ΔΗΜΙΟΥΡΓΗΘΕΙ)",
+    "lobby.enemy_team" to "ΕΧΘΡΙΚΗ ΟΜΑΔΑ",
+    "lobby.status_ready" to "ΕΤΟΙΜΟΣ",
+    "lobby.status_not_ready" to "ΜΗ ΕΤΟΙΜΟΣ",
+    "lobby.start_game" to "Έναρξη Παιχνιδιού",
+    "lobby.creator_waiting" to "Είστε ο Δημιουργός. Αναμονή για τη δημιουργία και των δύο ομάδων και την ετοιμότητα όλων των παικτών...",
+
+    "hud.turn" to "Γύρος {0} / {1}",
+    "hud.game_over_win" to "Τέλος Παιχνιδιού! Η ομάδα {0} Κερδίζει!",
+    "hud.your_turn" to "Σειρά της Ομάδας σας ({0})",
+    "hud.waiting_team" to "Αναμονή για {0}...",
+    "hud.your_team" to "Η Ομάδα σας",
+    "hud.enemy_team" to "Εχθρική Ομάδα",
+    "hud.market" to "⚖️ Αγορά",
+    "hud.market_tip" to "Ανταλλάξτε χρυσό για τρόφιμα ή τρόφιμα για χρυσό.",
+    "hud.recruit" to "⚔️ Στρατολόγηση",
+    "hud.recruit_tip" to "Προσλάβετε στρατιώτες για να ενταχθούν στους ήρωές σας.",
+    "hud.finish_game" to "🛑 Τερματισμός Παιχνιδιού",
+    "hud.finish_game_tip" to "Τερματισμός και επαναφορά του παιχνιδιού για όλους.",
+    "hud.turns_end_auto" to "Οι γύροι ολοκληρώνονται αυτόματα.",
+
+    "char.your_heroes" to "Οι Ήρωές Σας",
+    "char.acted_count" to "{0}/{1} Ενήργησαν",
+    "char.status_defeated" to "Ηττήθηκε",
+    "char.status_acted" to "Ενήργησε",
+    "char.status_sector" to "Τομέας {0}",
+    "char.status_at_sector" to "Στον Τομέα {0}",
+    "char.status_unplaced" to "Μη τοποθετημένος",
+    "char.status_unplaced_click" to "Μη τοποθετημένος (Κλικ στο χάρτη για τοποθέτηση)",
+    "char.stat_war" to "ΠΟΛ",
+    "char.stat_int" to "ΝΟΗ",
+    "char.stat_van" to "ΠΡΩ",
+    "char.stat_arc" to "ΑΡΧ",
+    "char.res_food" to "🌾 Τρόφιμα: {0}",
+    "char.res_gold" to "🪙 Χρυσός: {0}",
+    "char.army_count" to "⚔️ Στρατός: {0}/100",
+    "char.upkeep" to "Συντήρηση: {0}🌾/γύρο",
+    "char.starvation_warning" to "⚠️ Προειδοποίηση Λιμού: Ο στρατός σας θα υποστεί λιποταξίες στον επόμενο γύρο!",
+    "char.rest_skip" to "Ανάπαυση (Παράλειψη Ενέργειας)",
+    "char.send_resources" to "Αποστολή Πόρων",
+    "char.send_resources_tip" to "Αποστολή Πόρων (1 Ενέργεια)",
+    "char.transfer_title" to "Μεταφορά Πόρων",
+    "char.transfer_food_placeholder" to "🌾 Τρόφιμα",
+    "char.transfer_gold_placeholder" to "💰 Χρυσός",
+    "char.transfer_cancel" to "Ακύρωση",
+    "char.transfer_send" to "Αποστολή",
+    "char.scrolls_title" to "📜 Πάπυροι",
+    "char.scrolls_held" to "{0} στην κατοχή",
+    "char.scroll_use" to "Χρήση",
+    "char.scroll_use_tip" to "Μόνιμη ενίσχυση {1} του/της {0} κατά +{2}",
+    "char.scrolls_empty" to "Δεν υπάρχουν πάπυροι. Ερευνήστε εδάφη για να βρείτε!",
+    "char.no_heroes" to "Δεν έχετε επιλέξει ήρωες.",
+
+    "scroll.warlord" to "Πολεμάρχου",
+    "scroll.intellect" to "Νόησης",
+    "scroll.vanguard" to "Πρωτοπορίας",
+    "scroll.archon" to "Άρχοντα",
+
+    "unit.light_infantry" to "Ελαφρύ Πεζικό",
+    "unit.archers" to "Τοξότες",
+    "unit.heavy_infantry" to "Βαρύ Πεζικό",
+    "unit.mages" to "Μάγοι",
+    "unit.selected" to "Επιλεγμένο",
+    "unit.requires_prot" to "Απαιτεί {0} 🛡️",
+    "unit.req_prot" to "Απαιτ: {0} 🛡️",
+
+    "market.title" to "⚖️ Καραβάνι Εμπόρων",
+    "market.desc" to "Ανταλλάξτε πόρους με τους περιοδεύοντες εμπόρους. Οι τιμές ανταλλαγής είναι σταθερές.",
+    "market.no_heroes" to "Δεν έχετε ζωντανούς ήρωες για συναλλαγή.",
+    "market.trading_hero" to "Ήρωας Συναλλαγής:",
+    "market.your_wealth" to "Ο Πλούτος Σας:",
+    "market.buy_food" to "Αγορά Τροφίμων",
+    "market.sell_food" to "Πώληση Τροφίμων",
+    "market.rate_buy" to "Ισοτιμία: 1 Χρυσός = 1 Τρόφιμο",
+    "market.rate_sell" to "Ισοτιμία: 2 Τρόφιμα = 1 Χρυσός",
+    "market.gold" to "Χρυσός",
+    "market.food" to "Τρόφιμα",
+    "market.complete_trade" to "Ολοκλήρωση Συναλλαγής",
+
+    "recruit.title" to "⚔️ Στρατολόγηση Στρατού",
+    "recruit.no_heroes" to "Δεν έχετε ζωντανούς ήρωες για στρατολόγηση.",
+    "recruit.recruiting_hero" to "Ήρωας Στρατολόγησης:",
+    "recruit.current_wealth" to "Τρέχων Πλούτος:",
+    "recruit.protection_level" to "Επίπεδο Προστασίας Τομέα:",
+    "recruit.summary" to "Στρατολόγηση {0} μονάδων για {1} 🪙",
+    "recruit.confirm" to "Επιβεβαίωση Στρατολόγησης",
+    "recruit.army_full" to "Ο στρατός είναι πλήρης (100/100).",
+    "recruit.not_enough_gold" to "Δεν υπάρχει αρκετός χρυσός για τη στρατολόγηση αυτής της μονάδας.",
+
+    "kingdom.title" to "👑 Επισκόπηση Βασιλείου & Επικράτειας",
+    "kingdom.holdings_of" to "Κτήσεις του/της {0}",
+    "kingdom.tab_territories" to "🏰 Ελεγχόμενα Εδάφη ({0})",
+    "kingdom.tab_heroes" to "🧙 Ήρωες & Πάπυροι ({0} 📜)",
+    "kingdom.metric_territories" to "🏰 Εδάφη",
+    "kingdom.metric_food" to "🌾 Τρόφιμα Εδαφών",
+    "kingdom.metric_gold" to "🪙 Χρυσός Εδαφών",
+    "kingdom.metric_defense" to "🛡️ Συνολική Άμυνα",
+    "kingdom.metric_army" to "⚔️ Συνολικός Στρατός",
+    "kingdom.metric_scrolls" to "📜 Ευρεθέντες Πάπυροι",
+    "kingdom.food_yield" to "🌾 Παραγωγή Τροφίμων: ",
+    "kingdom.gold_yield" to "🪙 Παραγωγή Χρυσού: ",
+    "kingdom.garrison" to "Φρουρά: ",
+    "kingdom.ungarrisoned" to "Χωρίς φρουρά",
+    "kingdom.empty_territories" to "🏰 Δεν έχετε κατακτήσει ακόμη εδάφη. Μετακινήστε τους ήρωές σας σε γειτονικούς τομείς για να διεκδικήσετε εδάφη και να συγκομίσετε τους πόρους τους!",
+    "kingdom.bag_food" to "🌾 Σάκος: {0}",
+    "kingdom.bag_gold" to "🪙 Σάκος: {0}",
+    "kingdom.scrolls_count" to "{0} πάπυροι",
+    "kingdom.scroll_item" to "{0} Πάπυρος {1} (+{2})",
+    "kingdom.no_scrolls" to "Δεν έχουν βρεθεί πάπυροι ακόμη.",
+    "kingdom.no_heroes" to "Δεν έχουν επιλεγεί ήρωες.",
+
+    "territory.owned_you" to "Ιδιοκτησία Σας ({0})",
+    "territory.owned_ally" to "Ιδιοκτησία Συμμάχου ({0})",
+    "territory.controlled_enemy" to "Υπό Εχθρικό Έλεγχο ({0} - {1})",
+    "territory.wilderness" to "Αδέσποτη Άγρια Φύση",
+    "territory.cultivation" to "🌱 Καλλιέργεια",
+    "territory.protection" to "🛡️ Προστασία",
+    "territory.stored_food" to "🌾 Αποθηκευμένα Τρόφιμα",
+    "territory.stored_gold" to "🪙 Αποθηκευμένος Χρυσός",
+    "territory.actions_title" to "Ενέργειες Διαχείρισης Εδάφους",
+    "territory.cultivate" to "🌱 Καλλιέργεια (+{0})",
+    "territory.cultivate_tip" to "Αναλώνει τη σειρά του/της {0} για να αυξήσει την Καλλιέργεια κατά +{1}",
+    "territory.fortify" to "🛡️ Οχύρωση (+{0})",
+    "territory.fortify_tip" to "Αναλώνει τη σειρά του/της {0} για να αυξήσει την Προστασία κατά +{1}",
+    "territory.search_scrolls" to "🔍 Αναζήτηση Παπύρων (25% πιθανότητα)",
+    "territory.search_scrolls_tip" to "Ο/Η {0} αναλώνει τη σειρά του/της ερευνώντας για αρχαίους παπύρους. 25% πιθανότητα εύρεσης!",
+    "territory.collect_all" to "💰 Συλλογή Όλων των Πόρων ({0}🌾, {1}🪙) -> {2}",
+    "territory.collect_need_hero" to "💰 Συλλογή Πόρων (Ο Ήρωας πρέπει να είναι εδώ)",
+    "territory.move_hero_collect" to "📍 Μετακινήστε έναν ήρωα εδώ για να συλλέξετε τους αποθηκευμένους πόρους ({0}🌾, {1}🪙).",
+    "territory.already_acted" to "Ο/Η {0} έχει ήδη ενεργήσει σε αυτόν τον γύρο.",
+    "territory.wait_team_turn" to "Περιμένετε τη σειρά της ομάδας σας για να εκτελέσετε ενέργειες.",
+    "territory.capture_tip" to "Κατακτήστε αυτό το έδαφος μετακινώντας τον ήρωά σας σε αυτό.",
+    "territory.recruit_army_for" to "⚔️ Στρατολόγηση Στρατού για {0}",
+    "territory.use_char_panel_recruit" to "Χρησιμοποιήστε τον Πίνακα Ηρώων για να στρατολογήσετε το στρατό σας.",
+    "territory.buy_siege" to "🏹 Αγορά Πολιορκητικών Όπλων",
+    "territory.siege_count" to "Πολιορκητικά Όπλα: {0}",
+    "territory.siege_desc" to "Κόστος: 50🪙 έκαστο | Αναλώνει γύρο | Εξουδετερώνει υψηλή προστασία (20+)",
+    "territory.buy_siege_btn" to "+1 Πολιορκητικό Όπλο (50🪙)",
+    "territory.siege_acted" to "Έχει ήδη ενεργήσει σε αυτόν τον γύρο",
+    "territory.siege_buy_tip" to "Αγοράστε 1 Πολιορκητικό Όπλο για 50 χρυσό. Αναλώνει τη σειρά σας.",
+
+    "battle.prep_title" to "⚔️ Εκτίμηση Μάχης: Τομέας {0}",
+    "battle.win_prob" to "Εκτιμώμενη Πιθανότητα Νίκης",
+    "battle.domination_attacker" to "⚡ Συντριπτικός Στρατός (10x+ Στρατιώτες): 100% Εγγυημένη Νίκη με ελάχιστες απώλειες (<5%)!",
+    "battle.domination_defender" to "💀 Συντριπτικός Εχθρικός Στρατός (10x+ Στρατιώτες): Βέβαιη Ήττα!",
+    "battle.cas_light" to "🛡️ Αναμένονται ελαφρές απώλειες (~5-15% απώλειες στρατιωτών)",
+    "battle.cas_med" to "⚔️ Σκληρή μάχη: Αμφίρροπη σύγκρουση (~20-40% απώλειες στρατιωτών)",
+    "battle.cas_heavy" to "⚠️ Βάναυση μάχη: Ακραίος κίνδυνος μεγάλων απωλειών στρατού ή ήττας",
+    "battle.attacker_you" to "Επιτιθέμενος (Εσείς)",
+    "battle.stat_str" to "💪 ΔΥΝ",
+    "battle.stat_agi" to "🏃 ΕΠΙ",
+    "battle.stat_wis" to "🧠 ΣΟΦ",
+    "battle.stat_army" to "⚔️ Στρατός",
+    "battle.stat_prot" to "🛡️ Προστασία",
+    "battle.strategy_title" to "🏴 Στρατηγική Μάχης",
+    "battle.bonus_text" to "+{0} μπόνους μάχης",
+    "battle.select_strat_tip" to "Επιλέξτε στρατηγική για μπόνους μάχης",
+    "battle.strat_phalanx" to "🛡️ Μυστικιστική Φάλαγγα",
+    "battle.strat_phalanx_desc" to "Το βαρύ πεζικό κλειδώνει τις ασπίδες ενώ τοξότες και μάγοι εξαπολύουν συντονισμένες ομοβροντίες από πίσω.",
+    "battle.strat_phalanx_req" to "Απαιτούνται >5 στρατιώτες",
+    "battle.strat_hammer" to "⚔️ Σφύρα και Ξόρκι",
+    "battle.strat_hammer_desc" to "Το πεζικό καθηλώνει την πρώτη γραμμή ενώ οι μάγοι μάχης πλαγιοκοπούν και δίνουν το καταστροφικό τελειωτικό χτύπημα.",
+    "battle.strat_hammer_req" to "Απαιτείται ΕΠΙ≥6 & >3 στρατιώτες",
+    "battle.strat_volley" to "🔥 Ομοβροντία με Ξόρκια",
+    "battle.strat_volley_desc" to "Οι μάγοι μαγεύουν τα βέλη με φωτιά και κεραυνούς για να διαλύσουν την αντίπαλη δύναμη πριν από τη συμπλοκή σώμα με σώμα.",
+    "battle.strat_volley_req" to "Απαιτείται ΣΟΦ≥6 & >5 στρατιώτες",
+    "battle.scrolls_avail" to "📜 Διαθέσιμοι Πάπυροι (Ενίσχυση χαρακτηριστικών πριν τη μάχη)",
+    "battle.scrolls_in_bag" to "{0} στο σάκο",
+    "battle.scroll_apply" to "Εφαρμογή (+{0})",
+    "battle.scroll_apply_tip" to "Χρησιμοποιήστε τον πάπυρο για άμεση ενίσχυση {1} του/της {0} κατά +{2}",
+    "battle.no_scrolls" to "Δεν υπάρχουν διαθέσιμοι πάπυροι για ενίσχυση χαρακτηριστικών.",
+    "battle.retreat" to "🏳️ Υποχώρηση / Ακύρωση",
+    "battle.retreat_tip" to "Αποφυγή επίθεσης. Οι πάπυροι που χρησιμοποιήθηκαν ήδη παραμένουν αναλωμένοι.",
+    "battle.confirm_attack" to "⚔️ Επιβεβαίωση Επίθεσης",
+    "battle.confirm_attack_tip" to "Έναρξη μάχης στον Τομέα {0}!",
+
+    "popup.acknowledge" to "Κατανόηση",
+    "popup.battle_report" to "Αναφορά Μάχης",
+    "popup.battle_message" to "Μάχη στον Τομέα {0}!\nΟ/Η {1} νίκησε τον/την {2}{3}{4}",
+    "popup.casualties_lost" to " (⚔️ -{0} στρατιώτες χάθηκαν)",
+    "popup.no_casualties" to " (Χωρίς απώλειες)",
+    "popup.scroll_found_title" to "Ανακαλύφθηκε Πάπυρος",
+    "popup.scroll_found_msg" to "Ο/Η {0} βρήκε έναν πάπυρο {1}! (+{2})",
+    "popup.scroll_failed_title" to "Η Αναζήτηση Απέτυχε",
+    "popup.scroll_failed_msg" to "Ο/Η {0} ερεύνησε αλλά δεν βρήκε τίποτα...",
+
+    "nature.harvest_title" to "Άφθονη Σοδειά",
+    "nature.harvest_desc" to "Μια πλούσια σοδειά συνέβη! Η παραγωγή τροφίμων σε αυτό το έδαφος αυξάνεται σημαντικά για αυτόν τον γύρο.",
+    "nature.volunteers_title" to "Εθελοντές",
+    "nature.volunteers_desc" to "Γενναίοι ντόπιοι πήραν τα όπλα! Ελαφρύ Πεζικό εντάχθηκε στον τοπικό στρατό.",
+    "nature.hurricane_title" to "Τυφώνας",
+    "nature.hurricane_desc" to "Ένας καταστροφικός τυφώνας χτύπησε! Κτίρια υπέστησαν ζημιές και η προστασία μειώθηκε.",
+    "nature.flood_title" to "Πλημμύρα",
+    "nature.flood_desc" to "Σοβαρή πλημμύρα κατέστρεψε τα χωράφια! Τα αποθηκευμένα τρόφιμα σε αυτό το έδαφος παρασύρθηκαν.",
+
+    "victory.title" to "Τέλος Παιχνιδιού!",
+    "victory.subtitle" to "Η ομάδα {0} διεκδικεί την απόλυτη νίκη!",
+    "victory.desc" to "Η μάχη κερδήθηκε, και το βασίλειο υποτάσσεται στη θέλησή σας.",
+    "victory.return_map" to "Επιστροφή στο Χάρτη",
+
+    "history.title" to "Ιστορικό Παιχνιδιού",
+    "history.error" to "Σφάλμα φόρτωσης ιστορικού",
+    "history.loading" to "Φόρτωση ιστορικού...",
+    "history.empty" to "Δεν έχει ολοκληρωθεί κανένα παιχνίδι ακόμη.",
+    "history.empty_desc" to "Παίξτε ένα παιχνίδι για να δείτε τα αποτελέσματα εδώ!",
+    "history.team_wins" to "🏆 Η ΟΜΑΔΑ {0} ΝΙΚΗΣΕ!",
+    "history.draw" to "ΙΣΟΠΑΛΙΑ / ΚΑΝΕΝΑΣ ΝΙΚΗΤΗΣ",
+    "history.ended" to "Έληξε: {0}",
+    "history.turns" to "{0} Γύροι",
+    "history.no_players" to "Χωρίς παίκτες",
+
+    "notes.title" to "Ασφαλείς Σημειώσεις & Παγκόσμιες Συζητήσεις",
+    "notes.desc" to "Συνδεθείτε για να δημιουργήσετε ιδιωτικές σημειώσεις και να συμμετάσχετε στη συζήτηση της κοινότητας.",
+    "notes.add_note" to "Προσθήκη Σημείωσης",
+    "notes.save_note" to "Αποθήκευση Σημείωσης",
+    "notes.delete" to "Διαγραφή",
+    "notes.join_discussion" to "Συμμετοχή στη συζήτηση",
+    "notes.mind_placeholder" to "Τι σκέφτεστε;",
+    "notes.post" to "Δημοσίευση",
+    "notes.just_now" to "Μόλις τώρα",
+    "notes.title_placeholder" to "Τίτλος",
+    "notes.content_placeholder" to "Περιεχόμενο",
+    "app.conn_error" to "Σφάλμα Σύνδεσης",
+    "app.reconnect" to "Επανασύνδεση",
+    "lobby.play_pve_independent" to "Παιχνίδι εναντίον Υπολογιστή (Σόλο/Co-op)",
+    "lobby.observing_notice" to "Παρακολουθείτε έναν ενεργό αγώνα.",
+    "lobby.observing_desc" to "Θέλετε να ξεκινήσετε το δικό σας παιχνίδι εναντίον του υπολογιστή;",
+    "hud.leave_game" to "🚪 Έξοδος από το Παιχνίδι",
+    "hud.leave_game_tip" to "Έξοδος από αυτόν τον αγώνα και επιστροφή στο αρχικό μενού ή παιχνίδι εναντίον του υπολογιστή.",
+    "nav.play_pve" to "⚔️ Παιχνίδι εναντίον Υπολογιστή"
+)
+
+object I18n {
+    private const val STORAGE_KEY = "gothic_fire_lang"
+    
+    val currentLanguage: MutableState<Language> = mutableStateOf(getInitialLanguage())
+    
+    // Dynamic translations map loaded from external JSON text files
+    private val translations = mutableMapOf<String, MutableMap<String, String>>()
+
+    init {
+        // Pre-populate built-in fallbacks
+        translations["en"] = fallbackEn.toMutableMap()
+        translations["el"] = fallbackEl.toMutableMap()
+        
+        // Fetch external dedicated files if running in browser
+        loadLanguageFile(currentLanguage.value)
+    }
+
+    private fun getInitialLanguage(): Language {
+        return try {
+            val saved = localStorage.getItem(STORAGE_KEY)
+            if (saved != null) {
+                Language.fromCode(saved)
+            } else {
+                val navLang = window.navigator.language.lowercase()
+                if (navLang.startsWith("el")) Language.EL else Language.EN
+            }
+        } catch (e: Throwable) {
+            Language.EN
+        }
+    }
+
+    fun setLanguage(lang: Language) {
+        currentLanguage.value = lang
+        try {
+            localStorage.setItem(STORAGE_KEY, lang.code)
+        } catch (e: Throwable) {
+            // Ignore if localStorage unavailable
+        }
+        loadLanguageFile(lang)
+    }
+
+    fun loadLanguageFile(lang: Language) {
+        try {
+            window.fetch("/locales/${lang.code}.json")
+                .then { res -> res.text() }
+                .then { text ->
+                    try {
+                        val json = Json.parseToJsonElement(text).jsonObject
+                        val langMap = translations.getOrPut(lang.code) { mutableMapOf() }
+                        for ((k, v) in json) {
+                            langMap[k] = v.jsonPrimitive.content
+                        }
+                        // Re-assign to notify Compose subscribers of updated strings
+                        currentLanguage.value = lang
+                    } catch (e: Throwable) {
+                        // Keep using fallback
+                    }
+                }
+        } catch (e: Throwable) {
+            // Ignore if offline / fetch unavailable
+        }
+    }
+
+    fun t(key: String, vararg args: Any): String {
+        val lang = currentLanguage.value
+        val raw = translations[lang.code]?.get(key)
+            ?: translations["en"]?.get(key)
+            ?: fallbackEn[key]
+            ?: key
+
+        if (args.isEmpty()) return raw
+
+        var formatted = raw
+        for (i in args.indices) {
+            formatted = formatted.replace("{$i}", args[i].toString())
+        }
+        return formatted
+    }
+}
+
+// Convenient shorthand function
+fun t(key: String, vararg args: Any): String = I18n.t(key, *args)

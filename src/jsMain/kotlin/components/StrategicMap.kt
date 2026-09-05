@@ -4,6 +4,7 @@ import androidx.compose.runtime.*
 import dev.kilua.compose.ComponentNode
 import dev.kilua.core.IComponent
 import dev.kilua.html.*
+import i18n.t
 import models.GameState
 import models.isAdjacentSector
 import models.isCharacterVisibleToPlayer
@@ -165,9 +166,9 @@ fun IComponent.StrategicMap(
                         }
                         if (fightStrategy != BattleStrategy.NONE) {
                             val stratLabel = when (fightStrategy) {
-                                BattleStrategy.ARCANE_PHALANX -> "Arcane Phalanx"
-                                BattleStrategy.HAMMER_AND_SPELL -> "Hammer & Spell"
-                                BattleStrategy.SPELL_INFUSED_VOLLEY -> "Spell Volley"
+                                BattleStrategy.ARCANE_PHALANX -> t("battle.strat_phalanx")
+                                BattleStrategy.HAMMER_AND_SPELL -> t("battle.strat_hammer")
+                                BattleStrategy.SPELL_INFUSED_VOLLEY -> t("battle.strat_volley")
                                 else -> ""
                             }
                             div(className = "fight-strategy-label fight-strategy-label-${fightStrategy.name.lowercase()}") {
@@ -175,6 +176,7 @@ fun IComponent.StrategicMap(
                             }
                         }
                     }
+
 
                     // Handle clicks
                     onClick {
@@ -302,7 +304,7 @@ fun IComponent.StrategicMap(
                         // Header
                         div(className = "d-flex justify-between items-center mb-1") {
                             h3(className = "m-0") { 
-                                textNode("⚔️ Battle Estimation: Sector ${pb.targetSector}")
+                                textNode(t("battle.prep_title", pb.targetSector))
                                 if (territoryData?.name != null) textNode(" (${territoryData.name})")
                             }
                             button("✕", className = "btn-modal-close") {
@@ -316,22 +318,22 @@ fun IComponent.StrategicMap(
                         // Win Chance Banner
                         div(className = "battle-win-chance-banner $chanceClass mb-1") {
                             div(className = "d-flex justify-between items-center") {
-                                span(className = "font-600 text-sm") { textNode("Estimated Win Probability") }
+                                span(className = "font-600 text-sm") { textNode(t("battle.win_prob")) }
                                 span(className = "win-chance-value") { textNode("$winChance%") }
                             }
                             if (isAttacker10x) {
                                 div(className = "army-domination-tag mt-03 text-xs") {
-                                    textNode("⚡ Overwhelming Army (10x+ Soldiers): 100% Guaranteed Victory with minimal casualties (<5%)!")
+                                    textNode(t("battle.domination_attacker"))
                                 }
                             } else if (isDefender10x) {
                                 div(className = "army-domination-tag-danger mt-03 text-xs") {
-                                    textNode("💀 Overwhelming Enemy Army (10x+ Soldiers): Certain Defeat!")
+                                    textNode(t("battle.domination_defender"))
                                 }
                             } else {
                                 val casualtyEstimate = when {
-                                    winChance >= 75 -> "🛡️ Light casualties expected (~5-15% soldier losses)"
-                                    winChance >= 45 -> "⚔️ Heavy battle: Contested clash (~20-40% soldier losses)"
-                                    else -> "⚠️ Brutal battle: Extreme danger of heavy army losses or defeat"
+                                    winChance >= 75 -> t("battle.cas_light")
+                                    winChance >= 45 -> t("battle.cas_med")
+                                    else -> t("battle.cas_heavy")
                                 }
                                 div(className = "mt-03 text-xs text-gray") {
                                     textNode(casualtyEstimate)
@@ -345,23 +347,23 @@ fun IComponent.StrategicMap(
                             div(className = "combatant-card attacker-card glass") {
                                 div(className = "combatant-header") {
                                     span(className = "font-600 text-primary") { textNode(battleChar.name) }
-                                    span(className = "text-xs text-gray") { textNode("Attacker (You)") }
+                                    span(className = "text-xs text-gray") { textNode(t("battle.attacker_you")) }
                                 }
                                 div(className = "combatant-stats mt-05") {
                                     div(className = "stat-row") {
-                                        span { textNode("💪 STR") }
+                                        span { textNode(t("battle.stat_str")) }
                                         span { textNode("${battleChar.warlord}") }
                                     }
                                     div(className = "stat-row") {
-                                        span { textNode("🏃 AGI") }
+                                        span { textNode(t("battle.stat_agi")) }
                                         span { textNode("${battleChar.vanguard}") }
                                     }
                                     div(className = "stat-row") {
-                                        span { textNode("🧠 WIS") }
+                                        span { textNode(t("battle.stat_wis")) }
                                         span { textNode("${battleChar.intellect}") }
                                     }
                                     div(className = "stat-row font-600 text-warning") {
-                                        span { textNode("⚔️ Army") }
+                                        span { textNode(t("battle.stat_army")) }
                                         span { textNode("${battleChar.army.total()}") }
                                     }
                                 }
@@ -375,28 +377,28 @@ fun IComponent.StrategicMap(
                                         style("color", enemyColor)
                                         textNode(enemyChar.name) 
                                     }
-                                    span(className = "text-xs text-gray") { textNode(enemyPlayer?.name ?: "Enemy") }
+                                    span(className = "text-xs text-gray") { textNode(enemyPlayer?.name ?: t("hud.enemy_team")) }
                                 }
                                 div(className = "combatant-stats mt-05") {
                                     div(className = "stat-row") {
-                                        span { textNode("💪 STR") }
+                                        span { textNode(t("battle.stat_str")) }
                                         span { textNode("${enemyChar.warlord}") }
                                     }
                                     div(className = "stat-row") {
-                                        span { textNode("🏃 AGI") }
+                                        span { textNode(t("battle.stat_agi")) }
                                         span { textNode("${enemyChar.vanguard}") }
                                     }
                                     div(className = "stat-row") {
-                                        span { textNode("🧠 WIS") }
+                                        span { textNode(t("battle.stat_wis")) }
                                         span { textNode("${enemyChar.intellect}") }
                                     }
                                     div(className = "stat-row font-600 text-warning") {
-                                        span { textNode("⚔️ Army") }
+                                        span { textNode(t("battle.stat_army")) }
                                         span { textNode("${enemyChar.army.total()}") }
                                     }
                                     if (locationProtection > 0) {
                                         div(className = "stat-row text-xs text-gray") {
-                                            span { textNode("🛡️ Protection") }
+                                            span { textNode(t("battle.stat_prot")) }
                                             span { textNode("+$locationProtection") }
                                         }
                                     }
@@ -407,14 +409,14 @@ fun IComponent.StrategicMap(
                         // ====== BATTLE STRATEGY PICKER ======
                         div(className = "battle-strategy-section mb-1") {
                             div(className = "d-flex justify-between items-center mb-05") {
-                                span(className = "font-600 text-sm") { textNode("🏴 Battle Strategy") }
+                                span(className = "font-600 text-sm") { textNode(t("battle.strategy_title")) }
                                 if (selectedStrategy != BattleStrategy.NONE) {
                                     val bonus = strategyBonus(battleChar, selectedStrategy)
                                     span(className = "text-xs text-primary font-600") {
-                                        textNode("+${bonus.asDynamic().toFixed(1)} combat bonus")
+                                        textNode(t("battle.bonus_text", bonus.asDynamic().toFixed(1)))
                                     }
                                 } else {
-                                    span(className = "text-xs text-dark-gray") { textNode("Select a strategy for a combat bonus") }
+                                    span(className = "text-xs text-dark-gray") { textNode(t("battle.select_strat_tip")) }
                                 }
                             }
                             
@@ -431,7 +433,7 @@ fun IComponent.StrategicMap(
                                     }
                                     div(className = "d-flex justify-between items-center") {
                                         div {
-                                            span(className = "font-600 text-sm") { textNode("🛡️ Arcane Phalanx") }
+                                            span(className = "font-600 text-sm") { textNode(t("battle.strat_phalanx")) }
                                             if (canPhalanx) {
                                                 span(className = "text-xs text-primary ml-05") {
                                                     textNode("+${strategyBonus(battleChar, BattleStrategy.ARCANE_PHALANX).asDynamic().toFixed(1)}")
@@ -439,11 +441,11 @@ fun IComponent.StrategicMap(
                                             }
                                         }
                                         if (!canPhalanx) {
-                                            span(className = "text-xs text-red") { textNode("Need >5 troops") }
+                                            span(className = "text-xs text-red") { textNode(t("battle.strat_phalanx_req")) }
                                         }
                                     }
                                     p(className = "text-xs text-gray m-0 mt-02") {
-                                        textNode("Heavy infantry locks shields while archers and mages unleash coordinated volleys from behind.")
+                                        textNode(t("battle.strat_phalanx_desc"))
                                     }
                                 }
                                 
@@ -458,7 +460,7 @@ fun IComponent.StrategicMap(
                                     }
                                     div(className = "d-flex justify-between items-center") {
                                         div {
-                                            span(className = "font-600 text-sm") { textNode("⚔️ Hammer and Spell") }
+                                            span(className = "font-600 text-sm") { textNode(t("battle.strat_hammer")) }
                                             if (canHammer) {
                                                 span(className = "text-xs text-primary ml-05") {
                                                     textNode("+${strategyBonus(battleChar, BattleStrategy.HAMMER_AND_SPELL).asDynamic().toFixed(1)}")
@@ -466,11 +468,11 @@ fun IComponent.StrategicMap(
                                             }
                                         }
                                         if (!canHammer) {
-                                            span(className = "text-xs text-red") { textNode("Need AGI≥6 & >3 troops") }
+                                            span(className = "text-xs text-red") { textNode(t("battle.strat_hammer_req")) }
                                         }
                                     }
                                     p(className = "text-xs text-gray m-0 mt-02") {
-                                        textNode("Infantry pins the frontline while battle mages flank and deliver the catastrophic finishing strike.")
+                                        textNode(t("battle.strat_hammer_desc"))
                                     }
                                 }
                                 
@@ -485,7 +487,7 @@ fun IComponent.StrategicMap(
                                     }
                                     div(className = "d-flex justify-between items-center") {
                                         div {
-                                            span(className = "font-600 text-sm") { textNode("🔥 Spell-Infused Volley") }
+                                            span(className = "font-600 text-sm") { textNode(t("battle.strat_volley")) }
                                             if (canVolley) {
                                                 span(className = "text-xs text-primary ml-05") {
                                                     textNode("+${strategyBonus(battleChar, BattleStrategy.SPELL_INFUSED_VOLLEY).asDynamic().toFixed(1)}")
@@ -493,11 +495,11 @@ fun IComponent.StrategicMap(
                                             }
                                         }
                                         if (!canVolley) {
-                                            span(className = "text-xs text-red") { textNode("Need WIS≥6 & >5 troops") }
+                                            span(className = "text-xs text-red") { textNode(t("battle.strat_volley_req")) }
                                         }
                                     }
                                     p(className = "text-xs text-gray m-0 mt-02") {
-                                        textNode("Mages enchant arrows with fire and lightning to disintegrate the opposing force before melee.")
+                                        textNode(t("battle.strat_volley_desc"))
                                     }
                                 }
                             }
@@ -506,23 +508,23 @@ fun IComponent.StrategicMap(
                         // Scrolls Section
                         div(className = "battle-scrolls-section mb-1") {
                             div(className = "d-flex justify-between items-center mb-05") {
-                                span(className = "font-600 text-xs text-gray") { textNode("📜 Available Scrolls (Boost stats before fight)") }
-                                span(className = "text-xs text-dark-gray") { textNode("${battleChar.scrolls.size} in bag") }
+                                span(className = "font-600 text-xs text-gray") { textNode(t("battle.scrolls_avail")) }
+                                span(className = "text-xs text-dark-gray") { textNode(t("battle.scrolls_in_bag", battleChar.scrolls.size)) }
                             }
                             
                             if (battleChar.scrolls.isNotEmpty()) {
                                 div(className = "d-flex flex-col gap-03") {
                                     for (scroll in battleChar.scrolls) {
                                         val (icon, label) = when (scroll.type) {
-                                            ScrollType.WARLORD -> "⚔️" to "Warlord"
-                                            ScrollType.INTELLECT -> "🧠" to "Intellect"
-                                            ScrollType.VANGUARD -> "🛡️" to "Vanguard"
-                                            ScrollType.ARCHON -> "🔮" to "Archon"
+                                            ScrollType.WARLORD -> "⚔️" to t("scroll.warlord")
+                                            ScrollType.INTELLECT -> "🧠" to t("scroll.intellect")
+                                            ScrollType.VANGUARD -> "🛡️" to t("scroll.vanguard")
+                                            ScrollType.ARCHON -> "🔮" to t("scroll.archon")
                                         }
                                         div(className = "battle-scroll-row d-flex justify-between items-center") {
-                                            span(className = "text-xs") { textNode("$icon $label Scroll (+${scroll.boostAmount})") }
-                                            button("Apply (+${scroll.boostAmount})", className = "btn btn-xs btn-outline scroll-apply-btn") {
-                                                title("Consume scroll to immediately boost ${battleChar.name}'s $label by +${scroll.boostAmount}")
+                                            span(className = "text-xs") { textNode(t("kingdom.scroll_item", icon, label, scroll.boostAmount)) }
+                                            button(t("battle.scroll_apply", scroll.boostAmount), className = "btn btn-xs btn-outline scroll-apply-btn") {
+                                                title(t("battle.scroll_apply_tip", battleChar.name, label, scroll.boostAmount))
                                                 onClick {
                                                     sendAction(GameAction.UseScroll(scroll.id, battleChar.id))
                                                 }
@@ -532,22 +534,22 @@ fun IComponent.StrategicMap(
                                 }
                             } else {
                                 p(className = "text-xs text-dark-gray m-0") {
-                                    textNode("No scrolls available to boost stats.")
+                                    textNode(t("battle.no_scrolls"))
                                 }
                             }
                         }
                         
                         // Action Buttons
                         div(className = "d-flex gap-1 mt-1") {
-                            button("🏳️ Retreat / Cancel", className = "btn btn-outline flex-1") {
-                                title("Do not attack. Any scrolls already consumed will remain used.")
+                            button(t("battle.retreat"), className = "btn btn-outline flex-1") {
+                                title(t("battle.retreat_tip"))
                                 onClick {
                                     pendingBattle = null
                                     selectedStrategy = BattleStrategy.NONE
                                 }
                             }
-                            button("⚔️ Confirm Attack", className = "btn btn-primary flex-1") {
-                                title("Engage in battle at Sector ${pb.targetSector}!")
+                            button(t("battle.confirm_attack"), className = "btn btn-primary flex-1") {
+                                title(t("battle.confirm_attack_tip", pb.targetSector))
                                 onClick {
                                     if (pb.isPlacement) {
                                         sendAction(GameAction.PlaceCharacter(pb.targetSector, battleChar.id, selectedStrategy))

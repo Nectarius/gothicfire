@@ -7,6 +7,7 @@ import dev.kilua.form.number.range
 import dev.kilua.html.*
 import models.GameAction
 import models.GameState
+import i18n.t
 
 @Composable
 fun IComponent.MarketPanel(
@@ -32,24 +33,24 @@ fun IComponent.MarketPanel(
     div(className = "modal-overlay") {
         div(className = "modal-content glass p-4 max-w-md") {
             div(className = "d-flex justify-between items-center mb-2") {
-                h2(className = "m-0 text-warning") { textNode("⚖️ Merchant Caravan") }
+                h2(className = "m-0 text-warning") { textNode(t("market.title")) }
                 button("✖", className = "btn btn-xs btn-outline") {
                     onClick { onClose() }
                 }
             }
             
             p(className = "text-gray text-sm") {
-                textNode("Trade resources with the traveling merchants. The exchange rates are fixed.")
+                textNode(t("market.desc"))
             }
             
             if (myCharacters.isEmpty()) {
-                p(className = "text-red text-center") { textNode("You have no living heroes to trade with.") }
+                p(className = "text-red text-center") { textNode(t("market.no_heroes")) }
                 return@div
             }
             
             // Character Selection
             div(className = "mb-2") {
-                label(className = "text-sm text-gray block mb-05") { textNode("Trading Hero:") }
+                label(className = "text-sm text-gray block mb-05") { textNode(t("market.trading_hero")) }
                 div(className = "d-flex gap-05") {
                     for (char in myCharacters) {
                         button(char.name, className = "btn btn-sm ${if (tradeCharId == char.id) "btn-primary" else "glass"}") {
@@ -61,7 +62,7 @@ fun IComponent.MarketPanel(
             
             if (selectedChar != null) {
                 div(className = "d-flex justify-between items-center bg-black-20 p-2 mb-2 rounded") {
-                    span { textNode("Your Wealth:") }
+                    span { textNode(t("market.your_wealth")) }
                     div(className = "d-flex gap-1") {
                         span(className = "text-primary font-600") { textNode("${selectedChar.food} 🌾") }
                         span(className = "text-warning font-600") { textNode("${selectedChar.gold} 🪙") }
@@ -73,19 +74,19 @@ fun IComponent.MarketPanel(
                     button(className = "btn trade-mode-btn ${if (tradeMode == "BUY_FOOD") "active" else "glass"} flex-1 d-flex flex-col items-center p-2") {
                         onClick { tradeMode = "BUY_FOOD" }
                         span(className = "text-2xl mb-05") { textNode("🌾") }
-                        span(className = "font-600") { textNode("Buy Food") }
+                        span(className = "font-600") { textNode(t("market.buy_food")) }
                     }
                     button(className = "btn trade-mode-btn ${if (tradeMode == "SELL_FOOD") "active" else "glass"} flex-1 d-flex flex-col items-center p-2") {
                         onClick { tradeMode = "SELL_FOOD" }
                         span(className = "text-2xl mb-05") { textNode("🪙") }
-                        span(className = "font-600") { textNode("Sell Food") }
+                        span(className = "font-600") { textNode(t("market.sell_food")) }
                     }
                 }
                 
                 // Trade Calculator
                 div(className = "trade-calculator text-center") {
                     if (tradeMode == "BUY_FOOD") {
-                        p(className = "text-sm text-gray") { textNode("Rate: 1 Gold = 1 Food") }
+                        p(className = "text-sm text-gray") { textNode(t("market.rate_buy")) }
                         
                         val maxAffordable = selectedChar.gold
                         val actualGold = goldAmount.coerceIn(1, if (maxAffordable > 0) maxAffordable else 1)
@@ -94,12 +95,12 @@ fun IComponent.MarketPanel(
                         div(className = "trade-exchange-box glass p-2 mb-2 d-flex justify-center items-center gap-2") {
                             div(className = "text-center") {
                                 span(className = "text-warning text-xl font-600 d-block") { textNode("-$actualGold") }
-                                span(className = "text-sm text-gray") { textNode("Gold") }
+                                span(className = "text-sm text-gray") { textNode(t("market.gold")) }
                             }
                             span(className = "text-2xl") { textNode("➡️") }
                             div(className = "text-center") {
                                 span(className = "text-primary text-xl font-600 d-block") { textNode("+$foodGained") }
-                                span(className = "text-sm text-gray") { textNode("Food") }
+                                span(className = "text-sm text-gray") { textNode(t("market.food")) }
                             }
                         }
                         
@@ -108,7 +109,7 @@ fun IComponent.MarketPanel(
                         }
                         
                         val canAfford = maxAffordable > 0
-                        button("Complete Trade", className = "btn btn-primary w-full ${if (!canAfford) "opacity-50 pointer-events-none" else ""}") {
+                        button(t("market.complete_trade"), className = "btn btn-primary w-full ${if (!canAfford) "opacity-50 pointer-events-none" else ""}") {
                             onClick {
                                 if (canAfford && selectedChar != null) {
                                     sendAction(GameAction.MarketTrade(selectedChar.id, true, actualGold))
@@ -116,7 +117,7 @@ fun IComponent.MarketPanel(
                             }
                         }
                     } else {
-                        p(className = "text-sm text-gray") { textNode("Rate: 2 Food = 1 Gold") }
+                        p(className = "text-sm text-gray") { textNode(t("market.rate_sell")) }
                         
                         // When selling food, goldAmount represents the gold we WANT. Food cost is gold * 2
                         val maxGoldPossible = selectedChar.food / 2
@@ -126,12 +127,12 @@ fun IComponent.MarketPanel(
                         div(className = "trade-exchange-box glass p-2 mb-2 d-flex justify-center items-center gap-2") {
                             div(className = "text-center") {
                                 span(className = "text-primary text-xl font-600 d-block") { textNode("-$foodCost") }
-                                span(className = "text-sm text-gray") { textNode("Food") }
+                                span(className = "text-sm text-gray") { textNode(t("market.food")) }
                             }
                             span(className = "text-2xl") { textNode("➡️") }
                             div(className = "text-center") {
                                 span(className = "text-warning text-xl font-600 d-block") { textNode("+$actualGold") }
-                                span(className = "text-sm text-gray") { textNode("Gold") }
+                                span(className = "text-sm text-gray") { textNode(t("market.gold")) }
                             }
                         }
                         
@@ -140,7 +141,7 @@ fun IComponent.MarketPanel(
                         }
                         
                         val canAfford = maxGoldPossible > 0
-                        button("Complete Trade", className = "btn btn-primary w-full ${if (!canAfford) "opacity-50 pointer-events-none" else ""}") {
+                        button(t("market.complete_trade"), className = "btn btn-primary w-full ${if (!canAfford) "opacity-50 pointer-events-none" else ""}") {
                             onClick {
                                 if (canAfford && selectedChar != null) {
                                     sendAction(GameAction.MarketTrade(selectedChar.id, false, actualGold))

@@ -30,6 +30,9 @@ import game.GameWebSocket
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import models.GameEvent
+import i18n.I18n
+import i18n.Language
+import i18n.t
 
 data class PopupEvent(
     val title: String,
@@ -47,12 +50,17 @@ class App : Application() {
             rawHtml("""<style>
                 .d-flex { display: flex; }
                 .flex-col { flex-direction: column; }
+                .flex-wrap { flex-wrap: wrap; }
                 .items-center { align-items: center; }
+                .gap-05 { gap: 0.5rem; }
                 .gap-1 { gap: 1rem; }
                 .gap-20 { gap: 20px; }
                 .justify-between { justify-content: space-between; }
+                .justify-center { justify-content: center; }
                 .text-center { text-align: center; }
+                .p-2 { padding: 1rem; }
                 .p-4 { padding: 4rem; }
+                .mb-1 { margin-bottom: 1rem; }
                 .mb-2 { margin-bottom: 2rem; }
                 .mt-1 { margin-top: 1rem; }
                 .mt-05 { margin-top: 0.5rem; }
@@ -60,14 +68,19 @@ class App : Application() {
                 .text-gray { color: #D3D3D3; }
                 .text-dark-gray { color: #808080; }
                 .text-red { color: #ef4444; }
+                .text-yellow { color: #eab308; }
+                .bg-yellow { background-color: #eab308; color: #111827; }
                 .bg-red-light { background: rgba(239, 68, 68, 0.2); }
+                .border-yellow { border: 1px solid rgba(234, 179, 8, 0.4); box-shadow: 0 0 10px rgba(234, 179, 8, 0.15); }
                 .font-600 { font-weight: 600; }
                 .text-sm { font-size: 0.8rem; }
                 .text-md { font-size: 0.9rem; }
+                .text-xl { font-size: 1.5rem; }
                 .btn-delete { padding: 0.3rem 0.8rem; }
                 .self-start { align-self: flex-start; }
                 .text-none { text-decoration: none; }
                 .text-primary { color: var(--primary); }
+                .language-btn { padding: 0.25rem 0.5rem; font-size: 0.8rem; border-radius: 6px; }
             </style>""")
             
             var currentUser: UserSession? by remember { mutableStateOf(null) }
@@ -84,6 +97,7 @@ class App : Application() {
             var activeTransfers by remember { mutableStateOf<List<GameEvent.ResourceTransferred>>(emptyList()) }
             
             var victoryAcknowledged by remember { mutableStateOf(false) }
+            var observingPlayPvE by remember { mutableStateOf(false) }
             LaunchedEffect(gameState?.status) {
                 if (gameState?.status == models.GameStatus.GAME_OVER) {
                     victoryAcknowledged = false
@@ -96,6 +110,9 @@ class App : Application() {
                         gameState = newState
                         yourPlayerId = playerId
                         wsError = ""
+                        if (newState.status == models.GameStatus.IN_PROGRESS && newState.players.any { it.id == playerId }) {
+                            observingPlayPvE = false
+                        }
                     },
                     onError = { err ->
                         wsError = err
@@ -106,18 +123,18 @@ class App : Application() {
                         val loserChar = gameState?.characters?.find { it.id == fightEvent.loserId }
                         val winnerName = winnerChar?.name ?: "Victor"
                         val loserName = loserChar?.name ?: "Enemy"
-                        val casualtyInfo = if (fightEvent.winnerLosses > 0) " (⚔️ -${fightEvent.winnerLosses} soldiers lost)" else " (No casualties)"
+                        val casualtyInfo = if (fightEvent.winnerLosses > 0) t("popup.casualties_lost", fightEvent.winnerLosses) else t("popup.no_casualties")
                         val strategyLabel = when (fightEvent.strategy) {
-                            models.BattleStrategy.ARCANE_PHALANX -> " 🛡️ Arcane Phalanx!"
-                            models.BattleStrategy.HAMMER_AND_SPELL -> " ⚔️ Hammer and Spell!"
-                            models.BattleStrategy.SPELL_INFUSED_VOLLEY -> " 🔥 Spell-Infused Volley!"
+                            models.BattleStrategy.ARCANE_PHALANX -> " 🛡️ " + t("battle.strat_phalanx")
+                            models.BattleStrategy.HAMMER_AND_SPELL -> " ⚔️ " + t("battle.strat_hammer")
+                            models.BattleStrategy.SPELL_INFUSED_VOLLEY -> " 🔥 " + t("battle.strat_volley")
                             else -> ""
                         }
                         
                         activePopups = activePopups + PopupEvent(
-                            title = "Battle Report",
+                            title = t("popup.battle_report"),
                             icon = "⚔️",
-                            message = "Battle at Sector ${fightEvent.sectorId}!\n$winnerName defeated $loserName$casualtyInfo$strategyLabel",
+                            message = t("popup.battle_message", fightEvent.sectorId, winnerName, loserName, casualtyInfo, strategyLabel),
                             colorClass = "text-red"
                         )
                         
@@ -129,18 +146,24 @@ class App : Application() {
                         }
                     },
                     onScrollFound = { event ->
+                        val scrollTypeName = when (event.scroll.type) {
+                            models.ScrollType.WARLORD -> t("scroll.warlord")
+                            models.ScrollType.INTELLECT -> t("scroll.intellect")
+                            models.ScrollType.VANGUARD -> t("scroll.vanguard")
+                            models.ScrollType.ARCHON -> t("scroll.archon")
+                        }
                         activePopups = activePopups + PopupEvent(
-                            title = "Scroll Discovered",
+                            title = t("popup.scroll_found_title"),
                             icon = "📜",
-                            message = "${event.characterName} found a ${event.scroll.type.name} scroll! (+${event.scroll.boostAmount})",
+                            message = t("popup.scroll_found_msg", event.characterName, scrollTypeName, event.scroll.boostAmount),
                             colorClass = "text-primary"
                         )
                     },
                     onScrollSearchFailed = { event ->
                         activePopups = activePopups + PopupEvent(
-                            title = "Search Failed",
+                            title = t("popup.scroll_failed_title"),
                             icon = "🔍",
-                            message = "${event.characterName} searched but found nothing...",
+                            message = t("popup.scroll_failed_msg", event.characterName),
                             colorClass = "text-gray"
                         )
                     },
@@ -180,20 +203,33 @@ class App : Application() {
             // Navbar
             nav(className = "navbar glass") {
                 div(className = "navbar-brand") {
-                    textNode("Kilua Notes")
+                    textNode(t("nav.brand"))
                 }
                 div(className = "d-flex items-center gap-20") {
+                    // Language Switcher
+                    div(className = "d-flex items-center gap-05") {
+                        val activeLang = I18n.currentLanguage.value
+                        button("🇬🇧 EN", className = "btn btn-xs language-btn ${if (activeLang == Language.EN) "btn-primary" else "glass"}") {
+                            title("Switch to English")
+                            onClick { I18n.setLanguage(Language.EN) }
+                        }
+                        button("🇬🇷 ΕΛ", className = "btn btn-xs language-btn ${if (activeLang == Language.EL) "btn-primary" else "glass"}") {
+                            title("Αλλαγή σε Ελληνικά")
+                            onClick { I18n.setLanguage(Language.EL) }
+                        }
+                    }
+
                     if (currentUser != null) {
-                        span { textNode("Welcome, ${currentUser?.name}") }
+                        span { textNode(t("nav.welcome", currentUser?.name ?: "")) }
                         a(href = "/logout", className = "btn btn-primary text-none") {
-                            textNode("Logout")
+                            textNode(t("nav.logout"))
                         }
                     } else {
                         a(href = "/login", className = "btn btn-primary text-none") {
-                            textNode("Login with Google")
+                            textNode(t("nav.login_google"))
                         }
                         a(href = "/auth/twitter", className = "btn btn-primary text-none") {
-                            textNode("Login with X/Twitter")
+                            textNode(t("nav.login_twitter"))
                         }
                     }
                 }
@@ -203,24 +239,24 @@ class App : Application() {
             div(className = "container") {
                 if (currentUser == null) {
                     div(className = "glass card text-center p-4") {
-                        h2 { textNode("Secure Notes & Global Discussions") }
+                        h2 { textNode(t("notes.title")) }
                         p(className = "text-gray") { 
-                            textNode("Login to create your private notes and participate in the community discussion.")
+                            textNode(t("notes.desc"))
                         }
                     }
                 } else {
                     // Tabs
                     div(className = "d-flex gap-1 mb-2") {
-                        button("Private Notes", className = "btn ${if (currentTab == "notes") "btn-primary" else "glass"}") {
+                        button(t("nav.tab_notes"), className = "btn ${if (currentTab == "notes") "btn-primary" else "glass"}") {
                             onClick { currentTab = "notes" }
                         }
-                        button("Public Discussion", className = "btn ${if (currentTab == "discussions") "btn-primary" else "glass"}") {
+                        button(t("nav.tab_discussions"), className = "btn ${if (currentTab == "discussions") "btn-primary" else "glass"}") {
                             onClick { currentTab = "discussions" }
                         }
-                        button("War Map", className = "btn ${if (currentTab == "map") "btn-primary" else "glass"}") {
+                        button(t("nav.tab_map"), className = "btn ${if (currentTab == "map") "btn-primary" else "glass"}") {
                             onClick { currentTab = "map" }
                         }
-                        button("Game History", className = "btn ${if (currentTab == "history") "btn-primary" else "glass"}") {
+                        button(t("nav.tab_history"), className = "btn ${if (currentTab == "history") "btn-primary" else "glass"}") {
                             onClick { currentTab = "history" }
                         }
                     }
@@ -229,18 +265,18 @@ class App : Application() {
                         div {
                             // Note Form
                             div(className = "glass card mb-2") {
-                                h3 { textNode("Add Note") }
+                                h3 { textNode(t("notes.add_note")) }
                                 var title by remember { mutableStateOf("") }
                                 var content by remember { mutableStateOf("") }
                                 
                                 div(className = "d-flex flex-col gap-1") {
-                                    text(value = title, placeholder = "Title", className = "") {
+                                    text(value = title, placeholder = t("notes.title_placeholder"), className = "") {
                                         onInput { title = this.value ?: "" }
                                     }
-                                    textArea(value = content, rows = 4, placeholder = "Content", className = "") {
+                                    textArea(value = content, rows = 4, placeholder = t("notes.content_placeholder"), className = "") {
                                         onInput { content = this.value ?: "" }
                                     }
-                                    button("Save Note", className = "btn btn-primary self-start") {
+                                    button(t("notes.save_note"), className = "btn btn-primary self-start") {
                                         onClick {
                                             if (title.isNotBlank() && content.isNotBlank()) {
                                                 scope.launch {
@@ -263,7 +299,7 @@ class App : Application() {
                                         p(className = "text-md text-gray") { 
                                             textNode(note.content)
                                         }
-                                        button("Delete", className = "btn bg-red-light text-red text-sm btn-delete mt-1") {
+                                        button(t("notes.delete"), className = "btn bg-red-light text-red text-sm btn-delete mt-1") {
                                             onClick {
                                                 scope.launch {
                                                     if (appService.deleteNote(note.id)) {
@@ -280,14 +316,14 @@ class App : Application() {
                         // Discussions Tab
                         div {
                             div(className = "glass card mb-2") {
-                                h3 { textNode("Join the discussion") }
+                                h3 { textNode(t("notes.join_discussion")) }
                                 var content by remember { mutableStateOf("") }
                                 
                                 div(className = "d-flex flex-col gap-1") {
-                                    textArea(value = content, rows = 3, placeholder = "What's on your mind?", className = "") {
+                                    textArea(value = content, rows = 3, placeholder = t("notes.mind_placeholder"), className = "") {
                                         onInput { content = this.value ?: "" }
                                     }
-                                    button("Post", className = "btn btn-primary self-start") {
+                                    button(t("notes.post"), className = "btn btn-primary self-start") {
                                         onClick {
                                             if (content.isNotBlank()) {
                                                 scope.launch {
@@ -310,7 +346,7 @@ class App : Application() {
                                                 textNode(post.authorName)
                                             }
                                             span(className = "text-sm text-dark-gray") { 
-                                                textNode("Just now")
+                                                textNode(t("notes.just_now"))
                                             }
                                         }
                                         p(className = "mt-05") { 
@@ -322,11 +358,15 @@ class App : Application() {
                         }
                     } else if (currentTab == "map") {
                         // War Map Tab
+                        val isObserver = gameState != null &&
+                            (gameState!!.status == models.GameStatus.IN_PROGRESS || gameState!!.status == models.GameStatus.GAME_OVER) &&
+                            gameState!!.players.none { it.id == yourPlayerId }
+
                         if (wsError.isNotBlank()) {
                             div(className = "glass card text-center p-4") {
-                                h3(className = "text-red m-0") { textNode("Connection Error") }
+                                h3(className = "text-red m-0") { textNode(t("app.conn_error")) }
                                 p { textNode(wsError) }
-                                button("Reconnect", className = "btn btn-primary mt-1") {
+                                button(t("app.reconnect"), className = "btn btn-primary mt-1") {
                                     onClick {
                                         wsError = ""
                                         gameState = null
@@ -335,11 +375,36 @@ class App : Application() {
                             }
                         } else if (gameState == null || gameState!!.status == models.GameStatus.LOBBY || gameState!!.status == models.GameStatus.NOT_CREATED) {
                             GameLobby(ws = ws, gameState = gameState, yourPlayerId = yourPlayerId)
+                        } else if (isObserver && observingPlayPvE) {
+                            GameLobby(
+                                ws = ws,
+                                gameState = null,
+                                yourPlayerId = yourPlayerId,
+                                initialCreatingPvE = true,
+                                onCancelPvE = { observingPlayPvE = false }
+                            )
                         } else {
                             var selectedCharacterId by remember { mutableStateOf<String?>(null) }
                             
                             var showMarket by remember { mutableStateOf(false) }
                             var showRecruitment by remember { mutableStateOf(false) }
+                            
+                            if (isObserver) {
+                                div(className = "glass card p-2 mb-1 d-flex justify-between items-center flex-wrap gap-1 border-yellow") {
+                                    div(className = "d-flex items-center gap-1") {
+                                        span(className = "text-xl") { textNode("👁️") }
+                                        div {
+                                            h4(className = "m-0 text-yellow") { textNode(t("lobby.observing_notice")) }
+                                            p(className = "m-0 text-sm text-gray") { textNode(t("lobby.observing_desc")) }
+                                        }
+                                    }
+                                    button(t("lobby.play_pve_independent"), className = "btn bg-yellow text-dark-gray font-600") {
+                                        onClick {
+                                            observingPlayPvE = true
+                                        }
+                                    }
+                                }
+                            }
                             
                             TurnHud(
                                 playerId = yourPlayerId, 

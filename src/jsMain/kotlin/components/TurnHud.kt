@@ -8,6 +8,7 @@ import models.GameState
 import models.GameAction
 import models.GameStatus
 import models.Team
+import i18n.t
 
 @Composable
 fun IComponent.TurnHud(
@@ -27,48 +28,56 @@ fun IComponent.TurnHud(
             // Glowing indicator
             div(className = "turn-indicator ${if (isMyTurn) "turn-active" else "turn-waiting"}")
             h2(className = "m-0") { 
-                textNode("Turn ${gameState.currentTurn} / ${gameState.maxTurns}") 
+                textNode(t("hud.turn", gameState.currentTurn, gameState.maxTurns)) 
             }
         }
         
         div(className = "text-center") {
             if (gameState.status == GameStatus.GAME_OVER) {
                 val winningTeamName = gameState.winningTeam?.let { gameState.teamInfos[it]?.name } ?: gameState.winningTeam?.name ?: "Nobody"
-                h3(className = "m-0 text-red") { textNode("Game Over! $winningTeamName Wins!") }
+                h3(className = "m-0 text-red") { textNode(t("hud.game_over_win", winningTeamName)) }
             } else {
                 p(className = "m-0 text-md") { 
-                    if (isMyTurn) {
-                        val teamName = myPlayer?.team?.let { gameState.teamInfos[it]?.name } ?: "Your Team"
-                        val teamColor = myPlayer?.team?.let { gameState.teamInfos[it]?.color } ?: "var(--primary)"
+                    if (myPlayer == null) {
+                        span(className = "text-yellow font-600") { textNode("👁️ " + t("lobby.observing_notice")) }
+                    } else if (isMyTurn) {
+                        val teamName = myPlayer.team?.let { gameState.teamInfos[it]?.name } ?: t("hud.your_team")
+                        val teamColor = myPlayer.team?.let { gameState.teamInfos[it]?.color } ?: "var(--primary)"
                         span(className = "font-600") { 
                             style("color", teamColor)
-                            textNode("Your Team's Turn ($teamName)") 
+                            textNode(t("hud.your_turn", teamName)) 
                         }
                     } else {
-                        val enemyTeamEnum = if (myPlayer?.team == Team.RED) Team.BLUE else Team.RED
-                        val enemyTeam = gameState.teamInfos[enemyTeamEnum]?.name ?: "Enemy Team"
-                        span(className = "text-gray") { textNode("Waiting for $enemyTeam...") }
+                        val enemyTeamEnum = if (myPlayer.team == Team.RED) Team.BLUE else Team.RED
+                        val enemyTeam = gameState.teamInfos[enemyTeamEnum]?.name ?: t("hud.enemy_team")
+                        span(className = "text-gray") { textNode(t("hud.waiting_team", enemyTeam)) }
                     }
                 }
             }
         }
         
         div(className = "d-flex gap-05 items-center") {
-            button("⚖️ Market", className = "btn btn-sm btn-outline text-warning") {
-                title("Trade gold for food, or food for gold.")
-                onClick { onOpenMarket() }
-            }
-            button("⚔️ Recruit Army", className = "btn btn-sm btn-outline text-primary") {
-                title("Hire soldiers to join your heroes.")
-                onClick { onOpenRecruitment() }
-            }
-            if (myPlayer?.name == gameState.creatorPlayerId) {
-                button("🛑 Finish Game", className = "btn btn-sm btn-outline text-red ml-1") {
-                    title("End and reset the game for everyone.")
-                    onClick { sendAction(GameAction.EndGame) }
+            if (myPlayer != null) {
+                button(t("hud.market"), className = "btn btn-sm btn-outline text-warning") {
+                    title(t("hud.market_tip"))
+                    onClick { onOpenMarket() }
+                }
+                button(t("hud.recruit"), className = "btn btn-sm btn-outline text-primary") {
+                    title(t("hud.recruit_tip"))
+                    onClick { onOpenRecruitment() }
+                }
+                if (myPlayer.name == gameState.creatorPlayerId) {
+                    button(t("hud.finish_game"), className = "btn btn-sm btn-outline text-red ml-1") {
+                        title(t("hud.finish_game_tip"))
+                        onClick { sendAction(GameAction.EndGame) }
+                    }
+                }
+                button(t("hud.leave_game"), className = "btn btn-sm btn-outline text-gray ml-05") {
+                    title(t("hud.leave_game_tip"))
+                    onClick { sendAction(GameAction.LeaveGame) }
                 }
             }
-            p(className = "m-0 text-sm text-gray ml-1") { textNode("Turns end automatically.") }
+            p(className = "m-0 text-sm text-gray ml-1") { textNode(t("hud.turns_end_auto")) }
         }
     }
 }

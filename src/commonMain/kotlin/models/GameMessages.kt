@@ -72,6 +72,9 @@ sealed class GameAction {
     
     @Serializable
     data object EndGame : GameAction()
+    
+    @Serializable
+    data object LeaveGame : GameAction()
 }
 
 @Serializable

@@ -44,6 +44,9 @@ kotlin {
         jsMain.dependencies {
             implementation(libs.kilua.core)
         }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
     }
 }
 

@@ -9,6 +9,7 @@ import models.ArmyType
 import models.GameAction
 import models.GameState
 import models.MapData
+import i18n.t
 
 @Composable
 fun IComponent.ArmyRecruitmentPanel(
@@ -37,20 +38,20 @@ fun IComponent.ArmyRecruitmentPanel(
     div(className = "modal-overlay") {
         div(className = "modal-content glass p-4 max-w-lg") {
             div(className = "d-flex justify-between items-center mb-2") {
-                h2(className = "m-0 text-warning") { textNode("⚔️ Army Recruitment") }
+                h2(className = "m-0 text-warning") { textNode(t("recruit.title")) }
                 button("✖", className = "btn btn-xs btn-outline") {
                     onClick { onClose() }
                 }
             }
             
             if (myCharacters.isEmpty()) {
-                p(className = "text-red text-center") { textNode("You have no living heroes to recruit for.") }
+                p(className = "text-red text-center") { textNode(t("recruit.no_heroes")) }
                 return@div
             }
             
             // Character Selection
             div(className = "mb-2") {
-                label(className = "text-sm text-gray block mb-05") { textNode("Recruiting Hero:") }
+                label(className = "text-sm text-gray block mb-05") { textNode(t("recruit.recruiting_hero")) }
                 div(className = "d-flex gap-05") {
                     for (char in myCharacters) {
                         button(char.name, className = "btn btn-sm ${if (recruitCharId == char.id) "btn-primary" else "glass"}") {
@@ -62,21 +63,21 @@ fun IComponent.ArmyRecruitmentPanel(
             
             if (selectedChar != null) {
                 div(className = "d-flex justify-between items-center bg-black-20 p-2 mb-2 rounded") {
-                    span { textNode("Current Wealth:") }
+                    span { textNode(t("recruit.current_wealth")) }
                     span(className = "text-warning font-600") { textNode("${selectedChar.gold} 🪙") }
                 }
                 
                 div(className = "d-flex justify-between items-center bg-black-20 p-2 mb-2 rounded") {
-                    span { textNode("Sector Protection Level:") }
+                    span { textNode(t("recruit.protection_level")) }
                     span(className = "text-primary font-600") { textNode("$currentProtection 🛡️") }
                 }
                 
                 // Unit Selection
                 val unitOptions = listOf(
-                    Triple(ArmyType.LIGHT_INFANTRY, "Light Infantry" to "🗡️", 30 to 0), // Type, Name/Icon, Cost to Protection
-                    Triple(ArmyType.ARCHERS, "Archers" to "🏹", 40 to 10),
-                    Triple(ArmyType.HEAVY_INFANTRY, "Heavy Infantry" to "🛡️", 50 to 20),
-                    Triple(ArmyType.MAGES, "Mages" to "🔮", 80 to 30)
+                    Triple(ArmyType.LIGHT_INFANTRY, t("unit.light_infantry") to "🗡️", 30 to 0),
+                    Triple(ArmyType.ARCHERS, t("unit.archers") to "🏹", 40 to 10),
+                    Triple(ArmyType.HEAVY_INFANTRY, t("unit.heavy_infantry") to "🛡️", 50 to 20),
+                    Triple(ArmyType.MAGES, t("unit.mages") to "🔮", 80 to 30)
                 )
                 
                 div(className = "d-flex flex-col gap-1 mb-2") {
@@ -100,7 +101,7 @@ fun IComponent.ArmyRecruitmentPanel(
                                 div(className = "d-flex flex-col") {
                                     h4(className = "m-0 text-md ${if (isSelected) "text-primary" else ""}") { textNode(name) }
                                     if (isSelected) {
-                                        span(className = "text-xs text-primary font-600") { textNode("Selected") }
+                                        span(className = "text-xs text-primary font-600") { textNode(t("unit.selected")) }
                                     }
                                 }
                             }
@@ -109,9 +110,9 @@ fun IComponent.ArmyRecruitmentPanel(
                             div(className = "text-right d-flex flex-col justify-center") {
                                 p(className = "m-0 text-sm text-warning font-600") { textNode("$cost 🪙") }
                                 if (!canRecruitType) {
-                                    p(className = "m-0 text-xs text-red font-600") { textNode("Requires $reqProtection 🛡️") }
+                                    p(className = "m-0 text-xs text-red font-600") { textNode(t("unit.requires_prot", reqProtection)) }
                                 } else if (reqProtection > 0) {
-                                    p(className = "m-0 text-xs text-gray") { textNode("Req: $reqProtection 🛡️") }
+                                    p(className = "m-0 text-xs text-gray") { textNode(t("unit.req_prot", reqProtection)) }
                                 }
                             }
                         }
@@ -130,17 +131,14 @@ fun IComponent.ArmyRecruitmentPanel(
                     
                     div(className = "text-center mb-1") {
                         p(className = "m-0 mb-1") {
-                            textNode("Recruit ")
-                            span(className = "text-primary font-600") { textNode("$actualRecruit") }
-                            textNode(" units for ")
-                            span(className = "text-warning font-600") { textNode("$totalCost 🪙") }
+                            textNode(t("recruit.summary", actualRecruit, totalCost))
                         }
                         
                         range(value = actualRecruit, min = 1, max = maxRecruit, className = "w-full mb-1") {
                             onInput { recruitAmount = this.value?.toInt() ?: 1 }
                         }
                         
-                        button("Confirm Recruitment", className = "btn btn-primary w-full") {
+                        button(t("recruit.confirm"), className = "btn btn-primary w-full") {
                             onClick {
                                 sendAction(GameAction.RecruitArmy(actualRecruit, selectedChar.id, selectedUnitType))
                                 onClose()
@@ -148,9 +146,9 @@ fun IComponent.ArmyRecruitmentPanel(
                         }
                     }
                 } else if (spaceLeft <= 0) {
-                    p(className = "text-center text-red mt-2") { textNode("Army is full (100/100).") }
+                    p(className = "text-center text-red mt-2") { textNode(t("recruit.army_full")) }
                 } else {
-                    p(className = "text-center text-red mt-2") { textNode("Not enough gold to recruit this unit.") }
+                    p(className = "text-center text-red mt-2") { textNode(t("recruit.not_enough_gold")) }
                 }
             }
         }

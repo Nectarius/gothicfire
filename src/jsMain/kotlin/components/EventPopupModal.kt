@@ -5,6 +5,7 @@ import dev.kilua.compose.ComponentNode
 import dev.kilua.core.IComponent
 import dev.kilua.html.*
 import PopupEvent
+import i18n.t
 
 @Composable
 fun IComponent.EventPopupModal(
@@ -20,7 +21,7 @@ fun IComponent.EventPopupModal(
                 textNode(event.message)
             }
             
-            button("Acknowledge", className = "btn btn-primary w-full event-popup-btn") {
+            button(t("popup.acknowledge"), className = "btn btn-primary w-full event-popup-btn") {
                 onClick { onClose() }
             }
         }

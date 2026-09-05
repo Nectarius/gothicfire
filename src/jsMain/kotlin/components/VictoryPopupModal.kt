@@ -5,6 +5,7 @@ import dev.kilua.compose.ComponentNode
 import dev.kilua.core.IComponent
 import dev.kilua.html.*
 import models.GameState
+import i18n.t
 
 @Composable
 fun IComponent.VictoryPopupModal(
@@ -21,18 +22,17 @@ fun IComponent.VictoryPopupModal(
             h1(className = "m-0 mb-1") { 
                 style("color", winningColor)
                 style("font-size", "3rem")
-                textNode("Game Over!") 
+                textNode(t("victory.title")) 
             }
             h2(className = "m-0 mb-3 text-gray") {
-                span { style("color", winningColor); textNode(winningTeamName) }
-                textNode(" claims absolute victory!")
+                textNode(t("victory.subtitle", winningTeamName))
             }
             
             p(className = "text-lg text-gray mb-3") {
-                textNode("The battle is won, and the realm bends to your will.")
+                textNode(t("victory.desc"))
             }
             
-            button("Return to Map", className = "btn btn-primary w-full p-2 text-lg") {
+            button(t("victory.return_map"), className = "btn btn-primary w-full p-2 text-lg") {
                 onClick { onClose() }
             }
         }

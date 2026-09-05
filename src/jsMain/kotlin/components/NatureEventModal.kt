@@ -8,6 +8,7 @@ import models.GameEvent
 import models.NatureEventType
 import models.GameState
 import models.MapData
+import i18n.t
 
 @Composable
 fun IComponent.NatureEventModal(
@@ -18,10 +19,10 @@ fun IComponent.NatureEventModal(
     val territoryName = MapData[event.sectorId]?.name ?: "Sector ${event.sectorId}"
     
     val (icon, title, description, colorClass) = when (event.eventType) {
-        NatureEventType.ABUNDANT_HARVEST -> listOf("🌾", "Abundant Harvest", "A bountiful harvest has occurred! Food production in this territory is greatly increased for the turn.", "text-green")
-        NatureEventType.VOLUNTEERS -> listOf("🎺", "Volunteers", "Brave locals have taken up arms! Light Infantry has joined the local army.", "text-primary")
-        NatureEventType.HURRICANE -> listOf("🌪️", "Hurricane", "A devastating hurricane has struck! Buildings are damaged and protection is reduced.", "text-warning")
-        NatureEventType.FLOOD -> listOf("🌊", "Flood", "Severe flooding has ruined the fields! Stored food in this territory has been washed away.", "text-red")
+        NatureEventType.ABUNDANT_HARVEST -> listOf("🌾", t("nature.harvest_title"), t("nature.harvest_desc"), "text-green")
+        NatureEventType.VOLUNTEERS -> listOf("🎺", t("nature.volunteers_title"), t("nature.volunteers_desc"), "text-primary")
+        NatureEventType.HURRICANE -> listOf("🌪️", t("nature.hurricane_title"), t("nature.hurricane_desc"), "text-warning")
+        NatureEventType.FLOOD -> listOf("🌊", t("nature.flood_title"), t("nature.flood_desc"), "text-red")
     }
 
     div(className = "modal-overlay glass") {
@@ -34,7 +35,7 @@ fun IComponent.NatureEventModal(
                 textNode(description)
             }
             
-            button("Acknowledge", className = "btn btn-primary w-full") {
+            button(t("popup.acknowledge"), className = "btn btn-primary w-full") {
                 onClick { onClose() }
             }
         }

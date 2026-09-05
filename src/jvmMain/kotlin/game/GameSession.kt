@@ -181,10 +181,14 @@ class GameSession(var gameState: GameState = GameState()) {
         mutex.withLock {
             if (gameState.status == GameStatus.NOT_CREATED) return
             
-            if (connections.isEmpty() && observers.isEmpty()) {
+            if (connections.isEmpty() && observers.isEmpty() && lastSeenTimestamps.isNotEmpty()) {
                 logger.info("All players and observers have disconnected. Game ends and resets.")
                 gameState = GameState()
-                db.GameRepository.saveGameState(state = gameState, trigger = "ALL_DISCONNECTED")
+                try {
+                    db.GameRepository.saveGameState(state = gameState, trigger = "ALL_DISCONNECTED")
+                } catch (e: Exception) {
+                    logger.debug("Could not save disconnected state: {}", e.message)
+                }
                 return@withLock
             }
             
@@ -328,7 +332,17 @@ class GameSession(var gameState: GameState = GameState()) {
         }
     }
     
-    suspend fun startPvEGame(playerId: String, gameName: String, allowSecondPlayer: Boolean, playerTeam: Team, playerTeamColor: String, playerTeamName: String, chosenHeroes: List<String>, chosenCastle: String) {
+    suspend fun startPvEGame(
+        playerId: String, 
+        gameName: String, 
+        allowSecondPlayer: Boolean, 
+        playerTeam: Team, 
+        playerTeamColor: String, 
+        playerTeamName: String, 
+        chosenHeroes: List<String>, 
+        chosenCastle: String,
+        session: DefaultWebSocketSession? = null
+    ) {
         mutex.withLock {
             if (gameState.status == GameStatus.IN_PROGRESS || gameState.status == GameStatus.GAME_OVER) return@withLock
             
@@ -337,6 +351,11 @@ class GameSession(var gameState: GameState = GameState()) {
             if (distinctHeroIds.size != 2) return@withLock
             val chosenTemplates = distinctHeroIds.mapNotNull { id -> PredefinedCharacters.find { it.templateId == id } }
             if (chosenTemplates.size != 2) return@withLock
+            
+            if (session != null) {
+                connections[playerId] = session
+                lastSeenTimestamps[playerId] = System.currentTimeMillis()
+            }
             
             // Set up lobby
             gameState = GameState(

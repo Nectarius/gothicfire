@@ -8,6 +8,7 @@ import rpc.AppService
 import models.GameResultSummary
 import kotlinx.coroutines.launch
 import kotlin.js.Date
+import i18n.t
 
 @Composable
 fun IComponent.GameHistoryPanel(appService: AppService) {
@@ -20,25 +21,25 @@ fun IComponent.GameHistoryPanel(appService: AppService) {
             try {
                 history = appService.getGameHistory()
             } catch (e: Exception) {
-                error = e.message ?: "Failed to load history"
+                error = e.message ?: t("history.error")
             }
         }
     }
 
     div(className = "p-2") {
-        h2(className = "text-center m-0 mb-2") { textNode("Game History") }
+        h2(className = "text-center m-0 mb-2") { textNode(t("history.title")) }
         
         if (error.isNotBlank()) {
             div(className = "glass card text-center p-2") {
-                h3(className = "text-red m-0") { textNode("Error loading history") }
+                h3(className = "text-red m-0") { textNode(t("history.error")) }
                 p { textNode(error) }
             }
         } else if (history == null) {
-            p(className = "text-center text-gray") { textNode("Loading history...") }
+            p(className = "text-center text-gray") { textNode(t("history.loading")) }
         } else if (history!!.isEmpty()) {
             div(className = "glass card text-center p-4") {
-                h3(className = "text-gray m-0") { textNode("No games have been finished yet.") }
-                p(className = "text-dark-gray") { textNode("Play a game to see the results here!") }
+                h3(className = "text-gray m-0") { textNode(t("history.empty")) }
+                p(className = "text-dark-gray") { textNode(t("history.empty_desc")) }
             }
         } else {
             div(className = "d-flex flex-col gap-1") {
@@ -52,15 +53,15 @@ fun IComponent.GameHistoryPanel(appService: AppService) {
                                     val winColor = game.winningTeamColor ?: "var(--primary)"
                                     h3(className = "m-0 font-600") {
                                         style("color", winColor)
-                                        textNode("🏆 ${game.winningTeamName.uppercase()} WINS!")
+                                        textNode(t("history.team_wins", game.winningTeamName.uppercase()))
                                     }
                                 } else {
-                                    h3(className = "m-0 text-gray") { textNode("DRAW / NO WINNER") }
+                                    h3(className = "m-0 text-gray") { textNode(t("history.draw")) }
                                 }
-                                span(className = "text-sm text-dark-gray") { textNode("Ended: $dateString") }
+                                span(className = "text-sm text-dark-gray") { textNode(t("history.ended", dateString)) }
                             }
                             div(className = "text-right") {
-                                span(className = "font-600 text-gold") { textNode("${game.totalTurns} Turns") }
+                                span(className = "font-600 text-gold") { textNode(t("history.turns", game.totalTurns)) }
                             }
                         }
                         
@@ -71,7 +72,7 @@ fun IComponent.GameHistoryPanel(appService: AppService) {
                                     textNode(game.redTeamName ?: "Team 1")
                                 }
                                 if (game.redPlayers.isEmpty()) {
-                                    span(className = "text-xs text-dark-gray") { textNode("No players") }
+                                    span(className = "text-xs text-dark-gray") { textNode(t("history.no_players")) }
                                 } else {
                                     span(className = "text-sm text-gray") {
                                         textNode(game.redPlayers.joinToString(", "))
@@ -87,7 +88,7 @@ fun IComponent.GameHistoryPanel(appService: AppService) {
                                     textNode(game.blueTeamName ?: "Team 2")
                                 }
                                 if (game.bluePlayers.isEmpty()) {
-                                    span(className = "text-xs text-dark-gray") { textNode("No players") }
+                                    span(className = "text-xs text-dark-gray") { textNode(t("history.no_players")) }
                                 } else {
                                     span(className = "text-sm text-gray") {
                                         textNode(game.bluePlayers.joinToString(", "))

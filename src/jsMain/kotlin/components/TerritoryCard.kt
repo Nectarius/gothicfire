@@ -5,6 +5,7 @@ import dev.kilua.compose.ComponentNode
 import dev.kilua.core.IComponent
 import dev.kilua.html.*
 import models.*
+import i18n.t
 
 @Composable
 fun IComponent.TerritoryCard(
@@ -71,14 +72,14 @@ fun IComponent.TerritoryCard(
             }
             
             // Ownership Status Banner
-            val myTeamName = myPlayer?.team?.let { gameState.teamInfos[it]?.name } ?: "Your Team"
-            val ownerTeamName = ownerTeam?.let { gameState.teamInfos[it]?.name } ?: "Enemy Team"
+            val myTeamName = myPlayer?.team?.let { gameState.teamInfos[it]?.name } ?: t("hud.your_team")
+            val ownerTeamName = ownerTeam?.let { gameState.teamInfos[it]?.name } ?: t("hud.enemy_team")
             
             val ownerText = when {
-                isOwner -> "Owned by You ($myTeamName)"
-                ownerPlayer != null && ownerPlayer.team == myPlayer?.team -> "Owned by Ally (${ownerPlayer.name})"
-                ownerPlayer != null -> "Controlled by Enemy (${ownerPlayer.name} - $ownerTeamName)"
-                else -> "Unclaimed Wilderness"
+                isOwner -> t("territory.owned_you", myTeamName)
+                ownerPlayer != null && ownerPlayer.team == myPlayer?.team -> t("territory.owned_ally", ownerPlayer.name)
+                ownerPlayer != null -> t("territory.controlled_enemy", ownerPlayer.name, ownerTeamName)
+                else -> t("territory.wilderness")
             }
             
             val ownerClass = if (ownerTeam == null) "owner-banner-neutral" else ""
@@ -97,42 +98,41 @@ fun IComponent.TerritoryCard(
             // Stats Grid
             div(className = "territory-stats-grid mb-1") {
                 div(className = "stat-box") {
-                    span(className = "stat-label") { textNode("🌱 Cultivation") }
+                    span(className = "stat-label") { textNode(t("territory.cultivation")) }
                     span(className = "stat-value text-primary font-600") { textNode("${territoryState.cultivation}") }
                 }
                 div(className = "stat-box") {
-                    span(className = "stat-label") { textNode("🛡️ Protection") }
+                    span(className = "stat-label") { textNode(t("territory.protection")) }
                     span(className = "stat-value text-warning font-600") { textNode("${territoryState.protection}") }
                 }
                 div(className = "stat-box") {
-                    span(className = "stat-label") { textNode("🌾 Stored Food") }
+                    span(className = "stat-label") { textNode(t("territory.stored_food")) }
                     span(className = "stat-value font-600") { textNode("${territoryState.food}") }
                 }
                 div(className = "stat-box") {
-                    span(className = "stat-label") { textNode("🪙 Stored Gold") }
+                    span(className = "stat-label") { textNode(t("territory.stored_gold")) }
                     span(className = "stat-value font-600") { textNode("${territoryState.gold}") }
                 }
             }
             
             // Actions Section
             if (isOwner || isTeamOwner) {
-                h4(className = "m-0 mb-05 text-sm text-gray") { textNode("Territory Management Actions") }
+                h4(className = "m-0 mb-05 text-sm text-gray") { textNode(t("territory.actions_title")) }
                 
                 div(className = "d-flex flex-col gap-05") {
                     val boostAmount = if (activeChar != null) activeChar.intellect.coerceIn(2, 7) else 2
+                    val heroName = activeChar?.name ?: "Hero"
                     div(className = "d-flex gap-1") {
-                        button("🌱 Cultivate (+$boostAmount)", className = "btn btn-outline flex-1 ${if (!canAct) "btn-disabled" else ""}") {
-                            val heroName = activeChar?.name ?: "Hero"
-                            title("Spends $heroName's turn to increase Cultivation by +$boostAmount")
+                        button(t("territory.cultivate", boostAmount), className = "btn btn-outline flex-1 ${if (!canAct) "btn-disabled" else ""}") {
+                            title(t("territory.cultivate_tip", heroName, boostAmount))
                             onClick {
                                 if (canAct && activeChar != null) {
                                     sendAction(GameAction.UpgradeTerritory(sectorId, "CULTIVATION", activeChar.id))
                                 }
                             }
                         }
-                        button("🛡️ Fortify (+$boostAmount)", className = "btn btn-outline flex-1 ${if (!canAct) "btn-disabled" else ""}") {
-                            val heroName = activeChar?.name ?: "Hero"
-                            title("Spends $heroName's turn to increase Protection by +$boostAmount")
+                        button(t("territory.fortify", boostAmount), className = "btn btn-outline flex-1 ${if (!canAct) "btn-disabled" else ""}") {
+                            title(t("territory.fortify_tip", heroName, boostAmount))
                             onClick {
                                 if (canAct && activeChar != null) {
                                     sendAction(GameAction.UpgradeTerritory(sectorId, "PROTECTION", activeChar.id))
@@ -144,9 +144,8 @@ fun IComponent.TerritoryCard(
                     // Search for Scrolls button
                     val canSearch = canAct && activeChar != null && activeChar.currentSector != null &&
                         (activeChar.currentSector == sectorId || isAdjacentSector(activeChar.currentSector!!, sectorId))
-                    button("🔍 Search for Scrolls (25% chance)", className = "btn btn-outline ${if (!canSearch) "btn-disabled" else ""}") {
-                        val heroName = activeChar?.name ?: "Hero"
-                        title("$heroName spends their turn searching this territory for ancient scrolls. 25% chance to find one!")
+                    button(t("territory.search_scrolls"), className = "btn btn-outline ${if (!canSearch) "btn-disabled" else ""}") {
+                        title(t("territory.search_scrolls_tip", heroName))
                         onClick {
                             if (canSearch && activeChar != null) {
                                 sendAction(GameAction.SearchScroll(sectorId, activeChar.id))
@@ -160,8 +159,8 @@ fun IComponent.TerritoryCard(
                         else -> "Transfers stored Food and Gold to ${charAtLocation.name}'s inventory"
                     }
                     button(
-                        if (charAtLocation != null) "💰 Collect All Resources (${territoryState.food}🌾, ${territoryState.gold}🪙) -> ${charAtLocation.name}" 
-                        else "💰 Collect Resources (Hero Must Be Here)", 
+                        if (charAtLocation != null) t("territory.collect_all", territoryState.food, territoryState.gold, charAtLocation.name)
+                        else t("territory.collect_need_hero"), 
                         className = "btn btn-primary ${if (!canCollect) "btn-disabled" else ""}"
                     ) {
                         title(collectTitle)
@@ -174,23 +173,23 @@ fun IComponent.TerritoryCard(
                     
                     if (charAtLocation == null && hasResources) {
                         p(className = "text-xs text-warning m-0 text-center") {
-                            textNode("📍 Move a hero here to collect stored resources (${territoryState.food}🌾, ${territoryState.gold}🪙).")
+                            textNode(t("territory.move_hero_collect", territoryState.food, territoryState.gold))
                         }
                     }
                     
                     if (!canAct && isMyTurn) {
                         p(className = "text-xs text-red m-0 mt-05 text-center") {
-                            textNode("${activeChar?.name ?: "Hero"} has already acted this turn.")
+                            textNode(t("territory.already_acted", activeChar?.name ?: "Hero"))
                         }
                     } else if (!isMyTurn) {
                         p(className = "text-xs text-dark-gray m-0 mt-05 text-center") {
-                            textNode("Wait for your team's turn to spend actions.")
+                            textNode(t("territory.wait_team_turn"))
                         }
                     }
                 }
             } else {
                 p(className = "text-sm text-dark-gray text-center m-0 mb-1") {
-                    textNode("Capture this territory by moving your hero into it.")
+                    textNode(t("territory.capture_tip"))
                 }
             }
             
@@ -198,31 +197,31 @@ fun IComponent.TerritoryCard(
             if (activeChar != null && !activeChar.isDead) {
                 div(className = "recruitment-section mt-1 pt-1") {
                     div(className = "d-flex justify-between items-center mb-05") {
-                        h4(className = "m-0 text-sm") { textNode("⚔️ Recruit Army for ${activeChar.name}") }
+                        h4(className = "m-0 text-sm") { textNode(t("territory.recruit_army_for", activeChar.name)) }
                         span(className = "text-xs text-primary font-600") {
                             textNode("Army: ${activeChar.army.total()}/100 | Gold: ${activeChar.gold}🪙")
                         }
                     }
                     p(className = "text-xs text-dark-gray m-0 mb-05 text-center") {
-                        textNode("Use the Character Panel to recruit your army.")
+                        textNode(t("territory.use_char_panel_recruit"))
                     }
                     
                     if (territoryDef?.isCastle == true) {
                         // Siege Weapon Section
                         div(className = "d-flex justify-between items-center mt-1 mb-05 pt-05 border-t") {
-                            h4(className = "m-0 text-sm") { textNode("🏹 Buy Siege Weapons") }
+                            h4(className = "m-0 text-sm") { textNode(t("territory.buy_siege")) }
                             span(className = "text-xs text-primary font-600") {
-                                textNode("Siege Weapons: ${activeChar.siegeWeapons}")
+                                textNode(t("territory.siege_count", activeChar.siegeWeapons))
                             }
                         }
                         
                         p(className = "text-xs text-dark-gray m-0 mb-05") {
-                            textNode("Cost: 50🪙 each | Spends turn | Negates high protection (20+)")
+                            textNode(t("territory.siege_desc"))
                         }
                         
                         val canAffordSiege = activeChar.gold >= 50 && !activeChar.hasActedThisTurn
-                        button("+1 Siege Weapon (50🪙)", className = "btn btn-sm btn-outline w-full ${if (!canAffordSiege) "btn-disabled" else ""}") {
-                            title(if (activeChar.hasActedThisTurn) "Already acted this turn" else "Buy 1 Siege Weapon for 50 gold. Spends your turn.")
+                        button(t("territory.buy_siege_btn"), className = "btn btn-sm btn-outline w-full ${if (!canAffordSiege) "btn-disabled" else ""}") {
+                            title(if (activeChar.hasActedThisTurn) t("territory.siege_acted") else t("territory.siege_buy_tip"))
                             onClick {
                                 if (canAffordSiege) {
                                     sendAction(GameAction.BuySiegeWeapon(activeChar.id))

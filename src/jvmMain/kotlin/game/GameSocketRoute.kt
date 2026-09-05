@@ -50,6 +50,10 @@ fun Route.gameSocket() {
                             GameSessionManager.joinPvEGame(action.playerName, action.chosenHeroes, this)
                             return@consumeEach
                         }
+                        if (action is GameAction.LeaveGame) {
+                            GameSessionManager.leaveGame(this)
+                            return@consumeEach
+                        }
                         
                         // Handle active game actions
                         val (game, playerId) = GameSessionManager.connectionToGame[this] ?: return@consumeEach
