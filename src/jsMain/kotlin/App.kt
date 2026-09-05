@@ -209,13 +209,17 @@ class App : Application() {
                     // Language Switcher
                     div(className = "d-flex items-center gap-05") {
                         val activeLang = I18n.currentLanguage.value
-                        button("🇬🇧 EN", className = "btn btn-xs language-btn ${if (activeLang == Language.EN) "btn-primary" else "glass"}") {
+                        button("EN", className = "btn btn-xs language-btn ${if (activeLang == Language.EN) "btn-primary" else "glass"}") {
                             title("Switch to English")
                             onClick { I18n.setLanguage(Language.EN) }
                         }
-                        button("🇬🇷 ΕΛ", className = "btn btn-xs language-btn ${if (activeLang == Language.EL) "btn-primary" else "glass"}") {
+                        button("ΕΛ", className = "btn btn-xs language-btn ${if (activeLang == Language.EL) "btn-primary" else "glass"}") {
                             title("Αλλαγή σε Ελληνικά")
                             onClick { I18n.setLanguage(Language.EL) }
+                        }
+                        button("RU", className = "btn btn-xs language-btn ${if (activeLang == Language.RU) "btn-primary" else "glass"}") {
+                            title("Переключить на Русский")
+                            onClick { I18n.setLanguage(Language.RU) }
                         }
                     }
 
