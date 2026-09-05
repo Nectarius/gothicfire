@@ -96,7 +96,8 @@ object GameSessionManager {
         playerTeamName: String,
         chosenHeroes: List<String>,
         chosenCastle: String,
-        wsSession: DefaultWebSocketSession
+        wsSession: DefaultWebSocketSession,
+        userId: String? = null
     ) {
         val pveGame = mutex.withLock {
             // Detach wsSession from globalSession observers/connections if present
@@ -109,9 +110,10 @@ object GameSessionManager {
                 existing.first.connections.remove(existing.second)
             }
             
-            // Create a dedicated GameSession for this PvE match
-            val newSession = GameSession()
-            val gameId = UUID.randomUUID().toString()
+            val pveKey = userId ?: playerId
+            val gameId = "pve_$pveKey"
+            // Create a dedicated GameSession for this PvE match with persistent gameId
+            val newSession = GameSession(gameId = gameId, ownerUserId = userId)
             pveSessions[gameId] = newSession
             connectionToGame[wsSession] = Pair(newSession, playerId)
             newSession
@@ -119,7 +121,69 @@ object GameSessionManager {
         
         // Start the PvE match on the isolated session with wsSession attached
         pveGame.startPvEGame(playerId, gameName, allowSecondPlayer, playerTeam, playerTeamColor, playerTeamName, chosenHeroes, chosenCastle, wsSession)
-        logger.info("Started new independent PvE game for player '{}'", playerId)
+        logger.info("Started new independent PvE game '{}' for player '{}'", pveGame.gameId, playerId)
+    }
+
+    suspend fun findAndAttachActivePvEGame(
+        userId: String?,
+        userName: String?,
+        wsSession: DefaultWebSocketSession
+    ): Pair<GameSession, String>? {
+        val reconnected = mutex.withLock {
+            // 1. Check in-memory active PvE sessions
+            val inMemoryEntry = pveSessions.entries.find { (_, session) ->
+                session.gameState.isPvE &&
+                session.gameState.status == GameStatus.IN_PROGRESS &&
+                ((!userId.isNullOrBlank() && session.ownerUserId == userId) ||
+                 session.gameState.players.any { p ->
+                    !p.isBot && ((!userId.isNullOrBlank() && p.id == userId) || (!userName.isNullOrBlank() && (p.name == userName || p.id == userName)))
+                 })
+            }
+            
+            val triple = if (inMemoryEntry != null) {
+                val session = inMemoryEntry.value
+                val matchedPlayer = session.gameState.players.firstOrNull { p ->
+                    !p.isBot && ((!userId.isNullOrBlank() && p.id == userId) || (!userName.isNullOrBlank() && (p.name == userName || p.id == userName)))
+                } ?: session.gameState.players.firstOrNull { !it.isBot }
+                if (matchedPlayer != null) {
+                    Triple(session, inMemoryEntry.key, matchedPlayer.id)
+                } else null
+            } else {
+                // 2. Not in memory, check MongoDB
+                val saved = GameRepository.loadActivePvEGame(userId, userName)
+                if (saved != null && saved.second.status == GameStatus.IN_PROGRESS) {
+                    val (savedGameId, savedState) = saved
+                    val matchedPlayer = savedState.players.firstOrNull { p ->
+                        !p.isBot && ((!userId.isNullOrBlank() && p.id == userId) || (!userName.isNullOrBlank() && (p.name == userName || p.id == userName)))
+                    } ?: savedState.players.firstOrNull { !it.isBot }
+                    
+                    if (matchedPlayer != null) {
+                        val restoredSession = GameSession(savedState, savedGameId, userId ?: userName)
+                        pveSessions[savedGameId] = restoredSession
+                        Triple(restoredSession, savedGameId, matchedPlayer.id)
+                    } else null
+                } else null
+            }
+            
+            if (triple != null) {
+                val (gameSession, _, playerId) = triple
+                // Detach wsSession from global observers if present
+                val obsKey = globalSession.observers.entries.find { it.value == wsSession }?.key
+                if (obsKey != null) globalSession.observers.remove(obsKey)
+                
+                connectionToGame[wsSession] = Pair(gameSession, playerId)
+                Pair(gameSession, playerId)
+            } else null
+        }
+        
+        if (reconnected != null) {
+            val (gameSession, playerId) = reconnected
+            gameSession.reconnect(playerId, wsSession)
+            logger.info("Player '{}' reconnected to active PvE session '{}'", playerId, gameSession.gameId)
+            gameSession.broadcastState()
+            return reconnected
+        }
+        return null
     }
 
     suspend fun joinPvEGame(playerName: String, chosenHeroes: List<String>, wsSession: DefaultWebSocketSession) {
@@ -146,9 +210,10 @@ object GameSessionManager {
                 val (prevGame, prevPlayerId) = prev
                 prevGame.leave(prevPlayerId)
                 
-                // If it was a PvE session and has no human connections left, remove it
-                pveSessions.entries.removeIf { (_, session) ->
-                    session == prevGame && session.connections.isEmpty()
+                if (prevGame.gameState.isPvE) {
+                    // Explicitly leaving a PvE match clears it
+                    pveSessions.entries.removeIf { (_, session) -> session == prevGame }
+                    GameRepository.clearActiveGame(prevGame.gameId)
                 }
             }
             
@@ -188,8 +253,10 @@ object GameSessionManager {
         game.leave(playerId)
         
         mutex.withLock {
+            // Only clean up PvE sessions if they are GAME_OVER or NOT_CREATED.
+            // In-progress PvE sessions are retained so the user can reconnect.
             pveSessions.entries.removeIf { (_, session) ->
-                session == game && session.connections.isEmpty()
+                session == game && (session.gameState.status == GameStatus.GAME_OVER || session.gameState.status == GameStatus.NOT_CREATED)
             }
         }
     }

@@ -3,6 +3,7 @@ package game
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import io.ktor.server.sessions.*
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -16,8 +17,14 @@ fun Route.gameSocket() {
     val json = Json { ignoreUnknownKeys = true }
     
     webSocket("/game-socket") {
-        val observerId = java.util.UUID.randomUUID().toString()
-        GameSessionManager.addObserver(observerId, this)
+        val userSession = call.sessions.get<UserSession>()
+        val reconnected = GameSessionManager.findAndAttachActivePvEGame(userSession?.id, userSession?.name, this)
+        var observerId: String? = null
+        if (reconnected == null) {
+            val id = java.util.UUID.randomUUID().toString()
+            observerId = id
+            GameSessionManager.addObserver(id, this)
+        }
         
         try {
             incoming.consumeEach { frame ->
@@ -43,7 +50,12 @@ fun Route.gameSocket() {
                             return@consumeEach
                         }
                         if (action is GameAction.StartPvEGame) {
-                            GameSessionManager.startPvEGame(action.playerName, action.gameName, action.allowSecondPlayer, action.playerTeam, action.playerTeamColor, action.playerTeamName, action.chosenHeroes, action.chosenCastle, this)
+                            GameSessionManager.startPvEGame(
+                                action.playerName, action.gameName, action.allowSecondPlayer,
+                                action.playerTeam, action.playerTeamColor, action.playerTeamName,
+                                action.chosenHeroes, action.chosenCastle, this,
+                                userId = userSession?.id
+                            )
                             return@consumeEach
                         }
                         if (action is GameAction.JoinPvEGame) {
@@ -75,7 +87,13 @@ fun Route.gameSocket() {
                             is GameAction.TransferResources -> game.transferResources(playerId, action.fromCharId, action.toCharId, action.food, action.gold)
                             is GameAction.MarketTrade -> game.marketTrade(playerId, action.characterId, action.buyFood, action.goldAmount)
                             is GameAction.SkipTurn -> game.skipTurn(playerId, action.characterId)
-                            is GameAction.EndGame -> game.endGame(playerId)
+                            is GameAction.EndGame -> {
+                                val isPvE = game.gameState.isPvE
+                                game.endGame(playerId)
+                                if (isPvE) {
+                                    GameSessionManager.leaveGame(this)
+                                }
+                            }
                             is GameAction.JoinTeam -> {} // Handled above
                         }
                     } catch (e: Exception) {
@@ -84,7 +102,9 @@ fun Route.gameSocket() {
                 }
             }
         } finally {
-            GameSessionManager.removeObserver(observerId)
+            if (observerId != null) {
+                GameSessionManager.removeObserver(observerId)
+            }
             GameSessionManager.disconnect(this)
         }
     }

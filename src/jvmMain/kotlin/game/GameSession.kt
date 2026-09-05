@@ -12,13 +12,35 @@ import org.slf4j.LoggerFactory
 import java.util.UUID
 
 
-class GameSession(var gameState: GameState = GameState()) {
+class GameSession(
+    var gameState: GameState = GameState(),
+    val gameId: String = "global_game",
+    val ownerUserId: String? = null
+) {
     private val logger = LoggerFactory.getLogger(GameSession::class.java)
     private val mutex = Mutex()
     
     companion object {
         // 2 hours in milliseconds
         const val ABANDON_TIMEOUT_MS = 2 * 60 * 60 * 1000L
+    }
+    
+    private fun saveCurrentState(trigger: String) {
+        val humanPlayer = gameState.players.find { !it.isBot }
+        db.GameRepository.saveGameState(
+            gameId = gameId,
+            state = gameState,
+            trigger = trigger,
+            userId = ownerUserId,
+            playerName = humanPlayer?.name ?: gameState.creatorPlayerId
+        )
+    }
+    
+    suspend fun reconnect(playerId: String, session: DefaultWebSocketSession) {
+        mutex.withLock {
+            connections[playerId] = session
+            lastSeenTimestamps[playerId] = System.currentTimeMillis()
+        }
     }
     
     // WebSockets connected to this session
@@ -182,10 +204,20 @@ class GameSession(var gameState: GameState = GameState()) {
             if (gameState.status == GameStatus.NOT_CREATED) return
             
             if (connections.isEmpty() && observers.isEmpty() && lastSeenTimestamps.isNotEmpty()) {
+                if (gameState.isPvE) {
+                    logger.info("PvE player disconnected for gameId '{}'. Saving game state and keeping session active.", gameId)
+                    try {
+                        saveCurrentState("PLAYER_DISCONNECTED")
+                    } catch (e: Exception) {
+                        logger.warn("Could not save PvE state on disconnect: {}", e.message)
+                    }
+                    return@withLock
+                }
+                
                 logger.info("All players and observers have disconnected. Game ends and resets.")
                 gameState = GameState()
                 try {
-                    db.GameRepository.saveGameState(state = gameState, trigger = "ALL_DISCONNECTED")
+                    saveCurrentState("ALL_DISCONNECTED")
                 } catch (e: Exception) {
                     logger.debug("Could not save disconnected state: {}", e.message)
                 }
@@ -216,7 +248,7 @@ class GameSession(var gameState: GameState = GameState()) {
                         status = GameStatus.GAME_OVER,
                         winningTeam = winningTeam
                     )
-                    db.GameRepository.saveGameState(state = gameState, trigger = "ABANDON_FORFEIT")
+                    saveCurrentState("ABANDON_FORFEIT")
                     return
                 }
             }
@@ -450,6 +482,7 @@ class GameSession(var gameState: GameState = GameState()) {
                 territories = initialTerritories,
                 characters = updatedCharacters
             )
+            saveCurrentState("PVE_GAME_START")
         }
         broadcastState()
     }
@@ -1237,7 +1270,7 @@ class GameSession(var gameState: GameState = GameState()) {
 
     private suspend fun checkTurnEnd() {
         if (gameState.status == GameStatus.GAME_OVER) {
-            db.GameRepository.saveGameState(state = gameState, trigger = "GAME_OVER")
+            saveCurrentState("GAME_OVER")
             return
         }
 
@@ -1374,9 +1407,9 @@ class GameSession(var gameState: GameState = GameState()) {
             
             if (gameState.currentTurn > gameState.maxTurns) {
                 gameState = gameState.copy(status = GameStatus.GAME_OVER)
-                db.GameRepository.saveGameState(state = gameState, trigger = "GAME_OVER")
+                saveCurrentState("GAME_OVER")
             } else {
-                db.GameRepository.saveGameState(state = gameState, trigger = "TURN_END")
+                saveCurrentState("TURN_END")
             }
             
             if (gameState.status == GameStatus.IN_PROGRESS) {
@@ -1406,8 +1439,13 @@ class GameSession(var gameState: GameState = GameState()) {
             val player = gameState.players.find { it.id == playerId }
             if (player?.name != null && player.name == gameState.creatorPlayerId) {
                 logger.info("Game forcibly ended by creator ${player.name}")
+                if (gameState.isPvE) {
+                    db.GameRepository.clearActiveGame(gameId)
+                } else {
+                    gameState = GameState()
+                    saveCurrentState("CREATOR_ENDED")
+                }
                 gameState = GameState()
-                db.GameRepository.saveGameState(state = gameState, trigger = "CREATOR_ENDED")
             }
         }
         broadcastState()

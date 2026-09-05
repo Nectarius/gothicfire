@@ -52,9 +52,10 @@ fun IComponent.GameLobby(
     gameState: GameState?,
     yourPlayerId: String,
     initialCreatingPvE: Boolean = false,
-    onCancelPvE: (() -> Unit)? = null
+    onCancelPvE: (() -> Unit)? = null,
+    currentUserName: String = ""
 ) {
-    var playerName by remember { mutableStateOf("") }
+    var playerName by remember(currentUserName) { mutableStateOf(currentUserName) }
     var gameNameInput by remember { mutableStateOf("") }
     var selectedHeroIds by remember { mutableStateOf(listOf<String>()) }
 

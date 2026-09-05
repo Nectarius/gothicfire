@@ -383,14 +383,20 @@ class App : Application() {
                                 }
                             }
                         } else if (gameState == null || gameState!!.status == models.GameStatus.LOBBY || gameState!!.status == models.GameStatus.NOT_CREATED) {
-                            GameLobby(ws = ws, gameState = gameState, yourPlayerId = yourPlayerId)
+                            GameLobby(
+                                ws = ws,
+                                gameState = gameState,
+                                yourPlayerId = yourPlayerId,
+                                currentUserName = currentUser?.name ?: ""
+                            )
                         } else if (isObserver && observingPlayPvE) {
                             GameLobby(
                                 ws = ws,
                                 gameState = null,
                                 yourPlayerId = yourPlayerId,
                                 initialCreatingPvE = true,
-                                onCancelPvE = { observingPlayPvE = false }
+                                onCancelPvE = { observingPlayPvE = false },
+                                currentUserName = currentUser?.name ?: ""
                             )
                         } else {
                             var selectedCharacterId by remember { mutableStateOf<String?>(null) }
