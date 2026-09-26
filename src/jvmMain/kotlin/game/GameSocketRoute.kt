@@ -54,7 +54,8 @@ fun Route.gameSocket() {
                                 action.playerName, action.gameName, action.allowSecondPlayer,
                                 action.playerTeam, action.playerTeamColor, action.playerTeamName,
                                 action.chosenHeroes, action.chosenCastle, this,
-                                userId = userSession?.id
+                                userId = userSession?.id,
+                                chosenAdvisor = action.chosenAdvisor
                             )
                             return@consumeEach
                         }
@@ -87,6 +88,8 @@ fun Route.gameSocket() {
                             is GameAction.TransferResources -> game.transferResources(playerId, action.fromCharId, action.toCharId, action.food, action.gold)
                             is GameAction.MarketTrade -> game.marketTrade(playerId, action.characterId, action.buyFood, action.goldAmount)
                             is GameAction.SkipTurn -> game.skipTurn(playerId, action.characterId)
+                            is GameAction.AskAdvisor -> game.askAdvisor(playerId, action.questionType)
+                            is GameAction.SelectAdvisor -> game.selectAdvisor(playerId, action.advisorId)
                             is GameAction.EndGame -> {
                                 val isPvE = game.gameState.isPvE
                                 game.endGame(playerId)

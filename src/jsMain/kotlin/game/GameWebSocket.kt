@@ -14,7 +14,8 @@ class GameWebSocket(
     private val onScrollFound: (GameEvent.ScrollFound) -> Unit = {},
     private val onScrollSearchFailed: (GameEvent.ScrollSearchFailed) -> Unit = {},
     private val onNatureEvent: (GameEvent.NatureEventOccurred) -> Unit = {},
-    private val onResourceTransferred: (GameEvent.ResourceTransferred) -> Unit = {}
+    private val onResourceTransferred: (GameEvent.ResourceTransferred) -> Unit = {},
+    private val onAdvisorAdviceReceived: (GameEvent.AdvisorAdviceReceived) -> Unit = {}
 ) {
     private var ws: WebSocket? = null
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
@@ -50,6 +51,7 @@ class GameWebSocket(
                     is GameEvent.ScrollSearchFailed -> onScrollSearchFailed(gameEvent)
                     is GameEvent.NatureEventOccurred -> onNatureEvent(gameEvent)
                     is GameEvent.ResourceTransferred -> onResourceTransferred(gameEvent)
+                    is GameEvent.AdvisorAdviceReceived -> onAdvisorAdviceReceived(gameEvent)
                 }
             } catch (e: Exception) {
                 console.error("Failed to parse event: $data", e)

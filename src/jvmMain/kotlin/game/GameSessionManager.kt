@@ -97,7 +97,8 @@ object GameSessionManager {
         chosenHeroes: List<String>,
         chosenCastle: String,
         wsSession: DefaultWebSocketSession,
-        userId: String? = null
+        userId: String? = null,
+        chosenAdvisor: String = "ZORAX"
     ) {
         val pveGame = mutex.withLock {
             // Detach wsSession from globalSession observers/connections if present
@@ -120,8 +121,8 @@ object GameSessionManager {
         }
         
         // Start the PvE match on the isolated session with wsSession attached
-        pveGame.startPvEGame(playerId, gameName, allowSecondPlayer, playerTeam, playerTeamColor, playerTeamName, chosenHeroes, chosenCastle, wsSession)
-        logger.info("Started new independent PvE game '{}' for player '{}'", pveGame.gameId, playerId)
+        pveGame.startPvEGame(playerId, gameName, allowSecondPlayer, playerTeam, playerTeamColor, playerTeamName, chosenHeroes, chosenCastle, wsSession, chosenAdvisor)
+        logger.info("Started new independent PvE game '{}' for player '{}' with advisor '{}'", pveGame.gameId, playerId, chosenAdvisor)
     }
 
     suspend fun findAndAttachActivePvEGame(

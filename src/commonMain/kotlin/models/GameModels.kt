@@ -110,7 +110,8 @@ data class Player(
     val name: String,
     val team: Team,
     val isReady: Boolean = false,
-    val isBot: Boolean = false
+    val isBot: Boolean = false,
+    val advisorId: String = "ZORAX"
 )
 
 @Serializable

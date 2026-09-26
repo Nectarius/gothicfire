@@ -1,5 +1,8 @@
 package game
 
+import EnvConfig
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -19,6 +22,17 @@ class GameSession(
 ) {
     private val logger = LoggerFactory.getLogger(GameSession::class.java)
     private val mutex = Mutex()
+    
+    private val advisorService: AdvisorService by lazy {
+        val client = HttpClient(CIO)
+        val rawUrl = EnvConfig["AI_AGENT_URL"] ?: EnvConfig["AI_AGENT_ENDPOINT"] ?: "http://127.0.0.1:8000"
+        val url = rawUrl.trimEnd('/')
+            .removeSuffix("/decide")
+            .removeSuffix("/decision")
+            .removeSuffix("/decide-turn")
+            .trimEnd('/')
+        AdvisorService(client, url)
+    }
     
     companion object {
         // 2 hours in milliseconds
@@ -373,7 +387,8 @@ class GameSession(
         playerTeamName: String, 
         chosenHeroes: List<String>, 
         chosenCastle: String,
-        session: DefaultWebSocketSession? = null
+        session: DefaultWebSocketSession? = null,
+        chosenAdvisor: String = "ZORAX"
     ) {
         mutex.withLock {
             if (gameState.status == GameStatus.IN_PROGRESS || gameState.status == GameStatus.GAME_OVER) return@withLock
@@ -402,7 +417,7 @@ class GameSession(
             
             gameState = gameState.copy(teamInfos = mapOf(playerTeam to humanTeamInfo, Team.YELLOW to botTeamInfo))
             
-            val humanPlayer = Player(id = playerId, name = playerId, team = playerTeam, isReady = true) // Name will be overridden by caller if needed
+            val humanPlayer = Player(id = playerId, name = playerId, team = playerTeam, isReady = true, advisorId = chosenAdvisor) // Name will be overridden by caller if needed
             val botPlayer = Player(id = "bot_1", name = "Computer", team = Team.YELLOW, isReady = true, isBot = true)
             
             gameState = gameState.copy(players = listOf(humanPlayer, botPlayer))
@@ -1434,6 +1449,35 @@ class GameSession(
         }
     }
     
+    suspend fun askAdvisor(playerId: String, questionType: String) {
+        val player = gameState.players.find { it.id == playerId } ?: return
+        val advisorId = player.advisorId.ifBlank { "ZORAX" }
+        logger.info("Player {} consulting advisor {} with question '{}'", playerId, advisorId, questionType)
+        
+        val adviceResponse = advisorService.consultAdvisor(gameState, playerId, advisorId, questionType)
+        
+        val event = GameEvent.AdvisorAdviceReceived(
+            advisorId = advisorId,
+            advisorName = adviceResponse.advisorName,
+            questionType = questionType,
+            advice = adviceResponse.advice,
+            keyPoints = adviceResponse.keyPoints,
+            timestamp = System.currentTimeMillis()
+        )
+        broadcastEvent(event)
+    }
+
+    suspend fun selectAdvisor(playerId: String, advisorId: String) {
+        mutex.withLock {
+            val updatedPlayers = gameState.players.map { p ->
+                if (p.id == playerId) p.copy(advisorId = advisorId) else p
+            }
+            gameState = gameState.copy(players = updatedPlayers)
+            saveCurrentState("SELECT_ADVISOR")
+        }
+        broadcastState()
+    }
+
     suspend fun endGame(playerId: String) {
         mutex.withLock {
             val player = gameState.players.find { it.id == playerId }

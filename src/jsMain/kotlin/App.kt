@@ -24,12 +24,14 @@ import components.GameHistoryPanel
 import components.NatureEventModal
 import components.MarketPanel
 import components.ArmyRecruitmentPanel
+import components.AdvisorModal
 import components.EventPopupModal
 import components.VictoryPopupModal
 import game.GameWebSocket
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import models.GameEvent
+import models.GameAction
 import i18n.I18n
 import i18n.Language
 import i18n.t
@@ -99,6 +101,9 @@ class App : Application() {
             var victoryAcknowledged by remember { mutableStateOf(false) }
             var observingPlayPvE by remember { mutableStateOf(false) }
             var mapFullscreen by remember { mutableStateOf(false) }
+            var showAdvisor by remember { mutableStateOf(false) }
+            var latestAdvisorAdvice by remember { mutableStateOf<GameEvent.AdvisorAdviceReceived?>(null) }
+            var advisorLoading by remember { mutableStateOf(false) }
             LaunchedEffect(gameState?.status) {
                 if (gameState?.status == models.GameStatus.GAME_OVER) {
                     victoryAcknowledged = false
@@ -177,6 +182,11 @@ class App : Application() {
                             delay(4000)
                             activeTransfers = activeTransfers.filter { it != event }
                         }
+                    },
+                    onAdvisorAdviceReceived = { event ->
+                        latestAdvisorAdvice = event
+                        advisorLoading = false
+                        showAdvisor = true
                     }
                 )
             }
@@ -428,12 +438,27 @@ class App : Application() {
                                     gameState = gameState, 
                                     onOpenMarket = { showMarket = true },
                                     onOpenRecruitment = { showRecruitment = true },
+                                    onOpenAdvisor = { showAdvisor = true },
                                     sendAction = { ws.sendAction(it) }
                                 )
                             }
                             
                             // Scroll notification popup is handled via activePopups
                             
+                            if (showAdvisor) {
+                                AdvisorModal(
+                                    playerId = yourPlayerId,
+                                    gameState = gameState!!,
+                                    latestAdvice = latestAdvisorAdvice,
+                                    isLoading = advisorLoading,
+                                    onAskQuestion = { qType: String ->
+                                        advisorLoading = true
+                                        ws.sendAction(GameAction.AskAdvisor(qType))
+                                    },
+                                    onClose = { showAdvisor = false }
+                                )
+                            }
+
                             if (showMarket) {
                                 MarketPanel(
                                     playerId = yourPlayerId,

@@ -1,5 +1,8 @@
 package game
 
+import EnvConfig
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
 import kotlinx.coroutines.delay
 import models.Player
 import models.Team
@@ -10,8 +13,29 @@ import java.util.UUID
 object AiPlayerManager {
     private val logger = LoggerFactory.getLogger(AiPlayerManager::class.java)
     
-    // In the future, this can be instantiated based on environment variables
-    private val aiService: AiDecisionService = HeuristicAiService()
+    private val httpClient = HttpClient(CIO)
+    private val agentUrl = EnvConfig["AI_AGENT_URL"]
+        ?: EnvConfig["AI_AGENT_ENDPOINT"]
+        ?: "http://127.0.0.1:8000"
+    private val heuristicFallbackService = HeuristicAiService()
+    private val aiOpponentService = AiOpponentService(httpClient, agentUrl)
+
+    private val useAiAgent = run {
+        if (EnvConfig["USE_AI_AGENT"] != null) {
+            EnvConfig["USE_AI_AGENT"].toBoolean()
+        } else {
+            val provider = EnvConfig["AI_PROVIDER"]?.uppercase()
+            provider == "LLM" || provider == "AGENT" || provider == null
+        }
+    }
+
+    private val aiService: AiDecisionService = if (useAiAgent) {
+        logger.info("Initializing bot party with LLM AI Agent at $agentUrl (fallback: HeuristicAiService)")
+        LlmAiDecisionService(aiOpponentService, heuristicFallbackService)
+    } else {
+        logger.info("Initializing bot party with Heuristic AI (AI_PROVIDER=HEURISTIC)")
+        heuristicFallbackService
+    }
 
     suspend fun executeBotTurn(gameSession: GameSession) {
         val activeTeam = gameSession.gameState.activeTeamTurn

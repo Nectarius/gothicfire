@@ -16,6 +16,7 @@ fun IComponent.TurnHud(
     gameState: GameState?,
     onOpenMarket: () -> Unit,
     onOpenRecruitment: () -> Unit,
+    onOpenAdvisor: () -> Unit,
     sendAction: (GameAction) -> Unit
 ) {
     if (gameState == null) return
@@ -58,6 +59,30 @@ fun IComponent.TurnHud(
         
         div(className = "d-flex gap-05 items-center") {
             if (myPlayer != null) {
+                val advisorId = myPlayer.advisorId.ifBlank { "ZORAX" }
+                val advisor = models.PredefinedAdvisors.find { it.id == advisorId } ?: models.PredefinedAdvisors[0]
+                val isZorax = advisor.id == "ZORAX"
+                val badgeColor = if (isZorax) "#eab308" else "#c084fc"
+
+                button(className = "btn btn-sm btn-outline d-flex items-center gap-05") {
+                    style("border-color", badgeColor)
+                    style("color", badgeColor)
+                    style("padding", "0.2rem 0.6rem")
+                    title("Consult your Advisor (${advisor.name})")
+
+                    img(src = advisor.iconUrl, alt = advisor.name) {
+                        style("width", "22px")
+                        style("height", "22px")
+                        style("border-radius", "50%")
+                        style("object-fit", "cover")
+                        style("border", "1px solid $badgeColor")
+                    }
+                    span(className = "font-600") {
+                        textNode("Advisor: ${advisor.name.split(" ")[0]}")
+                    }
+                    onClick { onOpenAdvisor() }
+                }
+
                 button(t("hud.market"), className = "btn btn-sm btn-outline text-warning") {
                     title(t("hud.market_tip"))
                     onClick { onOpenMarket() }

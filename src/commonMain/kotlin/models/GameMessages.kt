@@ -17,7 +17,17 @@ sealed class GameAction {
     data class JoinTeam(val team: Team, val playerName: String) : GameAction()
     
     @Serializable
-    data class StartPvEGame(val playerName: String, val gameName: String, val allowSecondPlayer: Boolean, val playerTeam: Team, val playerTeamColor: String, val playerTeamName: String, val chosenHeroes: List<String>, val chosenCastle: String) : GameAction()
+    data class StartPvEGame(
+        val playerName: String,
+        val gameName: String,
+        val allowSecondPlayer: Boolean,
+        val playerTeam: Team,
+        val playerTeamColor: String,
+        val playerTeamName: String,
+        val chosenHeroes: List<String>,
+        val chosenCastle: String,
+        val chosenAdvisor: String = "ZORAX"
+    ) : GameAction()
     
     @Serializable
     data class JoinPvEGame(val playerName: String, val chosenHeroes: List<String>) : GameAction()
@@ -71,6 +81,12 @@ sealed class GameAction {
     data class SkipTurn(val characterId: String) : GameAction()
     
     @Serializable
+    data class AskAdvisor(val questionType: String) : GameAction()
+
+    @Serializable
+    data class SelectAdvisor(val advisorId: String) : GameAction()
+
+    @Serializable
     data object EndGame : GameAction()
     
     @Serializable
@@ -88,6 +104,16 @@ sealed class GameEvent {
     @Serializable
     data class Error(val message: String) : GameEvent()
     
+    @Serializable
+    data class AdvisorAdviceReceived(
+        val advisorId: String,
+        val advisorName: String,
+        val questionType: String,
+        val advice: String,
+        val keyPoints: List<String> = emptyList(),
+        val timestamp: Long = 0L
+    ) : GameEvent()
+
     @Serializable
     data class FightOccurred(
         val sectorId: String,

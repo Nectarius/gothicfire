@@ -72,6 +72,7 @@ fun IComponent.GameLobby(
     var pveSelectedCastle by remember { mutableStateOf("14") }
     var pveTeamColor by remember { mutableStateOf(predefinedColors[0].first) }
     var pveColorError by remember { mutableStateOf(false) }
+    var pveSelectedAdvisor by remember { mutableStateOf("ZORAX") }
 
     
     div(className = "lobby-container glass p-4 text-center w-full") {
@@ -206,6 +207,41 @@ fun IComponent.GameLobby(
                         onChange { pveSelectedCastle = this.value ?: "14" }
                     }
                 }
+
+                div(className = "mb-2") {
+                    p(className = "m-0 mb-05 font-600") { textNode("Choose Your Tactical Advisor") }
+                    div(className = "d-flex gap-1 flex-wrap") {
+                        for (adv in models.PredefinedAdvisors) {
+                            val isSelected = pveSelectedAdvisor == adv.id
+                            div(className = "glass p-2 d-flex items-center gap-1 cursor-pointer") {
+                                style("flex", "1 1 240px")
+                                style("border", if (isSelected) "2px solid ${adv.accentColor}" else "1px solid rgba(255,255,255,0.15)")
+                                style("box-shadow", if (isSelected) "0 0 14px ${adv.accentColor}66" else "none")
+                                style("border-radius", "12px")
+                                style("background", if (isSelected) "rgba(255,255,255,0.08)" else "rgba(0,0,0,0.2)")
+                                style("transition", "all 0.2s ease")
+
+                                img(src = adv.iconUrl, alt = adv.name) {
+                                    style("width", "56px")
+                                    style("height", "56px")
+                                    style("border-radius", "10px")
+                                    style("object-fit", "cover")
+                                    style("border", "1px solid ${adv.accentColor}")
+                                }
+                                div {
+                                    div(className = "font-600") {
+                                        style("color", adv.accentColor)
+                                        textNode(adv.name)
+                                    }
+                                    div(className = "text-sm text-gray") {
+                                        textNode(adv.title)
+                                    }
+                                }
+                                onClick { pveSelectedAdvisor = adv.id }
+                            }
+                        }
+                    }
+                }
                 
                 button(t("lobby.start_coop"), className = "btn btn-primary w-full p-2 text-lg ${if (pveSelectedHeroes.size != 2 || pveColorError || playerName.isBlank()) "btn-disabled" else ""}") {
                     onClick {
@@ -218,7 +254,15 @@ fun IComponent.GameLobby(
                                 val colorName = predefinedColors.find { it.first.uppercase() == pveTeamColor.uppercase() }?.second ?: if (pveTeam == Team.RED) "Red Team" else "Blue Team"
                                 ws.sendAction(
                                     GameAction.StartPvEGame(
-                                        effectivePlayerName, effectiveGameName, pveAllowSecond, pveTeam, pveTeamColor, colorName, pveSelectedHeroes, pveSelectedCastle
+                                        playerName = effectivePlayerName,
+                                        gameName = effectiveGameName,
+                                        allowSecondPlayer = pveAllowSecond,
+                                        playerTeam = pveTeam,
+                                        playerTeamColor = pveTeamColor,
+                                        playerTeamName = colorName,
+                                        chosenHeroes = pveSelectedHeroes,
+                                        chosenCastle = pveSelectedCastle,
+                                        chosenAdvisor = pveSelectedAdvisor
                                     )
                                 )
                             }

@@ -31,6 +31,7 @@ out/
 *.ipr
 *.iws
 
+
 # ========================
 # IDE — IntelliJ / Android Studio
 # ========================
@@ -52,9 +53,16 @@ out/
 # Python
 # ========================
 venv/
+.venv/
 __pycache__/
 *.pyc
 *.pyo
+
+# ========================
+# AI / LLM Models
+# ========================
+/models/
+*.gguf
 
 # ========================
 # Debug / Temp / Logs
