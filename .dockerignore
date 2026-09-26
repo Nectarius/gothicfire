@@ -18,8 +18,18 @@ kotlin-js-store
 
 # Python / Local helper scripts
 venv
+.venv
+__pycache__
+*.pyc
 *.log
-fix_app.py
+models
+fix_*.py
+refactor*.py
+update_*.py
+map_extractor.py
 search_github.py
 test.kt
 test.gradle.kts
+test_kilua.kt
+gothicfire.tar
+

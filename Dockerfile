@@ -19,7 +19,7 @@ RUN chmod +x gradlew
 COPY src ./src
 COPY webpack.config.d ./webpack.config.d
 COPY map_data.json ./map_data.json
-COPY Castle_icon.png knight_icon.png gothic_fire_map.png ./
+COPY Castle_icon.png knight_icon.png gothic_fire_map.png advisor_jade.png advisor_zorax.png ./
 
 # Build fat JAR with bundled JS frontend
 RUN ./gradlew jarWithJs --no-daemon
@@ -44,7 +44,8 @@ USER appuser
 # Default runtime configuration
 ENV APP_MODE="PROD" \
     MONGODB_URI="mongodb://localhost:27017" \
-    MONGODB_DB="gothicfire"
+    MONGODB_DB="gothicfire" \
+    AI_AGENT_URL="http://gothicfire-agent:8000"
 
 EXPOSE 8080 443
 

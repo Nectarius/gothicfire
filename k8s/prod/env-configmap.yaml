@@ -9,6 +9,10 @@ data:
   BEHIND_REVERSE_PROXY: "true"
   MONGODB_DB: "gothicfire"
 
+  # AI Agent microservice connection
+  AI_AGENT_URL: "http://gothicfire-agent:8000"
+  USE_AI_AGENT: "true"
+
   # OAuth redirect URIs (routed through Traefik with TLS termination)
   GOOGLE_REDIRECT_URI: "https://gothiccastles.com/auth/google/callback?provider=google"
   TWITTER_CALLBACK_URL: "https://gothiccastles.com/auth/twitter/callback"

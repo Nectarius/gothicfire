@@ -81,6 +81,8 @@ class AdvisorService(
             "$baseUrl/api/advisor/consult"
         }
 
+        logger.info("Consulting advisor $advisorName at $targetEndpoint (timeout: ${timeoutMillis}ms)...")
+
         val result = runCatching {
             withTimeout(timeoutMillis) {
                 val response = client.post(targetEndpoint) {
@@ -100,7 +102,7 @@ class AdvisorService(
         }
 
         return result.getOrElse { err ->
-            logger.warn("Advisor consultation failed ($err). Using in-character fallback counsel.")
+            logger.warn("Advisor consultation failed at $targetEndpoint ($err). Using in-character fallback counsel.")
             fallbackAdvice(advisorId, advisorName, questionType, myTotalArmy, enemyTotalArmy, myTotalGold)
         }
     }

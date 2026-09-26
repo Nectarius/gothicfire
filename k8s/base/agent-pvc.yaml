@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gothicfire-models-pvc
+  namespace: gothicfire
+  labels:
+    app.kubernetes.io/name: gothicfire-agent
+    app.kubernetes.io/component: ai-agent
+    app.kubernetes.io/part-of: gothicfire
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

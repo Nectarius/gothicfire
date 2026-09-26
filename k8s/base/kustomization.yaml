@@ -5,6 +5,9 @@ namespace: gothicfire
 
 resources:
   - namespace.yaml
+  - agent-pvc.yaml
+  - agent-deployment.yaml
+  - agent-service.yaml
   - app-deployment.yaml
   - app-service.yaml
 

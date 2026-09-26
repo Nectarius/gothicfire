@@ -72,7 +72,9 @@ echo "✅ Deployment complete!"
 echo ""
 echo "   Check pods:    kubectl get pods -n gothicfire"
 echo "   Check ingress: kubectl get ingress -n gothicfire"
-echo "   View logs:     kubectl logs -n gothicfire deployment/gothicfire-app -f"
+echo "   App logs:      kubectl logs -n gothicfire deployment/gothicfire-app -f"
+echo "   Agent logs:    kubectl logs -n gothicfire deployment/gothicfire-agent -f"
+
 echo ""
 
 if [[ "$ENV" == "local" ]]; then

@@ -33,12 +33,20 @@ Access the application at `http://localhost:8081`.
 ./gradlew jsBrowserDevelopmentRun --continuous
 
 # docker build
+docker build -t gothicfire:latest -f Dockerfile .  
+docker build -t gothicfire-agent:latest -f agent/Dockerfile .
 
-docker build -t gothicfire:latest .   
+# Save to .tar files for transfer to server
+docker save -o gothicfire.tar gothicfire:latest
+docker save -o gothicfire-agent.tar gothicfire-agent:latest
+# Or both into a single archive:
+# docker save -o gothicfire-all.tar gothicfire:latest gothicfire-agent:latest
 
-# K3S
+# K3S import on server
 sudo k3s ctr images import gothicfire.tar 
-kubectl rollout restart deployment gothicfire-app -n gothicfire
+sudo k3s ctr images import gothicfire-agent.tar
+kubectl rollout restart deployment/gothicfire-app deployment/gothicfire-agent -n gothicfire
+
 
 # Python Tactical AI & Advisor Agent
 

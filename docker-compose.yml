@@ -16,6 +16,9 @@ services:
       - TLS_KEY_FILE=${TLS_KEY_FILE:-gothiccastles.com.key}
       - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017}
       - MONGODB_DB=${MONGODB_DB:-gothicfire}
+      # AI Agent configuration
+      - AI_AGENT_URL=${AI_AGENT_DOCKER_URL:-http://agent:8000}
+      - USE_AI_AGENT=${USE_AI_AGENT:-true}
       # OAuth configurations:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
@@ -29,6 +32,35 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+      agent:
+        condition: service_healthy
+    networks:
+      - gothicfire-network
+
+  agent:
+    build:
+      context: .
+      dockerfile: agent/Dockerfile
+    image: gothicfire-agent:latest
+    container_name: gothicfire-agent
+    restart: unless-stopped
+    ports:
+      - "${AI_PORT:-8000}:8000"
+    volumes:
+      - ./models:/app/models:ro
+    environment:
+      - MODEL_PATH=${MODEL_PATH:-/app/models/qwen2.5-1.5b-instruct-q4_k_m.gguf}
+      - AI_PORT=8000
+      - AI_HOST=0.0.0.0
+      - AI_THREADS=${AI_THREADS:-4}
+      - AI_CTX=${AI_CTX:-1024}
+      - AUTO_DOWNLOAD_MODEL=${AUTO_DOWNLOAD_MODEL:-true}
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/live')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - gothicfire-network
 

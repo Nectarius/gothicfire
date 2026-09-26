@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gothicfire-agent
+  namespace: gothicfire
+  labels:
+    app.kubernetes.io/name: gothicfire-agent
+    app.kubernetes.io/component: ai-agent
+    app.kubernetes.io/part-of: gothicfire
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gothicfire-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gothicfire-agent
+        app.kubernetes.io/component: ai-agent
+        app.kubernetes.io/part-of: gothicfire
+    spec:
+      containers:
+        - name: agent
+          image: gothicfire-agent:latest
+          imagePullPolicy: Never  # Image imported locally via k3s ctr
+          ports:
+            - containerPort: 8000
+              name: http
+              protocol: TCP
+          env:
+            - name: MODEL_PATH
+              value: "/models/qwen2.5-1.5b-instruct-q4_k_m.gguf"
+            - name: AI_PORT
+              value: "8000"
+            - name: AI_HOST
+              value: "0.0.0.0"
+            - name: AI_THREADS
+              value: "4"
+            - name: AI_CTX
+              value: "1024"
+            - name: AUTO_DOWNLOAD_MODEL
+              value: "true"
+          resources:
+            requests:
+              memory: "1536Mi"
+              cpu: "500m"
+            limits:
+              memory: "2560Mi"
+              cpu: "2000m"
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: models-storage
+              mountPath: /models
+      volumes:
+        - name: models-storage
+          persistentVolumeClaim:
+            claimName: gothicfire-models-pvc
+      restartPolicy: Always
