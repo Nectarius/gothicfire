@@ -308,32 +308,53 @@ def consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
 
     q_type = request.question_type.upper()
     if q_type == "STATUS":
+        tokens_limit = int(os.getenv("AI_ADVISOR_STATUS_MAX_TOKENS", "260"))
         question_instruction = (
             'The player asks: "What is our current status?" '
-            'Directly contrast our affairs (our controlled territories, gold, food, army units) against our opponents. '
-            'Deliver a sharp tactical assessment of who currently holds the upper hand and where threats lie.'
+            'Directly contrast our affairs (controlled territories, army power, gold & food upkeep) against our opponents. '
+            'Deliver a concise, authoritative assessment of who holds the advantage and where threats lie.'
         )
-    elif q_type == "NEXT_MOVE":
-        question_instruction = (
-            'The player asks: "What should I do next?" '
-            'Give concrete, immediate advice for this turn (e.g., whether to recruit Heavy/Light Infantry or Mages, '
-            'collect unharvested resources from our sectors, fortify territory protection, or prepare to march).'
+        counsel_length_instruction = (
+            "Provide a focused, authoritative battlefield and imperial status assessment in character (2-3 concise sentences, 45-65 words). "
+            "Address troop counts, territory control, economic health/starvation risks, and key enemy threats. "
+            'Return output strictly as JSON matching: {"advice": "<status assessment 45-65 words>", "key_points": ["<key standing point>", "<key threat or opportunity>"]}.'
         )
-    else:  # STRATEGY
+    elif q_type == "STRATEGY":
+        tokens_limit = int(os.getenv("AI_ADVISOR_STRATEGY_MAX_TOKENS", "160"))
         question_instruction = (
             'The player asks: "What is our strategy for the future?" '
             'Provide grand visionary counsel on long-term territorial expansion, capturing enemy castles, '
             'synergizing commander stats, and winning before Turn 80.'
         )
+        counsel_length_instruction = (
+            "Provide visionary grand strategy in character (2-3 sentences, 35-55 words) on long-term conquest and winning before Turn 80. "
+            'Return output strictly as JSON matching: {"advice": "<grand strategy 35-55 words>", "key_points": ["<strategic goal 1>", "<strategic goal 2>"]}.'
+        )
+    else:  # NEXT_MOVE
+        tokens_limit = int(os.getenv("AI_ADVISOR_MOVE_MAX_TOKENS", "120"))
+        question_instruction = (
+            'The player asks: "What should I do next?" '
+            'Give concrete, immediate advice for this turn (e.g., whether to recruit Heavy/Light Infantry or Mages, '
+            'collect unharvested resources from our sectors, fortify territory protection, or prepare to march).'
+        )
+        counsel_length_instruction = (
+            "Provide decisive, immediate tactical counsel in character for this turn (1-2 sentences, 20-35 words). "
+            "Prioritize any urgent Tactical Alerts (food deficit, undefended castle, imminent attacks) with top priority. "
+            'Return output strictly as JSON matching: {"advice": "<decisive move 20-35 words>", "key_points": ["<action 1>", "<action 2>"]}.'
+        )
 
-    logger.info(f"Received advisor consultation for {advisor_name} (type: {q_type}, turn: {request.turn})")
+    logger.info(f"Received advisor consultation for {advisor_name} (type: {q_type}, turn: {request.turn}, max_tokens: {tokens_limit})")
     sys_prompt = (
         f"{persona_info['system_prompt']}\n"
         f"Query Type: {q_type}\n"
         f"Goal: {question_instruction}\n"
-        "Provide very concise, decisive counsel in character (1-2 short sentences, under 35 words). "
-        "Address any critical Tactical Alerts (food shortages, undefended castle, or direct threats) with high priority if present. "
-        'Return output strictly as JSON matching: {"advice": "<decisive counsel under 35 words>", "key_points": ["<key advice 1>", "<key advice 2>"]}.'
+        f"{counsel_length_instruction}\n"
+        "STRICT GROUNDING & FACTUAL ACCURACY RULES:\n"
+        "- ONLY refer to unit types that exist in Our Standing with count > 0. If Our Standing notes 0 Mages, we have NO Mages! NEVER state or hallucinate that we have Mages; if appropriate, recommend recruiting them to unlock magical synergies.\n"
+        "- Hero attributes (e.g. Archon, Warlord, Vanguard ratings) are leader attributes, NOT soldier counts. Never refer to hero attributes as troops.\n"
+        "- The exact unit counts must match Our Standing. Never invent unit counts that conflict with Our Standing.\n"
+        "- Distinguish strictly between friendly forces ('Our Standing') and enemy forces ('Rivals Standing'). NEVER assign our units or sector locations to the enemy, or vice versa.\n"
+        "- Check frontline clash reports carefully: notice who holds the advantage and who is on the offensive."
     )
 
     user_prompt = (
@@ -423,6 +444,12 @@ def consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
             found = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', kp_match.group(1))
             kps = [k.replace('\\"', '"').strip() for k in found if k.strip()]
 
+        # Clean up any trailing cut-off sentence fragment if truncated
+        if adv and not adv.endswith(('.', '!', '?')) and len(adv) > 25:
+            last_punct = max(adv.rfind('.'), adv.rfind('!'), adv.rfind('?'))
+            if last_punct > len(adv) // 2:
+                adv = adv[:last_punct + 1].strip()
+
         return adv, kps
 
     try:
@@ -432,23 +459,33 @@ def consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
             {"role": "user", "content": user_prompt}
         ]
 
+        logger.info(f"Advisor prompt:\n{user_prompt}")
         t0 = time.perf_counter()
         with _model_lock:
             completion = llm.create_chat_completion(
                 messages=messages,
                 temperature=0.1,
                 response_format={"type": "json_object"},
-                max_tokens=90
+                max_tokens=tokens_limit
             )
         elapsed = time.perf_counter() - t0
-        logger.info(f"Advisor counsel generated in {elapsed:.2f}s for {advisor_name}")
+        logger.info(f"Advisor counsel generated in {elapsed:.2f}s for {advisor_name} ({q_type}, max_tokens={tokens_limit})")
 
         content = completion["choices"][0]["message"]["content"].strip()
-        logger.debug(f"Advisor raw response: {content}")
+        logger.info(f"Advisor raw response: {content}")
 
         parsed_advice, parsed_key_points = safe_parse_advisor_json(content)
         final_advice = parsed_advice or fallback_advice
         final_key_points = parsed_key_points or ["Maintain vigilant watch", "Strike when prepared"]
+
+        # Safeguard: if player has 0 Mages, prevent false claims of possessing Mages
+        if "0 Mages" in request.player_summary:
+            final_advice = re.sub(
+                r'(?<!recruit\s)(?<!train\s)(?<!summon\s)\b\d+\s+Mages\b,?\s*(?:and\s+)?',
+                '',
+                final_advice,
+                flags=re.IGNORECASE
+            )
 
         return AdvisorResponse(
             advisor_name=advisor_name,

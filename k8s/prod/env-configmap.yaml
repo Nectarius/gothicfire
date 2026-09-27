@@ -12,7 +12,7 @@ data:
   # AI Agent microservice connection
   AI_AGENT_URL: "http://gothicfire-agent:8000"
   USE_AI_AGENT: "true"
-  AI_AGENT_TIMEOUT_MS: "60000"
+  AI_AGENT_TIMEOUT_MS: "90000"
 
   # OAuth redirect URIs (routed through Traefik with TLS termination)
   GOOGLE_REDIRECT_URI: "https://gothiccastles.com/auth/google/callback?provider=google"

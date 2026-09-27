@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 class AdvisorService(
     private val client: HttpClient,
     private val agentUrl: String = "http://127.0.0.1:8000",
-    private val timeoutMillis: Long = 60000L
+    private val timeoutMillis: Long = 90000L
 ) {
     private val logger = LoggerFactory.getLogger(AdvisorService::class.java)
     private val json = Json {
@@ -73,39 +73,58 @@ class AdvisorService(
                 char.vanguard >= 6 && char.army.total() > 5 -> "Spell Infused Volley"
                 else -> null
             }
-            val stratNote = if (unlockedStrategy != null) ", Strategy: $unlockedStrategy" else ""
+            val stratNote = if (unlockedStrategy != null) ", Combat Strategy: $unlockedStrategy" else ""
             val specialty = listOf(
-                "Warlord (Infantry)" to char.warlord,
-                "Archon (Mages)" to char.archon,
-                "Vanguard (Archers)" to char.vanguard,
+                "Warlord" to char.warlord,
+                "Archon" to char.archon,
+                "Vanguard" to char.vanguard,
                 "Intellect" to char.intellect
             ).maxByOrNull { it.second }
-            val specNote = if (specialty != null && specialty.second >= 5) ", Specialty: ${specialty.first} ${specialty.second}" else ""
-            "${char.name} at Sector ${char.currentSector ?: "Base"} (Army: ${char.army.total()}$specNote$stratNote)"
+            val specNote = if (specialty != null && specialty.second >= 5) ", Hero Attribute: ${specialty.first} ${specialty.second}" else ""
+            val locName = char.currentSector?.let { MapData[it]?.name ?: "Sector $it" } ?: "Base"
+            val armyComp = formatArmyBreakdown(char.army)
+            "Our Commander ${char.name} stationed at $locName (${char.army.total()} troops: $armyComp$specNote$stratNote)"
         }
 
-        // 5. Frontline Opportunities / Risks
+        // 5. Enemy Commander Locations
+        val enemyCommanderHighlights = enemyChars.map { enemy ->
+            val enemyTeam = enemyPlayers.find { it.id == enemy.playerId }?.team ?: "Enemy"
+            val enemyLocName = enemy.currentSector?.let { MapData[it]?.name ?: "Sector $it" } ?: "Unknown"
+            val isCastle = enemy.currentSector?.let { MapData[it]?.isCastle } == true
+            val castleNote = if (isCastle) " [Enemy Fortress Garrison]" else ""
+            val enemyArmyComp = formatArmyBreakdown(enemy.army)
+            "Enemy ${enemy.name} (Team $enemyTeam): ${enemy.army.total()} troops ($enemyArmyComp) stationed at $enemyLocName$castleNote"
+        }
+
+        // 6. Frontline Opportunities / Risks (Explicitly clarifying who is where)
         val combatOpportunities = mutableListOf<String>()
         for (char in myChars) {
             val sec = char.currentSector ?: continue
             val adjIds = MapData[sec]?.adjacentIds ?: emptyList()
+            val myLocName = MapData[sec]?.name ?: "Sector $sec"
             for (adj in adjIds) {
                 val enemy = enemyChars.find { it.currentSector == adj }
                 if (enemy != null) {
+                    val enemyLocName = MapData[adj]?.name ?: "Sector $adj"
+                    val enemyTeam = enemyPlayers.find { it.id == enemy.playerId }?.team ?: "Enemy"
+                    val isEnemyCastle = MapData[adj]?.isCastle == true
+                    val castleTag = if (isEnemyCastle) " (Enemy Fortress!)" else ""
                     val mySize = char.army.total()
                     val enemySize = enemy.army.total()
                     if (mySize >= enemySize * 10 && enemySize > 0) {
-                        combatOpportunities.add("OVERWHELMING 10x ratio: ${char.name} ($mySize) can wipe out ${enemy.name} ($enemySize) at Sector $adj!")
-                    } else if (mySize > enemySize * 1.5) {
-                        combatOpportunities.add("Advantage: ${char.name} ($mySize) outnumbers ${enemy.name} ($enemySize) at Sector $adj.")
-                    } else if (enemySize > mySize * 1.5) {
-                        combatOpportunities.add("DANGER: Enemy ${enemy.name} ($enemySize) outnumbers ${char.name} ($mySize) at Sector $adj!")
+                        combatOpportunities.add("OVERWHELMING ADVANTAGE: Our commander ${char.name} ($mySize units at $myLocName) can wipe out enemy ${enemy.name} ($enemySize units at $enemyLocName$castleTag) with a 10x instant victory ratio!")
+                    } else if (mySize > enemySize) {
+                        combatOpportunities.add("OUR ADVANTAGE: Our commander ${char.name} ($mySize units at $myLocName) outnumbers enemy ${enemy.name} of Team $enemyTeam ($enemySize units at $enemyLocName$castleTag).")
+                    } else if (enemySize > mySize) {
+                        combatOpportunities.add("HOSTILE THREAT: Enemy ${enemy.name} of Team $enemyTeam ($enemySize units at $enemyLocName$castleTag) outnumbers our commander ${char.name} ($mySize units at $myLocName).")
+                    } else {
+                        combatOpportunities.add("EVEN MATCH: Our commander ${char.name} ($mySize units at $myLocName) faces enemy ${enemy.name} ($enemySize units at $enemyLocName$castleTag).")
                     }
                 }
             }
         }
 
-        // 6. Tactical Alerts
+        // 7. Tactical Alerts
         val tacticalAlerts = mutableListOf<String>()
         if (foodDeficit) {
             tacticalAlerts.add("CRITICAL: Food shortage! Current food ($myTotalFood) < upkeep ($foodConsumption/turn). Soldiers will starve next turn!")
@@ -122,12 +141,28 @@ class AdvisorService(
             tacticalAlerts.add("RESOURCES: Controlled sectors hold $uncollectedGold Gold and $uncollectedFood Food ready for collection.")
         }
 
+        val totalMages = myChars.sumOf { it.army.mages }
+        val totalHeavy = myChars.sumOf { it.army.heavyInfantry }
+        val totalLight = myChars.sumOf { it.army.lightInfantry }
+        val totalArchers = myChars.sumOf { it.army.archers }
+
+        val activeTroopList = mutableListOf<String>()
+        if (totalLight > 0) activeTroopList.add("$totalLight Light Infantry")
+        if (totalHeavy > 0) activeTroopList.add("$totalHeavy Heavy Infantry")
+        if (totalArchers > 0) activeTroopList.add("$totalArchers Archers")
+        if (totalMages > 0) activeTroopList.add("$totalMages Mages")
+        val troopBreakdownStr = if (activeTroopList.isNotEmpty()) activeTroopList.joinToString(", ") else "0 troops"
+        val mageWarning = if (totalMages == 0) "; NOTE: We have 0 Mages" else ""
+
         val playerSummary = buildString {
-            append("Team: $playerTeam. Controlled Sectors: ${myTerritories.size}. Castle: $myCastleName (Garrison: $garrisonArmy troops). ")
-            append("Army: $myTotalArmy (Mages: ${myChars.sumOf { it.army.mages }}, Heavy: ${myChars.sumOf { it.army.heavyInfantry }}, Light: ${myChars.sumOf { it.army.lightInfantry }}, Archers: ${myChars.sumOf { it.army.archers }}). ")
+            append("Team: $playerTeam. Controlled Sectors: ${myTerritories.size}. Castle Base: $myCastleName (Garrison: $garrisonArmy troops). ")
+            append("Our Total Army: $myTotalArmy troops ($troopBreakdownStr$mageWarning). ")
             append("Treasury: $myTotalGold Gold, $myTotalFood Food (Upkeep: $foodConsumption Food/turn, ${if (foodDeficit) "STARVATION RISK" else "$foodTurnsRemaining turns reserve"}). ")
             if (commanderHighlights.isNotEmpty()) {
-                append("Commanders: ${commanderHighlights.joinToString("; ")}. ")
+                append("Our Commanders: ${commanderHighlights.joinToString("; ")}. ")
+            }
+            if (combatOpportunities.isNotEmpty()) {
+                append("Frontline Clashes: ${combatOpportunities.joinToString("; ")}. ")
             }
             if (tacticalAlerts.isNotEmpty()) {
                 append("Tactical Alerts: ${tacticalAlerts.joinToString(" | ")}")
@@ -135,9 +170,9 @@ class AdvisorService(
         }
 
         val opponentsSummary = buildString {
-            append("Rival Teams: ${enemyPlayers.map { it.team }.distinct().joinToString()}. Enemy Sectors: ${enemyTerritories.size}. Enemy Army: $enemyTotalArmy units across ${enemyChars.size} active commanders. Enemy Fortresses: ${if (enemyCastles.isNotBlank()) enemyCastles else "Unknown"}. ")
-            if (combatOpportunities.isNotEmpty()) {
-                append("Frontline Clashes: ${combatOpportunities.joinToString(" | ")}")
+            append("Rival Teams: ${enemyPlayers.map { it.team }.distinct().joinToString()}. Enemy Sectors: ${enemyTerritories.size}. Enemy Army Total: $enemyTotalArmy units across ${enemyChars.size} active commanders. Enemy Fortresses: ${if (enemyCastles.isNotBlank()) enemyCastles else "Unknown"}. ")
+            if (enemyCommanderHighlights.isNotEmpty()) {
+                append("Enemy Forces & Locations: ${enemyCommanderHighlights.joinToString("; ")}.")
             }
         }
 
@@ -283,5 +318,14 @@ class AdvisorService(
             advice = advice,
             keyPoints = keyPoints
         )
+    }
+
+    private fun formatArmyBreakdown(army: Army): String {
+        val parts = mutableListOf<String>()
+        if (army.lightInfantry > 0) parts.add("${army.lightInfantry} Light")
+        if (army.heavyInfantry > 0) parts.add("${army.heavyInfantry} Heavy")
+        if (army.archers > 0) parts.add("${army.archers} Archers")
+        if (army.mages > 0) parts.add("${army.mages} Mages")
+        return if (parts.isNotEmpty()) parts.joinToString(", ") else "0 units"
     }
 }

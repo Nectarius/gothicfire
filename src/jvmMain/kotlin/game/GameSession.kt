@@ -26,7 +26,7 @@ class GameSession(
     private val advisorService: AdvisorService by lazy {
         val client = HttpClient(CIO)
         val rawUrl = EnvConfig["AI_AGENT_URL"] ?: EnvConfig["AI_AGENT_ENDPOINT"] ?: "http://127.0.0.1:8000"
-        val timeout = EnvConfig["AI_AGENT_TIMEOUT_MS"]?.toLongOrNull() ?: 60000L
+        val timeout = EnvConfig["AI_AGENT_TIMEOUT_MS"]?.toLongOrNull() ?: 90000L
         val url = rawUrl.trimEnd('/')
             .removeSuffix("/decide")
             .removeSuffix("/decision")
