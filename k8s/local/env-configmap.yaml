@@ -11,6 +11,7 @@ data:
   # AI Agent microservice connection
   AI_AGENT_URL: "http://gothicfire-agent:8000"
   USE_AI_AGENT: "true"
+  AI_AGENT_TIMEOUT_MS: "60000"
 
   # OAuth redirect URIs (Direct access via K3s LoadBalancer on port 5120)
   GOOGLE_REDIRECT_URI: "http://localhost:5120/auth/google/callback"

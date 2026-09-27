@@ -46,7 +46,7 @@ spec:
               cpu: "500m"
             limits:
               memory: "2560Mi"
-              cpu: "2000m"
+              cpu: "4000m"
           livenessProbe:
             httpGet:
               path: /live

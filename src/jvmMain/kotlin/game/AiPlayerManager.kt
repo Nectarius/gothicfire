@@ -18,7 +18,8 @@ object AiPlayerManager {
         ?: EnvConfig["AI_AGENT_ENDPOINT"]
         ?: "http://127.0.0.1:8000"
     private val heuristicFallbackService = HeuristicAiService()
-    private val aiOpponentService = AiOpponentService(httpClient, agentUrl)
+    private val aiTimeout = EnvConfig["AI_AGENT_TIMEOUT_MS"]?.toLongOrNull() ?: 60000L
+    private val aiOpponentService = AiOpponentService(httpClient, agentUrl, aiTimeout)
 
     private val useAiAgent = run {
         if (EnvConfig["USE_AI_AGENT"] != null) {

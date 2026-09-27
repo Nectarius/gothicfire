@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 class AdvisorService(
     private val client: HttpClient,
     private val agentUrl: String = "http://127.0.0.1:8000",
-    private val timeoutMillis: Long = 30000L
+    private val timeoutMillis: Long = 60000L
 ) {
     private val logger = LoggerFactory.getLogger(AdvisorService::class.java)
     private val json = Json {

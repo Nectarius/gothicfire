@@ -3,6 +3,7 @@ package game
 import models.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
@@ -67,7 +68,7 @@ class PvESessionTest {
     }
 
     @Test
-    fun testLeaveGameBehavior() = runBlocking {
+    fun testLeaveGameBehavior() = runBlocking<Unit> {
         val session = GameSession()
         val heroes = listOf(PredefinedCharacters[0].templateId, PredefinedCharacters[1].templateId)
 
@@ -86,7 +87,7 @@ class PvESessionTest {
         assertTrue(session.gameState.players.any { it.id == "player_carol" })
 
         session.leave("player_carol")
-        // Player should be removed from active game players
-        assertTrue(session.gameState.players.none { it.id == "player_carol" })
+        // Player state is preserved for reconnection in IN_PROGRESS games, but connection is severed
+        assertFalse(session.connections.containsKey("player_carol"))
     }
 }

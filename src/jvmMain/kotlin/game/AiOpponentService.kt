@@ -41,7 +41,7 @@ data class DecisionResponse(
 class AiOpponentService(
     private val client: HttpClient,
     private val agentUrl: String = "http://127.0.0.1:8000",
-    private val timeoutMillis: Long = 15000L
+    private val timeoutMillis: Long = 60000L
 ) {
     private val logger = LoggerFactory.getLogger(AiOpponentService::class.java)
 

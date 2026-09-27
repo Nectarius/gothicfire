@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import threading
+import time
 from typing import List, Optional, Tuple
 from fastapi import FastAPI, HTTPException, Response, status
 from pydantic import BaseModel, Field, AliasChoices
@@ -316,12 +317,13 @@ def consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
             'synergizing commander stats, and winning before Turn 80.'
         )
 
+    logger.info(f"Received advisor consultation for {advisor_name} (type: {q_type}, turn: {request.turn})")
     sys_prompt = (
         f"{persona_info['system_prompt']}\n"
         f"Query Type: {q_type}\n"
         f"Goal: {question_instruction}\n"
-        "Provide concise, decisive counsel in character (1-2 sentences max, under 50 words). "
-        'Return output strictly as JSON matching: {"advice": "<concise 1-2 sentence advice>", "key_points": ["<point 1>", "<point 2>"]}.'
+        "Provide very concise, decisive counsel in character (1 short sentence, max 25 words). "
+        'Return output strictly as JSON matching: {"advice": "<1 short sentence under 25 words>", "key_points": ["<key advice>"]}.'
     )
 
     user_prompt = (
@@ -420,13 +422,16 @@ def consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
             {"role": "user", "content": user_prompt}
         ]
 
+        t0 = time.perf_counter()
         with _model_lock:
             completion = llm.create_chat_completion(
                 messages=messages,
-                temperature=0.3,
+                temperature=0.2,
                 response_format={"type": "json_object"},
-                max_tokens=96
+                max_tokens=48
             )
+        elapsed = time.perf_counter() - t0
+        logger.info(f"Advisor counsel generated in {elapsed:.2f}s for {advisor_name}")
 
         content = completion["choices"][0]["message"]["content"].strip()
         logger.debug(f"Advisor raw response: {content}")
