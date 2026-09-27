@@ -211,8 +211,10 @@ def decide_action(request: DecisionRequest) -> DecisionResponse:
 
     # ChatML system & user prompt markup as specified
     system_prompt = (
-        "You are a tactical AI for a turn-based strategy game. "
-        "Pick EXACTLY ONE action from the provided list of legal moves. "
+        "You are a master tactical AI for the turn-based strategy game Gothic Fire. "
+        "Review the tactical situation and pick the single best action from the provided legal moves list. "
+        "Tactical rules: Prioritize favorable combat (>=60% win chance), recruit units matching commander stats, "
+        "harvest uncollected resources, and NEVER pick suicidal attacks (<40% win chance). If on garrison duty, stay at castle. "
         'Return output strictly as JSON matching: {"chosen_move": "<one_of_legal_moves>", "reasoning": "<short rationale under 15 words>"}.'
     )
     user_prompt = f"Turn: {request.turn}\nSituation: {request.state_summary}\nLegal moves: {legal_moves}"
@@ -329,8 +331,9 @@ def consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
         f"{persona_info['system_prompt']}\n"
         f"Query Type: {q_type}\n"
         f"Goal: {question_instruction}\n"
-        "Provide very concise, decisive counsel in character (1 short sentence, max 25 words). "
-        'Return output strictly as JSON matching: {"advice": "<1 short sentence under 25 words>", "key_points": ["<key advice>"]}.'
+        "Provide very concise, decisive counsel in character (1-2 short sentences, under 35 words). "
+        "Address any critical Tactical Alerts (food shortages, undefended castle, or direct threats) with high priority if present. "
+        'Return output strictly as JSON matching: {"advice": "<decisive counsel under 35 words>", "key_points": ["<key advice 1>", "<key advice 2>"]}.'
     )
 
     user_prompt = (
@@ -433,7 +436,7 @@ def consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
         with _model_lock:
             completion = llm.create_chat_completion(
                 messages=messages,
-                temperature=0.4,
+                temperature=0.1,
                 response_format={"type": "json_object"},
                 max_tokens=90
             )

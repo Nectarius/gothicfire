@@ -24,6 +24,8 @@ Access the application at `http://localhost:8081`.
 ```bash
 # Build fat JAR with bundled JS frontend
 ./gradlew jarWithJs
+./gradlew jsBrowserDevelopmentRun --continuous
+
 
 # Run JVM server locally
 ./gradlew jvmRun
