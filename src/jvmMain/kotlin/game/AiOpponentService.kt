@@ -78,19 +78,30 @@ class AiOpponentService(
             return defaultFallback
         }
 
+        // Heuristic Pruning (Commander vs. Minister Pattern):
+        // Discard any move scoring below threshold (score < 40) or with suicidal combat (<40% win chance)
+        val prunedLegalMoves = legalMoves.filterNot { move ->
+            val winMatch = Regex("""(?i)win\s*chance:\s*(\d+)%""").find(move)
+            val scoreMatch = Regex("""(?i)score:\s*(\d+)/100""").find(move)
+            val winChance = winMatch?.groupValues?.get(1)?.toIntOrNull()
+            val score = scoreMatch?.groupValues?.get(1)?.toIntOrNull()
+            (winChance != null && winChance < 40) || (score != null && score < 40)
+        }.ifEmpty { legalMoves }
+
         val requestPayload = DecisionRequest(
             gameId = gameId,
             turn = turn,
             playerId = playerId,
             summary = summary,
-            legalMoves = legalMoves
+            legalMoves = prunedLegalMoves
         )
 
-        val targetEndpoint = if (agentUrl.endsWith("/decide") || agentUrl.endsWith("/decision") || agentUrl.endsWith("/decide-turn")) {
-            agentUrl
-        } else {
-            "${agentUrl.trimEnd('/')}/decide"
-        }
+        val baseUrl = agentUrl.trimEnd('/')
+            .removeSuffix("/api/v1/advisor/consult")
+            .removeSuffix("/api/v1/decide")
+            .removeSuffix("/api/v1")
+
+        val targetEndpoint = "$baseUrl/api/v1/decide"
 
         val result = runCatching {
             withTimeout(timeoutMillis) {
@@ -116,18 +127,23 @@ class AiOpponentService(
                     throw IllegalStateException("AI Agent returned blank move. Reasoning: ${decision.reasoning}")
                 }
 
-                if (selectedMove !in legalMoves) {
+                // Requirement 3: Robust match against enriched semantic tags or raw base moves
+                val matchedMove = prunedLegalMoves.find { it.equals(selectedMove, ignoreCase = true) }
+                    ?: prunedLegalMoves.find { it.substringBefore(" (").trim().equals(selectedMove.substringBefore(" (").trim(), ignoreCase = true) }
+                    ?: prunedLegalMoves.find { it.startsWith(selectedMove, ignoreCase = true) || selectedMove.startsWith(it.substringBefore(" (").trim(), ignoreCase = true) }
+
+                if (matchedMove == null) {
                     logger.warn(
                         "AI Agent chose invalid move '{}' not found in legalMoves {}. Reasoning: '{}'. Falling back to '{}'.",
-                        selectedMove, legalMoves, decision.reasoning, defaultFallback
+                        selectedMove, prunedLegalMoves, decision.reasoning, defaultFallback
                     )
                     defaultFallback
                 } else {
                     logger.info(
-                        "AI Agent selected move '{}' for gameId={}, turn={}, playerId={}. Reasoning: '{}'",
-                        selectedMove, gameId, turn, playerId, decision.reasoning
+                        "AI Agent selected move '{}' (matched: '{}') for gameId={}, turn={}, playerId={}. Reasoning: '{}'",
+                        selectedMove, matchedMove, gameId, turn, playerId, decision.reasoning
                     )
-                    selectedMove
+                    matchedMove
                 }
             }
         }

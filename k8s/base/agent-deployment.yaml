@@ -41,7 +41,7 @@ spec:
             - name: AI_THREADS
               value: "4"
             - name: AI_CTX
-              value: "1024"
+              value: "2048"
             - name: AI_BATCH
               value: "512"
             - name: AI_USE_MLOCK

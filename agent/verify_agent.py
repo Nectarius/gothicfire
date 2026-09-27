@@ -3,6 +3,7 @@
 Verification Script for Gothic Fire Tactical AI Agent.
 Tests the local Qwen2.5-1.5B GGUF model directly without launching the HTTP server.
 Validates model loading, ChatML JSON inference, latency, and memory footprint.
+Uses shared core package to eliminate code/prompt divergence with server.py.
 """
 
 import json
@@ -12,6 +13,24 @@ import sys
 import time
 from typing import Dict, List, Tuple
 from llama_cpp import Llama
+
+# Ensure agent directory and repo root are in sys.path
+_AGENT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _AGENT_DIR not in sys.path:
+    sys.path.insert(0, _AGENT_DIR)
+_REPO_DIR = os.path.dirname(_AGENT_DIR)
+if _REPO_DIR not in sys.path:
+    sys.path.insert(0, _REPO_DIR)
+
+from core import (
+    AdvisorRequest,
+    build_decision_prompts,
+    build_advisor_prompts,
+    safe_parse_decision_json,
+    safe_parse_advisor_json,
+    sanitize_advisor_advice,
+    get_advisor_fallback,
+)
 
 MODEL_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -23,7 +42,7 @@ if not os.path.exists(MODEL_PATH):
     if os.path.exists(rel_path):
         MODEL_PATH = rel_path
 
-N_CTX = 1024
+N_CTX = int(os.getenv("AI_CTX", "2048"))
 N_THREADS = int(os.getenv("AI_THREADS", "4"))
 
 
@@ -58,14 +77,8 @@ def run_inference(
     state_summary: str,
     legal_moves: List[str]
 ) -> Tuple[Dict[str, str], float]:
-    """Executes a single decision inference with Qwen ChatML prompting and measures elapsed time."""
-    system_prompt = (
-        "You are a tactical AI for a turn-based strategy game. "
-        "Pick EXACTLY ONE action from the provided list of legal moves. "
-        'Return output strictly as JSON matching: {"chosen_move": "<one_of_legal_moves>", "reasoning": "<short rationale>"}.'
-    )
-    user_prompt = f"Turn: {turn}\nSituation: {state_summary}\nLegal moves: {legal_moves}"
-
+    """Executes a single decision inference with shared Qwen ChatML prompting and measures elapsed time."""
+    system_prompt, user_prompt = build_decision_prompts(turn, state_summary, legal_moves)
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt}
@@ -76,43 +89,16 @@ def run_inference(
         messages=messages,
         temperature=0.1,
         response_format={"type": "json_object"},
-        max_tokens=256
+        max_tokens=180
     )
     elapsed = time.perf_counter() - t0
 
     content = completion["choices"][0]["message"]["content"].strip()
-    if content.startswith("```"):
-        lines = content.splitlines()
-        if lines and lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].strip().startswith("```"):
-            lines = lines[:-1]
-        content = "\n".join(lines).strip()
-
-    try:
-        data = json.loads(content)
-    except json.JSONDecodeError:
-        data = {
-            "chosen_move": legal_moves[0] if legal_moves else "WAIT",
-            "reasoning": "Fallback: LLM selected illegal or hallucinated move"
-        }
-
-    chosen_move = str(data.get("chosen_move", "")).strip()
-    reasoning = str(data.get("reasoning", "")).strip()
-
-    # Safety & Fallback check
-    if chosen_move not in legal_moves:
-        data = {
-            "chosen_move": legal_moves[0] if legal_moves else "WAIT",
-            "reasoning": "Fallback: LLM selected illegal or hallucinated move"
-        }
-    else:
-        data = {
-            "chosen_move": chosen_move,
-            "reasoning": reasoning
-        }
-
-    return data, elapsed
+    resp = safe_parse_decision_json(content, legal_moves)
+    return {
+        "chosen_move": resp.chosen_move,
+        "reasoning": resp.reasoning
+    }, elapsed
 
 
 def run_advisor_inference(
@@ -120,27 +106,22 @@ def run_advisor_inference(
     advisor_id: str,
     question_type: str,
     turn: int,
-    state_summary: str
+    state_summary: str,
+    opponents_summary: str = "",
+    map_summary: str = ""
 ) -> Tuple[Dict, float]:
-    """Executes advisor consultation inference with Qwen ChatML persona prompting."""
-    personas = {
-        "ZORAX": {
-            "name": "Zorax the Mighty",
-            "prompt": "You are Zorax the Mighty, a seasoned grey-haired military general and war advisor in Gothic Fire. Speak with blunt martial authority, discipline, and grim grit. Address the player as Commander or Sire."
-        },
-        "JADE": {
-            "name": "Jade the Enlightened",
-            "prompt": "You are Jade the Enlightened, an arcane high sorceress with flowing velvet hair and mystical foresight in Gothic Fire. Speak with elegant, perceptive, and enigmatic wisdom. Address the player as My Lord or Seeker."
-        }
-    }
-    persona = personas.get(advisor_id, personas["ZORAX"])
-    sys_prompt = (
-        f"{persona['prompt']} "
-        f"The player asks for your counsel on: '{question_type}'. "
-        "Provide concise, decisive counsel in character (1-2 sentences max, under 50 words). "
-        'Return output strictly as JSON matching: {"advice": "<concise 1-2 sentence advice>", "key_points": ["<point 1>", "<point 2>"]}.'
+    """Executes advisor consultation inference using shared core persona prompts and parsers."""
+    req = AdvisorRequest(
+        turn=turn,
+        advisor_id=advisor_id,
+        question_type=question_type,
+        player_summary=state_summary,
+        opponents_summary=opponents_summary,
+        map_summary=map_summary
     )
-    user_prompt = f"Turn: {turn}\nSituation: {state_summary}"
+    sys_prompt, user_prompt, tokens_limit, advisor_name = build_advisor_prompts(req)
+    fallback_advice, fallback_kps = get_advisor_fallback(advisor_id, question_type, turn)
+
     messages = [
         {"role": "system", "content": sys_prompt},
         {"role": "user", "content": user_prompt}
@@ -149,33 +130,22 @@ def run_advisor_inference(
     t0 = time.perf_counter()
     completion = llm.create_chat_completion(
         messages=messages,
-        temperature=0.3,
+        temperature=0.1,
         response_format={"type": "json_object"},
-        max_tokens=160
+        max_tokens=tokens_limit
     )
     elapsed = time.perf_counter() - t0
 
     content = completion["choices"][0]["message"]["content"].strip()
-    if content.startswith("```"):
-        lines = content.splitlines()
-        if lines and lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].strip().startswith("```"):
-            lines = lines[:-1]
-        content = "\n".join(lines).strip()
-
-    try:
-        data = json.loads(content)
-    except json.JSONDecodeError:
-        data = {
-            "advice": f"Stand firm, Commander. Watch our borders on turn {turn}.",
-            "key_points": ["Fortify positions", "Conserve resources"]
-        }
+    parsed_advice, parsed_key_points = safe_parse_advisor_json(content)
+    final_advice = parsed_advice or fallback_advice
+    final_key_points = parsed_key_points or fallback_kps
+    final_advice = sanitize_advisor_advice(final_advice, state_summary)
 
     return {
-        "advisor_name": persona["name"],
-        "advice": data.get("advice", ""),
-        "key_points": data.get("key_points", [])
+        "advisor_name": advisor_name,
+        "advice": final_advice,
+        "key_points": final_key_points
     }, elapsed
 
 
@@ -223,11 +193,11 @@ def main():
         "Primary goal: Establish defensive army garrison before exploring outward."
     )
     s1_legal_moves = [
-        "RECRUIT_HEAVY_INFANTRY",
-        "RECRUIT_LIGHT_INFANTRY",
-        "UPGRADE_CULTIVATION_14",
-        "UPGRADE_PROTECTION_14",
-        "WAIT"
+        "RECRUIT_HEAVY_INFANTRY (Score: 85/100, Warlord Synergy, +3 Heavy Infantry)",
+        "UPGRADE_PROTECTION_14 (Score: 70/100, Fortify Castle Wall)",
+        "RECRUIT_LIGHT_INFANTRY (Score: 60/100, Basic Defense)",
+        "UPGRADE_CULTIVATION_14 (Score: 45/100, Boosts Yield)",
+        "WAIT (Score: 75/100, Garrison Castle Wall, Safe)"
     ]
 
     res1, t1 = run_inference(llm, s1_turn, s1_summary, s1_legal_moves)
@@ -258,11 +228,11 @@ def main():
         "Milten possesses strong Archon synergy boosting Mage combat power. Sector 22 is within striking range."
     )
     s2_legal_moves = [
-        "ATTACK_SECTOR_22",
-        "RECRUIT_MAGES",
-        "UPGRADE_PROTECTION_23",
-        "MOVE_TO_30",
-        "WAIT"
+        "ATTACK_SECTOR_22 (Score: 95/100, Guaranteed Victory 95% Win, Archon Phalanx)",
+        "RECRUIT_MAGES (Score: 80/100, Archon Synergy, +1 Mage)",
+        "MOVE_TO_30 (Score: 50/100, Claim Unowned Sector)",
+        "UPGRADE_PROTECTION_23 (Score: 45/100, Fortify Farm Defense)",
+        "WAIT (Score: 40/100, Conserve Strength, Safe)"
     ]
 
     res2, t2 = run_inference(llm, s2_turn, s2_summary, s2_legal_moves)
@@ -288,17 +258,12 @@ def main():
     test_moves = ["SAFE_GARRISON", "MARCH_NORTH"]
     hallucinated_choice = "ILLEGAL_MOVE_NONSENSE"
 
-    # Simulate validator logic
-    if hallucinated_choice not in test_moves:
-        fallback_res = {
-            "chosen_move": test_moves[0],
-            "reasoning": "Fallback: LLM selected illegal or hallucinated move"
-        }
-    else:
-        fallback_res = {"chosen_move": hallucinated_choice, "reasoning": "Ok"}
+    # Test real validator logic from core
+    test_json = json.dumps({"chosen_move": hallucinated_choice, "reasoning": "Attempting illegal move"})
+    fallback_res = safe_parse_decision_json(test_json, test_moves)
 
-    assert fallback_res["chosen_move"] == "SAFE_GARRISON"
-    assert "Fallback:" in fallback_res["reasoning"]
+    assert fallback_res.chosen_move == "SAFE_GARRISON"
+    assert "Fallback:" in fallback_res.reasoning
     print("  ✓ Fallback logic successfully guarded against illegal move.")
 
     # -------------------------------------------------------------
@@ -344,9 +309,9 @@ def main():
     print(f"  • Zorax Advisor Latency : {tz:.3f} s")
     print(f"  • Jade Advisor Latency  : {tj:.3f} s")
     print(f"  • Current RSS Memory    : {final_rss:.2f} MB")
-    print(f"  • Peak RAM (HWM)        : {peak_rss:.2f} MB (Cap is 1536 MB)")
+    print(f"  • Peak RAM (HWM)        : {peak_rss:.2f} MB (Cap is 2560 MB)")
     print(f"  • Context Cap (n_ctx)   : {N_CTX} tokens")
-    print(f"  • Memory Constraint     : {'PASSED (< 1.5 GB)' if peak_rss < 1536 else 'WARNING (>= 1.5 GB)'}")
+    print(f"  • Memory Constraint     : {'PASSED (< 2.5 GB)' if peak_rss < 2560 else 'WARNING (>= 2.5 GB)'}")
     print(f"  • All Assertions        : PASSED")
     print("=" * 70)
 

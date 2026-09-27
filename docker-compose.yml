@@ -53,7 +53,7 @@ services:
       - AI_PORT=8000
       - AI_HOST=0.0.0.0
       - AI_THREADS=${AI_THREADS:-4}
-      - AI_CTX=${AI_CTX:-1024}
+      - AI_CTX=${AI_CTX:-2048}
       - AI_BATCH=${AI_BATCH:-512}
       - AI_USE_MLOCK=${AI_USE_MLOCK:-true}
       - AUTO_DOWNLOAD_MODEL=${AUTO_DOWNLOAD_MODEL:-true}

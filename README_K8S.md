@@ -178,7 +178,7 @@ AI_AGENT_URL=http://gothicfire-agent:8000
 USE_AI_AGENT=true
 AUTO_DOWNLOAD_MODEL=true
 AI_THREADS=4
-AI_CTX=1024
+AI_CTX=2048
 
 # Social OAuth credentials
 GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
@@ -307,9 +307,9 @@ If you have pre-downloaded the model or want to avoid downloading on the server:
 In `k8s/base/agent-deployment.yaml`, you can tune resource utilization based on your server capacity:
 
 - **`AI_THREADS`**: Number of CPU cores used during LLM generation. Set to `2` for low-spec dual-core servers, or `4` to `8` for quad/octa-core VPS.
-- **`AI_CTX`**: Context size in tokens. Defaults to `1024`. Keeps peak RAM strictly under 2 GB.
+- **`AI_CTX`**: Context size in tokens. Defaults to `2048`. Provides ample headroom for multi-turn tactical state and advisor queries with ~100 MB KV cache.
 - **Resource Limits**:
-  - `requests.memory`: `1536Mi`
-  - `limits.memory`: `2560Mi`
+  - `requests.memory`: `2048Mi`
+  - `limits.memory`: `3200Mi`
   - `requests.cpu`: `500m`
-  - `limits.cpu`: `2000m`
+  - `limits.cpu`: `4000m`

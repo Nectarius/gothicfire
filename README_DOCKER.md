@@ -79,7 +79,7 @@ MONGODB_DB=gothicfire
 AI_AGENT_URL=http://agent:8000
 USE_AI_AGENT=true
 AI_THREADS=4
-AI_CTX=1024
+AI_CTX=2048
 AUTO_DOWNLOAD_MODEL=true
 
 # OAuth Credentials (optional for local testing, required for social auth)
@@ -166,7 +166,7 @@ docker run -d \
   -v $(pwd)/models:/app/models:ro \
   -e MODEL_PATH=/app/models/qwen2.5-1.5b-instruct-q4_k_m.gguf \
   -e AI_THREADS=4 \
-  -e AI_CTX=1024 \
+  -e AI_CTX=2048 \
   -e AUTO_DOWNLOAD_MODEL=true \
   gothicfire-agent:latest
 ```
@@ -212,7 +212,7 @@ Response:
 
 ### Computer Opponent Tactical Decision:
 ```bash
-curl -s -X POST http://localhost:8000/decide \
+curl -s -X POST http://localhost:8000/api/v1/decide \
   -H "Content-Type: application/json" \
   -d '{
     "game_id": "test_game",
@@ -225,7 +225,7 @@ curl -s -X POST http://localhost:8000/decide \
 
 ### War Council Advisor Consultation:
 ```bash
-curl -s -X POST http://localhost:8000/api/advisor/consult \
+curl -s -X POST http://localhost:8000/api/v1/advisor/consult \
   -H "Content-Type: application/json" \
   -d '{
     "game_id": "test_game",
@@ -256,5 +256,5 @@ curl -s -X POST http://localhost:8000/api/advisor/consult \
 | `AI_PORT` | `8000` | AI Agent | Listening port for FastAPI microservice |
 | `AI_HOST` | `0.0.0.0` | AI Agent | Host binding interface |
 | `AI_THREADS` | `4` | AI Agent | Number of CPU threads dedicated to llama.cpp inference |
-| `AI_CTX` | `1024` | AI Agent | Context window cap in tokens |
+| `AI_CTX` | `2048` | AI Agent | Context window cap in tokens |
 | `AUTO_DOWNLOAD_MODEL` | `true` | AI Agent | If `true`, downloads GGUF model from Hugging Face if missing at boot |

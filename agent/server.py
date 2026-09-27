@@ -1,16 +1,39 @@
 from contextlib import asynccontextmanager
-import json
 import logging
 import os
-import re
 import sys
 import threading
 import time
 from typing import List, Optional, Tuple
-from fastapi import FastAPI, HTTPException, Response, status
-from pydantic import BaseModel, Field, AliasChoices
+from fastapi import APIRouter, FastAPI, HTTPException, Response, status
 import uvicorn
 from llama_cpp import Llama
+
+# Ensure agent directory and repo root are in sys.path for direct script execution
+_AGENT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _AGENT_DIR not in sys.path:
+    sys.path.insert(0, _AGENT_DIR)
+_REPO_DIR = os.path.dirname(_AGENT_DIR)
+if _REPO_DIR not in sys.path:
+    sys.path.insert(0, _REPO_DIR)
+
+from core import (
+    DecisionRequest,
+    DecisionResponse,
+    AdvisorRequest,
+    AdvisorResponse,
+    ADVISOR_PERSONAS,
+    get_advisor_persona,
+    build_decision_prompts,
+    build_advisor_prompts,
+    build_status_advisor_prompts,
+    build_strategy_advisor_prompts,
+    build_next_move_advisor_prompts,
+    safe_parse_decision_json,
+    safe_parse_advisor_json,
+    sanitize_advisor_advice,
+    get_advisor_fallback,
+)
 
 # Set up logging
 logging.basicConfig(
@@ -36,7 +59,7 @@ if not os.path.exists(MODEL_PATH):
     elif os.path.exists("/models/qwen2.5-1.5b-instruct-q4_k_m.gguf"):
         MODEL_PATH = "/models/qwen2.5-1.5b-instruct-q4_k_m.gguf"
 
-N_CTX = int(os.getenv("AI_CTX", "1024"))
+N_CTX = int(os.getenv("AI_CTX", "2048"))
 N_THREADS = int(os.getenv("AI_THREADS", "4"))
 AI_PORT = int(os.getenv("AI_PORT", "8000"))
 AI_HOST = os.getenv("AI_HOST", "0.0.0.0")
@@ -66,90 +89,6 @@ def ensure_model_available():
         urllib.request.urlretrieve(download_url, temp_path, reporthook=_reporthook)
         os.replace(temp_path, MODEL_PATH)
         logger.info(f"Model successfully saved to {MODEL_PATH}")
-
-
-# Request and Response schemas
-class DecisionRequest(BaseModel):
-    game_id: str = Field(
-        default="",
-        validation_alias=AliasChoices("game_id", "gameId"),
-        description="ID of the game session"
-    )
-    turn: int = Field(
-        default=1,
-        description="Current game turn number"
-    )
-    player_id: str = Field(
-        default="",
-        validation_alias=AliasChoices("player_id", "playerId"),
-        description="ID of the computer player/character"
-    )
-    state_summary: str = Field(
-        default="",
-        validation_alias=AliasChoices("state_summary", "summary"),
-        description="Summary of current game state and battlefield situation"
-    )
-    legal_moves: List[str] = Field(
-        default_factory=list,
-        validation_alias=AliasChoices("legal_moves", "legalMoves"),
-        description="List of legal moves available to choose from"
-    )
-
-    model_config = {
-        "populate_by_name": True
-    }
-
-
-class DecisionResponse(BaseModel):
-    chosen_move: str = Field(description="Selected move from legal_moves")
-    reasoning: str = Field(description="Short rationale for the choice")
-
-
-class AdvisorRequest(BaseModel):
-    game_id: str = Field(default="", validation_alias=AliasChoices("game_id", "gameId"))
-    turn: int = Field(default=1)
-    player_id: str = Field(default="", validation_alias=AliasChoices("player_id", "playerId"))
-    advisor_id: str = Field(default="ZORAX", validation_alias=AliasChoices("advisor_id", "advisorId"))
-    advisor_name: str = Field(default="Zorax the Mighty", validation_alias=AliasChoices("advisor_name", "advisorName"))
-    question_type: str = Field(default="STATUS", validation_alias=AliasChoices("question_type", "questionType"))
-    player_team: str = Field(default="RED", validation_alias=AliasChoices("player_team", "playerTeam"))
-    player_summary: str = Field(default="", validation_alias=AliasChoices("player_summary", "playerSummary"))
-    opponents_summary: str = Field(default="", validation_alias=AliasChoices("opponents_summary", "opponentsSummary"))
-    map_summary: str = Field(default="", validation_alias=AliasChoices("map_summary", "mapSummary"))
-
-    model_config = {
-        "populate_by_name": True
-    }
-
-
-class AdvisorResponse(BaseModel):
-    advisor_name: str
-    advisorName: Optional[str] = None
-    question_type: str
-    questionType: Optional[str] = None
-    advice: str
-    key_points: List[str] = Field(default_factory=list)
-    keyPoints: Optional[List[str]] = None
-
-
-ADVISOR_PERSONAS = {
-    "ZORAX": {
-        "name": "Zorax the Mighty",
-        "system_prompt": (
-            "You are Zorax the Mighty, a seasoned grey-haired military general and tactical war advisor in the dark turn-based strategy game Gothic Fire. "
-            "You have survived a hundred sieges and battlefields. You speak with blunt martial authority, stern discipline, grim grit, and uncompromising loyalty. "
-            "Address the player as 'Commander' or 'Sire'. Your military doctrine prioritizes secure castle garrisons, overwhelming force, heavy infantry discipline, and crushing counter-attacks."
-        )
-    },
-    "JADE": {
-        "name": "Jade the Enlightened",
-        "system_prompt": (
-            "You are Jade the Enlightened, an arcane high sorceress with flowing velvet hair and deep mystical foresight in the strategy game Gothic Fire. "
-            "You speak with elegant, perceptive, and enigmatic wisdom. You perceive unseen currents of magical ether and economic destiny. "
-            "Address the player as 'My Lord', 'Commander', or 'Seeker'. Your strategic doctrine prioritizes cultivation of resources, Mage synergies, territory protection, and calculating grand long-term moves."
-        )
-    }
-}
 
 
 # Global model instance and thread lock for safe serialized inference
@@ -209,15 +148,11 @@ def decide_action(request: DecisionRequest) -> DecisionResponse:
     fallback_move = legal_moves[0]
     llm = get_llm()
 
-    # ChatML system & user prompt markup as specified
-    system_prompt = (
-        "You are a master tactical AI for the turn-based strategy game Gothic Fire. "
-        "Review the tactical situation and pick the single best action from the provided legal moves list. "
-        "Tactical rules: Prioritize favorable combat (>=60% win chance), recruit units matching commander stats, "
-        "harvest uncollected resources, and NEVER pick suicidal attacks (<40% win chance). If on garrison duty, stay at castle. "
-        'Return output strictly as JSON matching: {"chosen_move": "<one_of_legal_moves>", "reasoning": "<short rationale under 15 words>"}.'
+    system_prompt, user_prompt = build_decision_prompts(
+        turn=request.turn,
+        state_summary=request.state_summary,
+        legal_moves=legal_moves
     )
-    user_prompt = f"Turn: {request.turn}\nSituation: {request.state_summary}\nLegal moves: {legal_moves}"
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -225,13 +160,14 @@ def decide_action(request: DecisionRequest) -> DecisionResponse:
     ]
 
     try:
+        decide_max_tokens = int(os.getenv("AI_DECIDE_MAX_TOKENS", "180"))
         t0 = time.perf_counter()
         with _model_lock:
             completion = llm.create_chat_completion(
                 messages=messages,
                 temperature=0.1,
                 response_format={"type": "json_object"},
-                max_tokens=45
+                max_tokens=decide_max_tokens
             )
         elapsed = time.perf_counter() - t0
         logger.info(f"Tactical move decided in {elapsed:.2f}s (turn: {request.turn})")
@@ -239,41 +175,8 @@ def decide_action(request: DecisionRequest) -> DecisionResponse:
         content = completion["choices"][0]["message"]["content"].strip()
         logger.debug(f"LLM raw response: {content}")
 
-        # Strip markdown fences if present
-        if content.startswith("```"):
-            lines = content.splitlines()
-            if lines and lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].strip().startswith("```"):
-                lines = lines[:-1]
-            content = "\n".join(lines).strip()
+        return safe_parse_decision_json(content, legal_moves, fallback_move)
 
-        data = json.loads(content)
-        chosen_move = str(data.get("chosen_move", "")).strip()
-        reasoning = str(data.get("reasoning", "")).strip()
-
-        # Safety & Fallback: Verify chosen_move is present in legal_moves
-        if chosen_move not in legal_moves:
-            logger.warning(
-                f"LLM chosen move '{chosen_move}' not in legal_moves: {legal_moves}. "
-                f"Original reasoning: '{reasoning}'. Falling back to: '{fallback_move}'"
-            )
-            return DecisionResponse(
-                chosen_move=fallback_move,
-                reasoning="Fallback: LLM selected illegal or hallucinated move"
-            )
-
-        return DecisionResponse(
-            chosen_move=chosen_move,
-            reasoning=reasoning if reasoning else "Tactical choice by AI model"
-        )
-
-    except json.JSONDecodeError as jde:
-        logger.error(f"Failed to parse LLM JSON response: {jde}. Raw content was: {content!r}")
-        return DecisionResponse(
-            chosen_move=fallback_move,
-            reasoning="Fallback: LLM selected illegal or hallucinated move"
-        )
     except Exception as e:
         logger.error(f"Error during inference: {e}", exc_info=True)
         return DecisionResponse(
@@ -282,175 +185,17 @@ def decide_action(request: DecisionRequest) -> DecisionResponse:
         )
 
 
-@app.post("/decide", response_model=DecisionResponse)
-def post_decide(request: DecisionRequest) -> DecisionResponse:
-    """Primary decision endpoint."""
-    return decide_action(request)
-
-
-@app.post("/decision", response_model=DecisionResponse)
-def post_decision(request: DecisionRequest) -> DecisionResponse:
-    """Alternative alias endpoint."""
-    return decide_action(request)
-
-
-@app.post("/api/v1/agent/decide-turn", response_model=DecisionResponse)
-def post_decide_turn(request: DecisionRequest) -> DecisionResponse:
-    """Endpoint matching AI_AGENT_ENDPOINT in .env."""
-    return decide_action(request)
-
-
-def consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
-    """Generates thematic tactical and strategic advice based on chosen advisor persona and question type."""
-    advisor_key = request.advisor_id.upper()
-    persona_info = ADVISOR_PERSONAS.get(advisor_key, ADVISOR_PERSONAS["ZORAX"])
-    advisor_name = persona_info["name"]
-
-    q_type = request.question_type.upper()
-    if q_type == "STATUS":
-        tokens_limit = int(os.getenv("AI_ADVISOR_STATUS_MAX_TOKENS", "260"))
-        question_instruction = (
-            'The player asks: "What is our current status?" '
-            'Directly contrast our affairs (controlled territories, army power, gold & food upkeep) against our opponents. '
-            'Deliver a concise, authoritative assessment of who holds the advantage and where threats lie.'
-        )
-        counsel_length_instruction = (
-            "Provide a focused, authoritative battlefield and imperial status assessment in character (2-3 concise sentences, 45-65 words). "
-            "Address troop counts, territory control, economic health/starvation risks, and key enemy threats. "
-            'Return output strictly as JSON matching: {"advice": "<status assessment 45-65 words>", "key_points": ["<key standing point>", "<key threat or opportunity>"]}.'
-        )
-    elif q_type == "STRATEGY":
-        tokens_limit = int(os.getenv("AI_ADVISOR_STRATEGY_MAX_TOKENS", "160"))
-        question_instruction = (
-            'The player asks: "What is our strategy for the future?" '
-            'Provide grand visionary counsel on long-term territorial expansion, capturing enemy castles, '
-            'synergizing commander stats, and winning before Turn 80.'
-        )
-        counsel_length_instruction = (
-            "Provide visionary grand strategy in character (2-3 sentences, 35-55 words) on long-term conquest and winning before Turn 80. "
-            'Return output strictly as JSON matching: {"advice": "<grand strategy 35-55 words>", "key_points": ["<strategic goal 1>", "<strategic goal 2>"]}.'
-        )
-    else:  # NEXT_MOVE
-        tokens_limit = int(os.getenv("AI_ADVISOR_MOVE_MAX_TOKENS", "120"))
-        question_instruction = (
-            'The player asks: "What should I do next?" '
-            'Give concrete, immediate advice for this turn (e.g., whether to recruit Heavy/Light Infantry or Mages, '
-            'collect unharvested resources from our sectors, fortify territory protection, or prepare to march).'
-        )
-        counsel_length_instruction = (
-            "Provide decisive, immediate tactical counsel in character for this turn (1-2 sentences, 20-35 words). "
-            "Prioritize any urgent Tactical Alerts (food deficit, undefended castle, imminent attacks) with top priority. "
-            'Return output strictly as JSON matching: {"advice": "<decisive move 20-35 words>", "key_points": ["<action 1>", "<action 2>"]}.'
-        )
-
+def _execute_advisor_inference(
+    sys_prompt: str,
+    user_prompt: str,
+    tokens_limit: int,
+    advisor_name: str,
+    q_type: str,
+    request: AdvisorRequest
+) -> AdvisorResponse:
+    """Thread-safe inference execution, JSON parsing, sanitization, and fallback for advisor consultation."""
+    fallback_advice, fallback_kps = get_advisor_fallback(request.advisor_id, q_type, request.turn)
     logger.info(f"Received advisor consultation for {advisor_name} (type: {q_type}, turn: {request.turn}, max_tokens: {tokens_limit})")
-    sys_prompt = (
-        f"{persona_info['system_prompt']}\n"
-        f"Query Type: {q_type}\n"
-        f"Goal: {question_instruction}\n"
-        f"{counsel_length_instruction}\n"
-        "STRICT GROUNDING & FACTUAL ACCURACY RULES:\n"
-        "- ONLY refer to unit types that exist in Our Standing with count > 0. If Our Standing notes 0 Mages, we have NO Mages! NEVER state or hallucinate that we have Mages; if appropriate, recommend recruiting them to unlock magical synergies.\n"
-        "- Hero attributes (e.g. Archon, Warlord, Vanguard ratings) are leader attributes, NOT soldier counts. Never refer to hero attributes as troops.\n"
-        "- The exact unit counts must match Our Standing. Never invent unit counts that conflict with Our Standing.\n"
-        "- Distinguish strictly between friendly forces ('Our Standing') and enemy forces ('Rivals Standing'). NEVER assign our units or sector locations to the enemy, or vice versa.\n"
-        "- Check frontline clash reports carefully: notice who holds the advantage and who is on the offensive."
-    )
-
-    user_prompt = (
-        f"Turn: {request.turn}\n"
-        f"Our Standing: {request.player_summary}\n"
-        f"Rivals Standing: {request.opponents_summary}\n"
-        f"Map & Economy: {request.map_summary}\n"
-        f"Player Inquiry: {question_instruction}"
-    )
-
-    # In-character fallbacks in case of timeout or inference exception
-    fallback_map = {
-        ("ZORAX", "STATUS"): (
-            "Commander, our garrison is established, but the enemy lurks on our borders. "
-            "Keep your guard up and ensure our castle is never left unattended."
-        ),
-        ("ZORAX", "NEXT_MOVE"): (
-            "Recruit Heavy Infantry if the treasury permits, Sire. A solid front line is the bedrock of every successful campaign."
-        ),
-        ("ZORAX", "STRATEGY"): (
-            "Fortify our forward sectors and march directly upon their castle. Overwhelming force leaves no room for enemy trickery."
-        ),
-        ("JADE", "STATUS"): (
-            "The arcane tides flow with our colors, My Lord, yet the rivals gather strength in the shadows. "
-            "Keep a close eye on their troop counts."
-        ),
-        ("JADE", "NEXT_MOVE"): (
-            "Tend to our cultivation and gather unharvested gold, Commander. True dominance begins with a flourishing treasury."
-        ),
-        ("JADE", "STRATEGY"): (
-            "Cultivate our lands and assemble high-tier Mages. When the enemy stretches their lines too thin, strike at their heart."
-        )
-    }
-    fallback_advice = fallback_map.get(
-        (advisor_key, q_type),
-        f"Hold fast, Commander. Weigh your moves with care on turn {request.turn}."
-    )
-
-    # Safe parsing helper
-    def safe_parse_advisor_json(raw_text: str) -> Tuple[Optional[str], List[str]]:
-        text = raw_text.strip()
-        if text.startswith("```"):
-            lines = text.splitlines()
-            if lines and lines[0].startswith("```"):
-                lines = lines[1:]
-            if lines and lines[-1].strip().startswith("```"):
-                lines = lines[:-1]
-            text = "\n".join(lines).strip()
-
-        # 1. Normal JSON load
-        try:
-            parsed = json.loads(text)
-            if isinstance(parsed, dict):
-                adv = parsed.get("advice")
-                kps = parsed.get("key_points", [])
-                if isinstance(adv, str) and adv.strip():
-                    return adv.strip(), [str(kp) for kp in kps if kp]
-        except Exception:
-            pass
-
-        # 2. Repair truncated JSON (unclosed string/brackets/braces)
-        repaired = text.strip()
-        if not repaired.endswith("}"):
-            if repaired.count('"') % 2 != 0:
-                repaired += '"'
-            if repaired.count('[') > repaired.count(']'):
-                repaired += ']'
-            if repaired.count('{') > repaired.count('}'):
-                repaired += '}'
-            try:
-                parsed = json.loads(repaired)
-                if isinstance(parsed, dict):
-                    adv = parsed.get("advice")
-                    kps = parsed.get("key_points", [])
-                    if isinstance(adv, str) and adv.strip():
-                        return adv.strip(), [str(kp) for kp in kps if kp]
-            except Exception:
-                pass
-
-        # 3. Regex fallback extraction for unclosed strings
-        adv_match = re.search(r'"advice"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)', text)
-        adv = adv_match.group(1).replace('\\"', '"').replace('\\n', ' ').strip() if adv_match else None
-
-        kps = []
-        kp_match = re.search(r'"key_points"\s*:\s*\[(.*)', text, re.DOTALL)
-        if kp_match:
-            found = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', kp_match.group(1))
-            kps = [k.replace('\\"', '"').strip() for k in found if k.strip()]
-
-        # Clean up any trailing cut-off sentence fragment if truncated
-        if adv and not adv.endswith(('.', '!', '?')) and len(adv) > 25:
-            last_punct = max(adv.rfind('.'), adv.rfind('!'), adv.rfind('?'))
-            if last_punct > len(adv) // 2:
-                adv = adv[:last_punct + 1].strip()
-
-        return adv, kps
 
     try:
         llm = get_llm()
@@ -459,7 +204,7 @@ def consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
             {"role": "user", "content": user_prompt}
         ]
 
-        logger.info(f"Advisor prompt:\n{user_prompt}")
+        logger.info(f"Advisor prompt ({q_type}):\n{user_prompt}")
         t0 = time.perf_counter()
         with _model_lock:
             completion = llm.create_chat_completion(
@@ -476,16 +221,9 @@ def consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
 
         parsed_advice, parsed_key_points = safe_parse_advisor_json(content)
         final_advice = parsed_advice or fallback_advice
-        final_key_points = parsed_key_points or ["Maintain vigilant watch", "Strike when prepared"]
+        final_key_points = parsed_key_points or fallback_kps
 
-        # Safeguard: if player has 0 Mages, prevent false claims of possessing Mages
-        if "0 Mages" in request.player_summary:
-            final_advice = re.sub(
-                r'(?<!recruit\s)(?<!train\s)(?<!summon\s)\b\d+\s+Mages\b,?\s*(?:and\s+)?',
-                '',
-                final_advice,
-                flags=re.IGNORECASE
-            )
+        final_advice = sanitize_advisor_advice(final_advice, request.player_summary)
 
         return AdvisorResponse(
             advisor_name=advisor_name,
@@ -505,23 +243,60 @@ def consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
             question_type=q_type,
             questionType=q_type,
             advice=fallback_advice,
-            key_points=["Inspect border defenses", "Bolster economic reserve"],
-            keyPoints=["Inspect border defenses", "Bolster economic reserve"]
+            key_points=fallback_kps,
+            keyPoints=fallback_kps
         )
 
 
-@app.post("/api/advisor/consult", response_model=AdvisorResponse)
-@app.post("/decide/api/advisor/consult", response_model=AdvisorResponse)
+def consult_status_advisor(request: AdvisorRequest) -> AdvisorResponse:
+    """Specialized advisor handler for imperial & battlefield STATUS auditing."""
+    persona_info = get_advisor_persona(request.advisor_id.upper())
+    sys_prompt, user_prompt, tokens_limit = build_status_advisor_prompts(request, persona_info)
+    return _execute_advisor_inference(sys_prompt, user_prompt, tokens_limit, persona_info["name"], "STATUS", request)
+
+
+def consult_strategy_advisor(request: AdvisorRequest) -> AdvisorResponse:
+    """Specialized advisor handler for long-term STRATEGY and grand campaign planning."""
+    persona_info = get_advisor_persona(request.advisor_id.upper())
+    sys_prompt, user_prompt, tokens_limit = build_strategy_advisor_prompts(request, persona_info)
+    return _execute_advisor_inference(sys_prompt, user_prompt, tokens_limit, persona_info["name"], "STRATEGY", request)
+
+
+def consult_next_move_advisor(request: AdvisorRequest) -> AdvisorResponse:
+    """Specialized advisor handler for immediate NEXT_MOVE tactical recommendations."""
+    persona_info = get_advisor_persona(request.advisor_id.upper())
+    sys_prompt, user_prompt, tokens_limit = build_next_move_advisor_prompts(request, persona_info)
+    return _execute_advisor_inference(sys_prompt, user_prompt, tokens_limit, persona_info["name"], "NEXT_MOVE", request)
+
+
+def consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
+    """Dispatches consultation request to decomposed, specialized prompt handlers based on task type."""
+    q_type = request.question_type.upper()
+    if q_type == "STATUS":
+        return consult_status_advisor(request)
+    elif q_type == "STRATEGY":
+        return consult_strategy_advisor(request)
+    else:
+        return consult_next_move_advisor(request)
+
+
+# Unified API v1 Router
+api_v1_router = APIRouter(prefix="/api/v1")
+
+
+@api_v1_router.post("/decide", response_model=DecisionResponse)
+def post_decide(request: DecisionRequest) -> DecisionResponse:
+    """Primary tactical decision endpoint for computer player turns."""
+    return decide_action(request)
+
+
+@api_v1_router.post("/advisor/consult", response_model=AdvisorResponse)
 def post_consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
-    """Advisor consultation endpoint."""
+    """Advisor consultation endpoint providing thematic counsel."""
     return consult_advisor(request)
 
 
-@app.post("/advisor", response_model=AdvisorResponse)
-@app.post("/decide/advisor", response_model=AdvisorResponse)
-def post_advisor_alias(request: AdvisorRequest) -> AdvisorResponse:
-    """Advisor consultation alias endpoint."""
-    return consult_advisor(request)
+app.include_router(api_v1_router)
 
 
 @app.get("/health")

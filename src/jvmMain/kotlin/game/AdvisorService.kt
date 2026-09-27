@@ -195,18 +195,11 @@ class AdvisorService(
         )
 
         val baseUrl = agentUrl.trimEnd('/')
-            .removeSuffix("/decide")
-            .removeSuffix("/decision")
-            .removeSuffix("/decide-turn")
-            .removeSuffix("/api/advisor/consult")
-            .removeSuffix("/advisor")
-            .trimEnd('/')
+            .removeSuffix("/api/v1/decide")
+            .removeSuffix("/api/v1/advisor/consult")
+            .removeSuffix("/api/v1")
 
-        val targetEndpoint = if (agentUrl.endsWith("/api/advisor/consult") || agentUrl.endsWith("/advisor")) {
-            agentUrl
-        } else {
-            "$baseUrl/api/advisor/consult"
-        }
+        val targetEndpoint = "$baseUrl/api/v1/advisor/consult"
 
         logger.info("Consulting advisor $advisorName at $targetEndpoint (timeout: ${timeoutMillis}ms)...")
 

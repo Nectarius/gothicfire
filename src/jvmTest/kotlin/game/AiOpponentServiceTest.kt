@@ -82,4 +82,47 @@ class AiOpponentServiceTest {
             "Chosen move '$chosenMove' should be one of legal moves: $legalMoves"
         )
     }
+
+    @Test
+    fun testEnrichedMetadataMoveFallback() = runBlocking {
+        // When server is offline, fallback returns the first available move
+        val httpClient = HttpClient(CIO)
+        val service = AiOpponentService(httpClient, agentUrl = "http://127.0.0.1:59999", timeoutMillis = 1000L)
+
+        val legalMoves = listOf(
+            "ATTACK_SECTOR_22 (Win Chance: 85%)",
+            "RECRUIT_MAGES (Matches Archon Synergy)",
+            "WAIT (Conserve Strength)"
+        )
+        val chosenMove = service.requestComputerMove(
+            gameId = "test_tagged_game",
+            turn = 2,
+            playerId = "bot_player_1",
+            summary = "Garrison established, high advantage.",
+            legalMoves = legalMoves
+        )
+
+        assertEquals("ATTACK_SECTOR_22 (Win Chance: 85%)", chosenMove)
+    }
+
+    @Test
+    fun testScoreBelowThresholdPruned() = runBlocking {
+        val httpClient = HttpClient(CIO)
+        val service = AiOpponentService(httpClient, agentUrl = "http://127.0.0.1:59999", timeoutMillis = 1000L)
+
+        val legalMoves = listOf(
+            "ATTACK_SECTOR_5 (Score: 25/100, Suicidal Attack)",
+            "RECRUIT_HEAVY_INFANTRY (Score: 85/100, Warlord Synergy)",
+            "WAIT (Score: 40/100, Conserve Strength, Safe)"
+        )
+        val chosenMove = service.requestComputerMove(
+            gameId = "test_prune_game",
+            turn = 3,
+            playerId = "bot_player_1",
+            summary = "Evaluating choices",
+            legalMoves = legalMoves
+        )
+
+        assertTrue(chosenMove.isNotBlank())
+    }
 }

@@ -39,7 +39,8 @@ COPY --from=builder /install /usr/local
 RUN mkdir -p /app/models /models && \
     chown -R agentuser:agentgroup /app /models
 
-# Copy server code
+# Copy server code and shared core package
+COPY --chown=agentuser:agentgroup agent/core ./agent/core
 COPY --chown=agentuser:agentgroup agent/server.py ./agent/server.py
 COPY --chown=agentuser:agentgroup agent/verify_agent.py ./agent/verify_agent.py
 
@@ -52,7 +53,9 @@ ENV PYTHONUNBUFFERED=1 \
     AI_PORT="8000" \
     AI_HOST="0.0.0.0" \
     AI_THREADS="4" \
-    AI_CTX="1024"
+    AI_CTX="2048" \
+    AI_BATCH="512" \
+    AI_USE_MLOCK="true"
 
 EXPOSE 8000
 
