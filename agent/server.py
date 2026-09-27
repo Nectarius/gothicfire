@@ -40,6 +40,8 @@ N_CTX = int(os.getenv("AI_CTX", "1024"))
 N_THREADS = int(os.getenv("AI_THREADS", "4"))
 AI_PORT = int(os.getenv("AI_PORT", "8000"))
 AI_HOST = os.getenv("AI_HOST", "0.0.0.0")
+AI_BATCH = int(os.getenv("AI_BATCH", "512"))
+AI_USE_MLOCK = os.getenv("AI_USE_MLOCK", "true").lower() in ("true", "1", "yes")
 
 def ensure_model_available():
     """Verifies model exists, or optionally downloads it if AUTO_DOWNLOAD_MODEL=true."""
@@ -163,11 +165,13 @@ def get_llm() -> Llama:
                 ensure_model_available()
                 if not os.path.exists(MODEL_PATH):
                     raise RuntimeError(f"Model file not found at: {MODEL_PATH}")
-                logger.info(f"Loading GGUF model from {MODEL_PATH} (n_ctx={N_CTX}, n_threads={N_THREADS})...")
+                logger.info(f"Loading GGUF model from {MODEL_PATH} (n_ctx={N_CTX}, n_threads={N_THREADS}, n_batch={AI_BATCH}, mlock={AI_USE_MLOCK})...")
                 _llm = Llama(
                     model_path=MODEL_PATH,
                     n_ctx=N_CTX,
                     n_threads=N_THREADS,
+                    n_batch=AI_BATCH,
+                    use_mlock=AI_USE_MLOCK,
                     verbose=False
                 )
                 logger.info("Model loaded successfully.")
@@ -219,13 +223,16 @@ def decide_action(request: DecisionRequest) -> DecisionResponse:
     ]
 
     try:
+        t0 = time.perf_counter()
         with _model_lock:
             completion = llm.create_chat_completion(
                 messages=messages,
                 temperature=0.1,
                 response_format={"type": "json_object"},
-                max_tokens=90
+                max_tokens=45
             )
+        elapsed = time.perf_counter() - t0
+        logger.info(f"Tactical move decided in {elapsed:.2f}s (turn: {request.turn})")
 
         content = completion["choices"][0]["message"]["content"].strip()
         logger.debug(f"LLM raw response: {content}")
@@ -426,9 +433,9 @@ def consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
         with _model_lock:
             completion = llm.create_chat_completion(
                 messages=messages,
-                temperature=0.2,
+                temperature=0.4,
                 response_format={"type": "json_object"},
-                max_tokens=48
+                max_tokens=90
             )
         elapsed = time.perf_counter() - t0
         logger.info(f"Advisor counsel generated in {elapsed:.2f}s for {advisor_name}")

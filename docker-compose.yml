@@ -54,7 +54,11 @@ services:
       - AI_HOST=0.0.0.0
       - AI_THREADS=${AI_THREADS:-4}
       - AI_CTX=${AI_CTX:-1024}
+      - AI_BATCH=${AI_BATCH:-512}
+      - AI_USE_MLOCK=${AI_USE_MLOCK:-true}
       - AUTO_DOWNLOAD_MODEL=${AUTO_DOWNLOAD_MODEL:-true}
+    cap_add:
+      - IPC_LOCK
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/live')"]
       interval: 15s

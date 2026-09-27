@@ -27,6 +27,10 @@ spec:
             - containerPort: 8000
               name: http
               protocol: TCP
+          securityContext:
+            capabilities:
+              add:
+                - IPC_LOCK
           env:
             - name: MODEL_PATH
               value: "/models/qwen2.5-1.5b-instruct-q4_k_m.gguf"
@@ -38,14 +42,18 @@ spec:
               value: "4"
             - name: AI_CTX
               value: "1024"
+            - name: AI_BATCH
+              value: "512"
+            - name: AI_USE_MLOCK
+              value: "true"
             - name: AUTO_DOWNLOAD_MODEL
               value: "true"
           resources:
             requests:
-              memory: "1536Mi"
+              memory: "2048Mi"
               cpu: "500m"
             limits:
-              memory: "2560Mi"
+              memory: "3200Mi"
               cpu: "4000m"
           livenessProbe:
             httpGet:
