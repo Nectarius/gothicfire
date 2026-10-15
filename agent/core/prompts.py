@@ -29,9 +29,11 @@ def build_decision_prompts(turn: int, state_summary: str, legal_moves: List[str]
         "Review the tactical situation and pick the single best action from the provided scored legal moves list. "
         "Commander directives: Favor high-scoring actions (>=60), exploit commander attribute synergies, "
         "ensure resource security, and fulfill castle garrison duty when assigned.\n"
-        'Return output strictly as JSON matching: {"chosen_move": "<exact_full_string_from_legal_moves>", "reasoning": "<concise logic>"}.'
+        'Return output strictly as JSON matching: {"chosen_move": "<move_index_or_name>", "reasoning": "<concise logic>"}. '
+        'You may return either the move index number (e.g. "0", "1") or the base action name.'
     )
-    user_prompt = f"Turn: {turn}\nSituation: {state_summary}\nLegal moves: {legal_moves}"
+    indexed_moves = [f"[{i}] {move}" for i, move in enumerate(legal_moves)]
+    user_prompt = f"Turn: {turn}\nSituation: {state_summary}\nLegal moves:\n" + "\n".join(indexed_moves)
     return system_prompt, user_prompt
 
 

@@ -57,7 +57,7 @@ ENV PYTHONUNBUFFERED=1 \
     AI_THREADS="4" \
     AI_CTX="2048" \
     AI_BATCH="512" \
-    AI_USE_MLOCK="true"
+    AI_USE_MLOCK="false"
 
 EXPOSE 8000
 

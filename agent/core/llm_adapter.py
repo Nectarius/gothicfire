@@ -17,8 +17,26 @@ from llama_cpp import Llama
 
 logger = logging.getLogger("AiAgentCore.LlmAdapter")
 
-# Global thread lock for serialized CPU inference
+# Global thread lock for serialized CPU inference and model operations
 _inference_lock = threading.Lock()
+
+# Async lock to prevent unbounded thread pool congestion
+_async_inference_lock: Optional[asyncio.Lock] = None
+_lock_loop = None
+
+
+def get_async_inference_lock() -> asyncio.Lock:
+    """Returns an asyncio.Lock bound to the current running event loop."""
+    global _async_inference_lock, _lock_loop
+    try:
+        current_loop = asyncio.get_running_loop()
+    except RuntimeError:
+        current_loop = None
+
+    if _async_inference_lock is None or _lock_loop != current_loop:
+        _async_inference_lock = asyncio.Lock()
+        _lock_loop = current_loop
+    return _async_inference_lock
 
 
 class LlamaCppLlm(BaseLlm):
@@ -29,7 +47,7 @@ class LlamaCppLlm(BaseLlm):
     n_ctx: int = 2048
     n_threads: int = 4
     n_batch: int = 512
-    use_mlock: bool = True
+    use_mlock: bool = False
 
     # Private attributes for in-memory model lifecycle
     _llm: Optional[Llama] = None
@@ -159,14 +177,28 @@ class LlamaCppLlm(BaseLlm):
                 stop_seqs = list(llm_request.config.stop_sequences)
 
         t0 = time.perf_counter()
-        # Offload CPU inference to worker thread so async event loop is never blocked
-        completion = await asyncio.to_thread(
-            self._sync_generate,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            stop=stop_seqs
-        )
+        inference_timeout = float(os.getenv("AI_INFERENCE_TIMEOUT", "8.0"))
+
+        async def _acquire_and_generate() -> Dict[str, Any]:
+            async with get_async_inference_lock():
+                return await asyncio.to_thread(
+                    self._sync_generate,
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    stop=stop_seqs
+                )
+
+        try:
+            completion = await asyncio.wait_for(_acquire_and_generate(), timeout=inference_timeout)
+        except (asyncio.TimeoutError, TimeoutError) as exc:
+            elapsed = time.perf_counter() - t0
+            logger.warning(
+                f"LlamaCppLlm inference timed out after {elapsed:.2f}s "
+                f"(timeout threshold: {inference_timeout:.1f}s)."
+            )
+            raise TimeoutError(f"Inference timed out after {inference_timeout:.1f}s") from exc
+
         elapsed = time.perf_counter() - t0
 
         raw_text = completion["choices"][0]["message"]["content"].strip()

@@ -7,6 +7,7 @@ from typing import Optional
 
 from google.genai import types
 from google.adk.agents import LlmAgent
+from google.adk.events import Event
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.adk.workflow import Workflow, START, node
@@ -39,7 +40,9 @@ async def run_advisor_workflow(
         turn=request.turn,
         player_summary=request.player_summary,
         question_type=q_type,
-        advisor_id=advisor_id
+        advisor_id=advisor_id,
+        opponents_summary=request.opponents_summary or "",
+        map_summary=request.map_summary or ""
     )
     if cached_resp is not None:
         logger.info(
@@ -64,13 +67,14 @@ async def run_advisor_workflow(
         generate_content_config=types.GenerateContentConfig(
             temperature=0.1,
             max_output_tokens=tokens_limit,
-            stop_sequences=["}"],
+            stop_sequences=["\n\n", "```"],
             response_mime_type="application/json"
         )
     )
 
     app_id = f"gothicfire_advisor_{request.game_id or 'default'}"
     user_id = request.player_id or "player_commander"
+    session = None
 
     try:
         t0 = time.perf_counter()
@@ -126,14 +130,16 @@ async def run_advisor_workflow(
             player_summary=request.player_summary,
             question_type=q_type,
             advisor_id=advisor_id,
-            response=response
+            response=response,
+            opponents_summary=request.opponents_summary or "",
+            map_summary=request.map_summary or ""
         )
 
         return response
 
     except Exception as e:
         logger.warning(f"ADK Advisor consultation exception ({e}). Using in-character fallback.")
-        return AdvisorResponse(
+        fallback_resp = AdvisorResponse(
             advisor_name=advisor_name,
             advisorName=advisor_name,
             question_type=q_type,
@@ -142,6 +148,26 @@ async def run_advisor_workflow(
             key_points=fallback_kps,
             keyPoints=fallback_kps
         )
+        advisor_cache.set(
+            turn=request.turn,
+            player_summary=request.player_summary,
+            question_type=q_type,
+            advisor_id=advisor_id,
+            response=fallback_resp,
+            opponents_summary=request.opponents_summary or "",
+            map_summary=request.map_summary or ""
+        )
+        return fallback_resp
+    finally:
+        if session is not None:
+            try:
+                await _session_service.delete_session(
+                    app_name=app_id,
+                    user_id=user_id,
+                    session_id=session.id
+                )
+            except Exception as del_err:
+                logger.debug(f"Error cleaning up ADK advisor session: {del_err}")
 
 
 def build_advisor_workflow(llm: LlamaCppLlm) -> Workflow:

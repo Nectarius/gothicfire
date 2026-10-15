@@ -34,10 +34,13 @@ from .parser import (
 from .cache import (
     AdvisorCache,
     advisor_cache,
+    DecisionCache,
+    decide_cache,
 )
 
 from .llm_adapter import (
     LlamaCppLlm,
+    _inference_lock,
 )
 
 from .workflows import (
@@ -67,7 +70,10 @@ __all__ = [
     "get_advisor_fallback",
     "AdvisorCache",
     "advisor_cache",
+    "DecisionCache",
+    "decide_cache",
     "LlamaCppLlm",
+    "_inference_lock",
     "build_decide_workflow",
     "run_decide_workflow",
     "build_advisor_workflow",

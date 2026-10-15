@@ -52,10 +52,18 @@ def clean_json_markdown(raw_text: str) -> str:
 
 
 def match_legal_move(candidate: str, legal_moves: List[str]) -> Optional[str]:
-    """Matches a candidate move string against legal_moves, supporting tagged metadata."""
+    """Matches a candidate move string against legal_moves, supporting index-based selection and tagged metadata."""
     if not candidate or not legal_moves:
         return None
     cand_clean = candidate.strip()
+
+    # 0. Index-based selection (e.g., "0", "1", "[0]", "#0")
+    idx_str = cand_clean.strip("[]# ")
+    if idx_str.isdigit():
+        idx = int(idx_str)
+        if 0 <= idx < len(legal_moves):
+            return legal_moves[idx]
+
     # 1. Exact match
     if cand_clean in legal_moves:
         return cand_clean
@@ -67,7 +75,7 @@ def match_legal_move(candidate: str, legal_moves: List[str]) -> Optional[str]:
     cand_base = cand_clean.split("(")[0].strip().lower()
     for m in legal_moves:
         m_base = m.split("(")[0].strip().lower()
-        if cand_base == m_base:
+        if cand_base and cand_base == m_base:
             return m
     # 4. Substring / prefix containment
     for m in legal_moves:

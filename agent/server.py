@@ -35,6 +35,8 @@ from core import (
     run_decide_workflow,
     run_advisor_workflow,
     advisor_cache,
+    decide_cache,
+    _inference_lock,
 )
 
 # Set up logging
@@ -66,7 +68,8 @@ N_THREADS = int(os.getenv("AI_THREADS", "4"))
 AI_PORT = int(os.getenv("AI_PORT", "8000"))
 AI_HOST = os.getenv("AI_HOST", "0.0.0.0")
 AI_BATCH = int(os.getenv("AI_BATCH", "512"))
-AI_USE_MLOCK = os.getenv("AI_USE_MLOCK", "true").lower() in ("true", "1", "yes")
+AI_USE_MLOCK = os.getenv("AI_USE_MLOCK", "false").lower() in ("true", "1", "yes")
+AI_ENABLE_RAM_CACHE = os.getenv("AI_ENABLE_RAM_CACHE", "false").lower() in ("true", "1", "yes")
 
 def ensure_model_available():
     """Verifies model exists, or optionally downloads it if AUTO_DOWNLOAD_MODEL=true."""
@@ -93,8 +96,7 @@ def ensure_model_available():
         logger.info(f"Model successfully saved to {MODEL_PATH}")
 
 
-# Global model instance and thread lock for safe serialized inference
-_model_lock = threading.Lock()
+# Global model instance (uses unified _inference_lock for safe serialized inference)
 _llm: Optional[Llama] = None
 _adk_llm: Optional[LlamaCppLlm] = None
 
@@ -102,7 +104,7 @@ _adk_llm: Optional[LlamaCppLlm] = None
 def get_llm() -> Llama:
     global _llm
     if _llm is None:
-        with _model_lock:
+        with _inference_lock:
             if _llm is None:
                 ensure_model_available()
                 if not os.path.exists(MODEL_PATH):
@@ -116,11 +118,12 @@ def get_llm() -> Llama:
                     use_mlock=AI_USE_MLOCK,
                     verbose=False
                 )
-                try:
-                    _llm.set_cache(llama_cpp.LlamaRAMCache(capacity_bytes=128 * 1024 * 1024))
-                    logger.info("Enabled 128MB in-memory KV prompt cache (LlamaRAMCache).")
-                except Exception as cache_err:
-                    logger.warning(f"KV prompt cache could not be initialized: {cache_err}")
+                if AI_ENABLE_RAM_CACHE:
+                    try:
+                        _llm.set_cache(llama_cpp.LlamaRAMCache(capacity_bytes=128 * 1024 * 1024))
+                        logger.info("Enabled 128MB in-memory KV prompt cache (LlamaRAMCache).")
+                    except Exception as cache_err:
+                        logger.warning(f"KV prompt cache could not be initialized: {cache_err}")
                 logger.info("Model loaded successfully.")
     return _llm
 
@@ -212,7 +215,8 @@ def health(response: Response):
         "n_ctx": N_CTX,
         "n_threads": N_THREADS,
         "ram_rss_mb": rss_mb,
-        "advisor_cache_size": advisor_cache.size()
+        "advisor_cache_size": advisor_cache.size(),
+        "decide_cache_size": decide_cache.size()
     }
 
 
