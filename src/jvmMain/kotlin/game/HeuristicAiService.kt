@@ -2,7 +2,7 @@ package game
 
 import models.*
 
-class HeuristicAiService : AiDecisionService {
+open class HeuristicAiService : AiDecisionService {
     override suspend fun decideTurn(snapshot: BotGameStateSnapshot): List<BotAction> {
         val actions = mutableListOf<BotAction>()
         
@@ -31,7 +31,7 @@ class HeuristicAiService : AiDecisionService {
         return actions
     }
 
-    private fun decideForCharacter(char: Character, snapshot: BotGameStateSnapshot, mustStayAtCastle: Boolean): BotAction {
+    open fun decideForCharacter(char: Character, snapshot: BotGameStateSnapshot, mustStayAtCastle: Boolean): BotAction {
         val sectorId = char.currentSector ?: return BotAction.Skip(char.id)
         val territory = snapshot.gameState.territories[sectorId]
         

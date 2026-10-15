@@ -29,7 +29,7 @@ def build_decision_prompts(turn: int, state_summary: str, legal_moves: List[str]
         "Review the tactical situation and pick the single best action from the provided scored legal moves list. "
         "Commander directives: Favor high-scoring actions (>=60), exploit commander attribute synergies, "
         "ensure resource security, and fulfill castle garrison duty when assigned.\n"
-        'Return output strictly as JSON matching: {"reasoning": "<step-by-step logic>", "chosen_move": "<one_of_legal_moves>"}.'
+        'Return output strictly as JSON matching: {"chosen_move": "<exact_full_string_from_legal_moves>", "reasoning": "<concise logic>"}.'
     )
     user_prompt = f"Turn: {turn}\nSituation: {state_summary}\nLegal moves: {legal_moves}"
     return system_prompt, user_prompt

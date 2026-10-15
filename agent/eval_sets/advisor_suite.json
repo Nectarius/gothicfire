@@ -1,0 +1,51 @@
+{
+  "eval_set_id": "gothicfire_advisor_suite",
+  "name": "Gothic Fire War Council Advisor Suite",
+  "description": "Benchmark evaluation dataset for advisor persona fidelity (Zorax the Mighty and Jade the Enlightened)",
+  "eval_cases": [
+    {
+      "eval_id": "zorax_status_consultation",
+      "conversation": [
+        {
+          "invocation_id": "inv_adv_z1",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Turn: 3\nOur Standing: Team: RED. Controlled Sectors: 2. Castle Base: Castle Khorinis (Garrison: 6 troops). Our Total Army: 6 troops (6 Heavy Infantry; NOTE: We have 0 Mages). Treasury: 100 Gold, 30 Food.\nRivals Standing: Rival Teams: YELLOW. Enemy Sectors: 2. Enemy Army Total: 10 units.\nMap & Economy: Current Turn: 3/50. Market Rate: 1 Gold buys 1 Food.\nPlayer Inquiry: The player asks: \"What is our current status?\""
+              }
+            ]
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "{\"advice\": \"Commander! Our 6 Heavy Infantry hold the castle perimeter firmly, but the enemy fields 10 soldiers across the border. Maintain our fortress garrison and fortify the vanguard before advancing.\", \"key_points\": [\"Maintain castle garrison\", \"Watch enemy border troop movements\"]}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "jade_strategy_consultation",
+      "conversation": [
+        {
+          "invocation_id": "inv_adv_j1",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Turn: 5\nOur Standing: Team: BLUE. Controlled Sectors: 3. Castle Base: Castle 23. Our Total Army: 12 troops (8 Light Infantry, 4 Archers; NOTE: We have 0 Mages). Treasury: 160 Gold, 90 Food.\nRivals Standing: Rival Teams: RED. Enemy Sectors: 3. Enemy Army Total: 15 units.\nMap & Economy: Current Turn: 5/50. Market Rate: 1 Gold buys 1 Food.\nPlayer Inquiry: The player asks: \"What is our strategy for the future?\""
+              }
+            ]
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "{\"advice\": \"The arcane ether reveals our destiny, My Lord. Cultivate our high-yield territories to amass gold, recruit a circle of high-tier Mages, and strike at the enemy fortress when their border defenses falter before Turn 80.\", \"key_points\": [\"Cultivate high-yield territories for compound wealth\", \"Recruit Mages to unlock arcane phalanx synergies\"]}"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

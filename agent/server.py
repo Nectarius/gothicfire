@@ -7,6 +7,7 @@ import time
 from typing import List, Optional, Tuple
 from fastapi import APIRouter, FastAPI, HTTPException, Response, status
 import uvicorn
+import llama_cpp
 from llama_cpp import Llama
 
 # Ensure agent directory and repo root are in sys.path for direct script execution
@@ -26,13 +27,14 @@ from core import (
     get_advisor_persona,
     build_decision_prompts,
     build_advisor_prompts,
-    build_status_advisor_prompts,
-    build_strategy_advisor_prompts,
-    build_next_move_advisor_prompts,
     safe_parse_decision_json,
     safe_parse_advisor_json,
     sanitize_advisor_advice,
     get_advisor_fallback,
+    LlamaCppLlm,
+    run_decide_workflow,
+    run_advisor_workflow,
+    advisor_cache,
 )
 
 # Set up logging
@@ -94,6 +96,7 @@ def ensure_model_available():
 # Global model instance and thread lock for safe serialized inference
 _model_lock = threading.Lock()
 _llm: Optional[Llama] = None
+_adk_llm: Optional[LlamaCppLlm] = None
 
 
 def get_llm() -> Llama:
@@ -113,171 +116,56 @@ def get_llm() -> Llama:
                     use_mlock=AI_USE_MLOCK,
                     verbose=False
                 )
+                try:
+                    _llm.set_cache(llama_cpp.LlamaRAMCache(capacity_bytes=128 * 1024 * 1024))
+                    logger.info("Enabled 128MB in-memory KV prompt cache (LlamaRAMCache).")
+                except Exception as cache_err:
+                    logger.warning(f"KV prompt cache could not be initialized: {cache_err}")
                 logger.info("Model loaded successfully.")
     return _llm
+
+
+def get_adk_llm() -> LlamaCppLlm:
+    """Provides singleton LlamaCppLlm adapter wired to the local Llama instance."""
+    global _adk_llm
+    if _adk_llm is None:
+        _adk_llm = LlamaCppLlm(
+            model_path=MODEL_PATH,
+            llm_getter=get_llm,
+            n_ctx=N_CTX,
+            n_threads=N_THREADS,
+            n_batch=AI_BATCH,
+            use_mlock=AI_USE_MLOCK
+        )
+    return _adk_llm
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
         get_llm()
+        get_adk_llm()
     except Exception as e:
         logger.error(f"Failed to load model during startup: {e}")
     yield
 
 
 app = FastAPI(
-    title="Gothic Fire Tactical AI Agent",
-    description="Local LLM decision microservice for turn-based strategy game computer party",
-    version="1.0.0",
+    title="Gothic Fire Tactical AI Agent (Google ADK)",
+    description="Google ADK graph-powered decision microservice for turn-based strategy game",
+    version="2.0.0",
     lifespan=lifespan
 )
 
 
-def decide_action(request: DecisionRequest) -> DecisionResponse:
-    legal_moves = request.legal_moves
-
-    # If no legal moves provided, return safe default
-    if not legal_moves:
-        logger.warning("Empty legal_moves received. Returning WAIT fallback.")
-        return DecisionResponse(
-            chosen_move="WAIT",
-            reasoning="Fallback: No legal moves were provided in request."
-        )
-
-    fallback_move = legal_moves[0]
-    llm = get_llm()
-
-    system_prompt, user_prompt = build_decision_prompts(
-        turn=request.turn,
-        state_summary=request.state_summary,
-        legal_moves=legal_moves
-    )
-
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt}
-    ]
-
-    try:
-        decide_max_tokens = int(os.getenv("AI_DECIDE_MAX_TOKENS", "180"))
-        t0 = time.perf_counter()
-        with _model_lock:
-            completion = llm.create_chat_completion(
-                messages=messages,
-                temperature=0.1,
-                response_format={"type": "json_object"},
-                max_tokens=decide_max_tokens
-            )
-        elapsed = time.perf_counter() - t0
-        logger.info(f"Tactical move decided in {elapsed:.2f}s (turn: {request.turn})")
-
-        content = completion["choices"][0]["message"]["content"].strip()
-        logger.debug(f"LLM raw response: {content}")
-
-        return safe_parse_decision_json(content, legal_moves, fallback_move)
-
-    except Exception as e:
-        logger.error(f"Error during inference: {e}", exc_info=True)
-        return DecisionResponse(
-            chosen_move=fallback_move,
-            reasoning=f"Fallback: Inference exception ({type(e).__name__}): {str(e)}"
-        )
+async def decide_action(request: DecisionRequest) -> DecisionResponse:
+    """Executes tactical decision via ADK DecideWorkflow with zero-compute short-circuiting."""
+    return await run_decide_workflow(request, get_adk_llm())
 
 
-def _execute_advisor_inference(
-    sys_prompt: str,
-    user_prompt: str,
-    tokens_limit: int,
-    advisor_name: str,
-    q_type: str,
-    request: AdvisorRequest
-) -> AdvisorResponse:
-    """Thread-safe inference execution, JSON parsing, sanitization, and fallback for advisor consultation."""
-    fallback_advice, fallback_kps = get_advisor_fallback(request.advisor_id, q_type, request.turn)
-    logger.info(f"Received advisor consultation for {advisor_name} (type: {q_type}, turn: {request.turn}, max_tokens: {tokens_limit})")
-
-    try:
-        llm = get_llm()
-        messages = [
-            {"role": "system", "content": sys_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
-
-        logger.info(f"Advisor prompt ({q_type}):\n{user_prompt}")
-        t0 = time.perf_counter()
-        with _model_lock:
-            completion = llm.create_chat_completion(
-                messages=messages,
-                temperature=0.1,
-                response_format={"type": "json_object"},
-                max_tokens=tokens_limit
-            )
-        elapsed = time.perf_counter() - t0
-        logger.info(f"Advisor counsel generated in {elapsed:.2f}s for {advisor_name} ({q_type}, max_tokens={tokens_limit})")
-
-        content = completion["choices"][0]["message"]["content"].strip()
-        logger.info(f"Advisor raw response: {content}")
-
-        parsed_advice, parsed_key_points = safe_parse_advisor_json(content)
-        final_advice = parsed_advice or fallback_advice
-        final_key_points = parsed_key_points or fallback_kps
-
-        final_advice = sanitize_advisor_advice(final_advice, request.player_summary)
-
-        return AdvisorResponse(
-            advisor_name=advisor_name,
-            advisorName=advisor_name,
-            question_type=q_type,
-            questionType=q_type,
-            advice=final_advice,
-            key_points=final_key_points,
-            keyPoints=final_key_points
-        )
-
-    except Exception as e:
-        logger.warning(f"Advisor consultation exception ({e}). Using in-character fallback counsel.")
-        return AdvisorResponse(
-            advisor_name=advisor_name,
-            advisorName=advisor_name,
-            question_type=q_type,
-            questionType=q_type,
-            advice=fallback_advice,
-            key_points=fallback_kps,
-            keyPoints=fallback_kps
-        )
-
-
-def consult_status_advisor(request: AdvisorRequest) -> AdvisorResponse:
-    """Specialized advisor handler for imperial & battlefield STATUS auditing."""
-    persona_info = get_advisor_persona(request.advisor_id.upper())
-    sys_prompt, user_prompt, tokens_limit = build_status_advisor_prompts(request, persona_info)
-    return _execute_advisor_inference(sys_prompt, user_prompt, tokens_limit, persona_info["name"], "STATUS", request)
-
-
-def consult_strategy_advisor(request: AdvisorRequest) -> AdvisorResponse:
-    """Specialized advisor handler for long-term STRATEGY and grand campaign planning."""
-    persona_info = get_advisor_persona(request.advisor_id.upper())
-    sys_prompt, user_prompt, tokens_limit = build_strategy_advisor_prompts(request, persona_info)
-    return _execute_advisor_inference(sys_prompt, user_prompt, tokens_limit, persona_info["name"], "STRATEGY", request)
-
-
-def consult_next_move_advisor(request: AdvisorRequest) -> AdvisorResponse:
-    """Specialized advisor handler for immediate NEXT_MOVE tactical recommendations."""
-    persona_info = get_advisor_persona(request.advisor_id.upper())
-    sys_prompt, user_prompt, tokens_limit = build_next_move_advisor_prompts(request, persona_info)
-    return _execute_advisor_inference(sys_prompt, user_prompt, tokens_limit, persona_info["name"], "NEXT_MOVE", request)
-
-
-def consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
-    """Dispatches consultation request to decomposed, specialized prompt handlers based on task type."""
-    q_type = request.question_type.upper()
-    if q_type == "STATUS":
-        return consult_status_advisor(request)
-    elif q_type == "STRATEGY":
-        return consult_strategy_advisor(request)
-    else:
-        return consult_next_move_advisor(request)
+async def consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
+    """Executes advisor consultation via ADK AdvisorWorkflow with persona guardrails."""
+    return await run_advisor_workflow(request, get_adk_llm())
 
 
 # Unified API v1 Router
@@ -285,15 +173,15 @@ api_v1_router = APIRouter(prefix="/api/v1")
 
 
 @api_v1_router.post("/decide", response_model=DecisionResponse)
-def post_decide(request: DecisionRequest) -> DecisionResponse:
+async def post_decide(request: DecisionRequest) -> DecisionResponse:
     """Primary tactical decision endpoint for computer player turns."""
-    return decide_action(request)
+    return await decide_action(request)
 
 
 @api_v1_router.post("/advisor/consult", response_model=AdvisorResponse)
-def post_consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
+async def post_consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
     """Advisor consultation endpoint providing thematic counsel."""
-    return consult_advisor(request)
+    return await consult_advisor(request)
 
 
 app.include_router(api_v1_router)
@@ -318,11 +206,13 @@ def health(response: Response):
 
     return {
         "status": "healthy" if model_loaded else "uninitialized",
+        "engine": "google-adk-2.11.0",
         "model_path": MODEL_PATH,
         "model_loaded": model_loaded,
         "n_ctx": N_CTX,
         "n_threads": N_THREADS,
-        "ram_rss_mb": rss_mb
+        "ram_rss_mb": rss_mb,
+        "advisor_cache_size": advisor_cache.size()
     }
 
 
@@ -330,7 +220,6 @@ def health(response: Response):
 def live():
     """Liveness probe endpoint returning 200 immediately."""
     return {"status": "alive"}
-
 
 
 if __name__ == "__main__":

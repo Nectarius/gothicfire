@@ -39,10 +39,12 @@ COPY --from=builder /install /usr/local
 RUN mkdir -p /app/models /models && \
     chown -R agentuser:agentgroup /app /models
 
-# Copy server code and shared core package
+# Copy server code, shared core package, and eval sets
+COPY --chown=agentuser:agentgroup agent/__init__.py ./agent/__init__.py
 COPY --chown=agentuser:agentgroup agent/core ./agent/core
 COPY --chown=agentuser:agentgroup agent/server.py ./agent/server.py
 COPY --chown=agentuser:agentgroup agent/verify_agent.py ./agent/verify_agent.py
+COPY --chown=agentuser:agentgroup agent/eval_sets ./agent/eval_sets
 
 # Switch to non-root user
 USER agentuser

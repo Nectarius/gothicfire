@@ -1,0 +1,73 @@
+{
+  "eval_set_id": "gothicfire_tactical_suite",
+  "name": "Gothic Fire Tactical Decision Suite",
+  "description": "Benchmark evaluation dataset for tactical computer opponent decisions in Gothic Fire",
+  "eval_cases": [
+    {
+      "eval_id": "early_game_castle_garrison",
+      "conversation": [
+        {
+          "invocation_id": "inv_s1",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Turn: 1\nSituation: Commander Torrez is stationed at Castle Khorinis (Sector 14). Treasury: 150 Gold, 40 Food. Current Army: 0 units. Castle fortification protection is 20. Immediate adjacent sectors (11, 25, 26) are neutral. Primary goal: Establish defensive army garrison before exploring outward.\nLegal moves: ['RECRUIT_HEAVY_INFANTRY (Score: 85/100, Warlord Synergy, +3 Heavy Infantry)', 'UPGRADE_PROTECTION_14 (Score: 70/100, Fortify Castle Wall)', 'RECRUIT_LIGHT_INFANTRY (Score: 60/100, Basic Defense)', 'UPGRADE_CULTIVATION_14 (Score: 45/100, Boosts Yield)', 'WAIT (Score: 75/100, Garrison Castle Wall, Safe)']"
+              }
+            ]
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "{\"chosen_move\": \"RECRUIT_HEAVY_INFANTRY (Score: 85/100, Warlord Synergy, +3 Heavy Infantry)\", \"reasoning\": \"Highest scored action with Warlord synergy establishes vital castle garrison.\"}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "mid_game_combat_engagement",
+      "conversation": [
+        {
+          "invocation_id": "inv_s2",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Turn: 12\nSituation: Archon Milten commands Onar's Farm (Sector 23) with an army of 10 Mages and 5 Heavy Infantry. Gold: 120, Food: 80. Enemy rival Gorn is advancing through adjacent Sector 22 with 15 Light Infantry. Milten possesses strong Archon synergy boosting Mage combat power. Sector 22 is within striking range.\nLegal moves: ['ATTACK_SECTOR_22 (Score: 95/100, Guaranteed Victory 95% Win, Archon Phalanx)', 'RECRUIT_MAGES (Score: 80/100, Archon Synergy, +1 Mage)', 'MOVE_TO_30 (Score: 50/100, Claim Unowned Sector)', 'UPGRADE_PROTECTION_23 (Score: 45/100, Fortify Farm Defense)', 'WAIT (Score: 40/100, Conserve Strength, Safe)']"
+              }
+            ]
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "{\"chosen_move\": \"ATTACK_SECTOR_22 (Score: 95/100, Guaranteed Victory 95% Win, Archon Phalanx)\", \"reasoning\": \"Exploit overwhelming Archon Phalanx combat odds to eliminate enemy commander.\"}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "eval_id": "starvation_crisis_prevention",
+      "conversation": [
+        {
+          "invocation_id": "inv_s3",
+          "user_content": {
+            "parts": [
+              {
+                "text": "Turn: 6\nSituation: Commander Diego commands 30 soldiers with only 10 Food remaining. Upkeep is 30 Food per turn. STARVATION IMMINENT NEXT TURN. Sector holds unharvested 40 Food ready for collection.\nLegal moves: ['COLLECT_RESOURCES_14 (Score: 95/100, Harvest Sector Yield +20g +40f, Prevents Starvation!)', 'RECRUIT_LIGHT_INFANTRY (Score: 35/100)', 'WAIT (Score: 30/100)']"
+              }
+            ]
+          },
+          "final_response": {
+            "parts": [
+              {
+                "text": "{\"chosen_move\": \"COLLECT_RESOURCES_14 (Score: 95/100, Harvest Sector Yield +20g +40f, Prevents Starvation!)\", \"reasoning\": \"Harvest food immediately to avert critical army starvation next turn.\"}"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

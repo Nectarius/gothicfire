@@ -117,4 +117,152 @@ class LlmAiDecisionServiceTest {
             assertTrue(action.targetSector != "22", "Suicidal attack on Sector 22 must be pruned!")
         }
     }
+
+    @Test
+    fun testAgentResponseUsedWhenHealthyAndHeuristicNotCalled() = runBlocking {
+        val fakeOpponent = FakeAiOpponentService(Result.success("WAIT (Conserve Strength, Safe)"))
+        val trackingHeuristic = TrackingHeuristicAiService()
+        val llmService = LlmAiDecisionService(fakeOpponent, trackingHeuristic)
+
+        val botPlayer = Player(id = "bot_1", name = "Computer", team = Team.YELLOW, isBot = true)
+        val botChar = Character(
+            id = "bot_char_1",
+            playerId = "bot_1",
+            name = "Gorn",
+            warlord = 5,
+            gold = 100,
+            food = 50,
+            army = Army(heavyInfantry = 10),
+            currentSector = "14"
+        )
+        val gameState = GameState(
+            status = GameStatus.IN_PROGRESS,
+            gameName = "Healthy Agent Game",
+            players = listOf(botPlayer),
+            characters = listOf(botChar),
+            currentTurn = 1,
+            teamCastles = mapOf(Team.YELLOW to "14"),
+            territories = mapOf("14" to TerritoryState(sectorId = "14", protection = 25, ownerPlayerId = "bot_1", ownerTeam = Team.YELLOW))
+        )
+        val snapshot = BotGameStateSnapshot(
+            gameState = gameState,
+            botTeam = Team.YELLOW,
+            botCharacters = listOf(botChar),
+            botPlayers = listOf(botPlayer)
+        )
+
+        val actions = llmService.decideTurn(snapshot)
+        assertEquals(1, fakeOpponent.callCount, "Python agent should be queried for character decision")
+        assertEquals(0, trackingHeuristic.decideForCharacterCalls, "HeuristicAiService should NOT be used when agent succeeds")
+        assertEquals(1, actions.size)
+        assertTrue(actions.first() is BotAction.Skip, "Should execute the agent's chosen move")
+    }
+
+    @Test
+    fun testFallbackToHeuristicOnAgentTimeout() = runBlocking {
+        val fakeOpponent = FakeAiOpponentService(Result.failure(java.util.concurrent.TimeoutException("Agent not responding after 60000ms")))
+        val trackingHeuristic = TrackingHeuristicAiService()
+        val llmService = LlmAiDecisionService(fakeOpponent, trackingHeuristic)
+
+        val botPlayer = Player(id = "bot_1", name = "Computer", team = Team.YELLOW, isBot = true)
+        val botChar = Character(
+            id = "bot_char_1",
+            playerId = "bot_1",
+            name = "Thorus",
+            warlord = 7,
+            gold = 100,
+            food = 50,
+            army = Army(heavyInfantry = 0, lightInfantry = 0),
+            currentSector = "14"
+        )
+        val gameState = GameState(
+            status = GameStatus.IN_PROGRESS,
+            gameName = "Timeout Test Game",
+            players = listOf(botPlayer),
+            characters = listOf(botChar),
+            currentTurn = 1,
+            teamCastles = mapOf(Team.YELLOW to "14"),
+            territories = mapOf("14" to TerritoryState(sectorId = "14", protection = 25, cultivation = 20, ownerPlayerId = "bot_1", ownerTeam = Team.YELLOW))
+        )
+        val snapshot = BotGameStateSnapshot(
+            gameState = gameState,
+            botTeam = Team.YELLOW,
+            botCharacters = listOf(botChar),
+            botPlayers = listOf(botPlayer)
+        )
+
+        val actions = llmService.decideTurn(snapshot)
+        assertEquals(1, fakeOpponent.callCount, "Python agent should be attempted first")
+        assertEquals(1, trackingHeuristic.decideForCharacterCalls, "HeuristicAiService must be called on agent timeout")
+        assertEquals(1, actions.size)
+        assertTrue(actions.first() is BotAction.Recruit, "Heuristic fallback should recruit for 0-army commander")
+    }
+
+    @Test
+    fun testFallbackToHeuristicOnAgentErrorMessages() = runBlocking {
+        val fakeOpponent = FakeAiOpponentService(Result.failure(IllegalStateException("HTTP 500 Internal Server Error from Python agent")))
+        val trackingHeuristic = TrackingHeuristicAiService()
+        val llmService = LlmAiDecisionService(fakeOpponent, trackingHeuristic)
+
+        val botPlayer = Player(id = "bot_1", name = "Computer", team = Team.YELLOW, isBot = true)
+        val botChar = Character(
+            id = "bot_char_1",
+            playerId = "bot_1",
+            name = "Milten",
+            archon = 8,
+            gold = 100,
+            food = 50,
+            army = Army(heavyInfantry = 0),
+            currentSector = "14"
+        )
+        val gameState = GameState(
+            status = GameStatus.IN_PROGRESS,
+            gameName = "Error Test Game",
+            players = listOf(botPlayer),
+            characters = listOf(botChar),
+            currentTurn = 1,
+            teamCastles = mapOf(Team.YELLOW to "14"),
+            territories = mapOf("14" to TerritoryState(sectorId = "14", protection = 30, ownerPlayerId = "bot_1", ownerTeam = Team.YELLOW))
+        )
+        val snapshot = BotGameStateSnapshot(
+            gameState = gameState,
+            botTeam = Team.YELLOW,
+            botCharacters = listOf(botChar),
+            botPlayers = listOf(botPlayer)
+        )
+
+        val actions = llmService.decideTurn(snapshot)
+        assertEquals(1, fakeOpponent.callCount, "Python agent should be attempted first")
+        assertEquals(1, trackingHeuristic.decideForCharacterCalls, "HeuristicAiService must be called on agent error messages")
+        assertEquals(1, actions.size)
+        assertTrue(actions.first() is BotAction.Recruit, "Heuristic fallback should recruit army for defenseless character")
+    }
+
+    private class FakeAiOpponentService(
+        private val decisionToReturn: Result<String>
+    ) : AiOpponentService(HttpClient(CIO)) {
+        var callCount = 0
+        override suspend fun requestDecision(
+            gameId: String,
+            turn: Int,
+            playerId: String,
+            summary: String,
+            legalMoves: List<String>
+        ): Result<String> {
+            callCount++
+            return decisionToReturn
+        }
+    }
+
+    private class TrackingHeuristicAiService : HeuristicAiService() {
+        var decideForCharacterCalls = 0
+        override fun decideForCharacter(
+            char: Character,
+            snapshot: BotGameStateSnapshot,
+            mustStayAtCastle: Boolean
+        ): BotAction {
+            decideForCharacterCalls++
+            return super.decideForCharacter(char, snapshot, mustStayAtCastle)
+        }
+    }
 }

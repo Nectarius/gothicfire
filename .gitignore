@@ -57,6 +57,7 @@ venv/
 __pycache__/
 *.pyc
 *.pyo
+.adk/
 
 # ========================
 # AI / LLM Models

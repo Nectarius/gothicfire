@@ -31,6 +31,22 @@ from .parser import (
     get_advisor_fallback,
 )
 
+from .cache import (
+    AdvisorCache,
+    advisor_cache,
+)
+
+from .llm_adapter import (
+    LlamaCppLlm,
+)
+
+from .workflows import (
+    build_decide_workflow,
+    run_decide_workflow,
+    build_advisor_workflow,
+    run_advisor_workflow,
+)
+
 __all__ = [
     "DecisionRequest",
     "DecisionResponse",
@@ -49,4 +65,11 @@ __all__ = [
     "safe_parse_advisor_json",
     "sanitize_advisor_advice",
     "get_advisor_fallback",
+    "AdvisorCache",
+    "advisor_cache",
+    "LlamaCppLlm",
+    "build_decide_workflow",
+    "run_decide_workflow",
+    "build_advisor_workflow",
+    "run_advisor_workflow",
 ]

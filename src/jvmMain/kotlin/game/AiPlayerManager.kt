@@ -70,7 +70,12 @@ object AiPlayerManager {
             )
             
             logger.info("Executing AI turn for team $activeTeam (iteration $iterations)")
-            val actions = aiService.decideTurn(snapshot)
+            val actions = try {
+                aiService.decideTurn(snapshot)
+            } catch (e: Exception) {
+                logger.error("Error executing AI decision service: ${e.message}. Falling back to HeuristicAiService", e)
+                heuristicFallbackService.decideTurn(snapshot)
+            }
             
             if (actions.isEmpty()) {
                 // Fallback: force skip turn if the AI returns no actions but characters still haven't acted

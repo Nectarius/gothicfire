@@ -14,39 +14,35 @@ class LlmAiDecisionService(
     private val logger = LoggerFactory.getLogger(LlmAiDecisionService::class.java)
 
     override suspend fun decideTurn(snapshot: BotGameStateSnapshot): List<BotAction> {
-        val actions = mutableListOf<BotAction>()
+        return try {
+            val actions = mutableListOf<BotAction>()
 
-        val allTeamCharacters = snapshot.gameState.characters.filter { char ->
-            snapshot.gameState.players.find { p -> p.id == char.playerId }?.team == snapshot.botTeam && !char.isDead
-        }
-        val teamCastleId = snapshot.gameState.teamCastles[snapshot.botTeam]
-        val designatedGuardian = allTeamCharacters.maxByOrNull { it.intellect }
-        val charsAtCastleIds = allTeamCharacters.filter { it.currentSector == teamCastleId }.map { it.id }.toSet()
+            val allTeamCharacters = snapshot.gameState.characters.filter { char ->
+                snapshot.gameState.players.find { p -> p.id == char.playerId }?.team == snapshot.botTeam && !char.isDead
+            }
+            val teamCastleId = snapshot.gameState.teamCastles[snapshot.botTeam]
+            val designatedGuardian = allTeamCharacters.maxByOrNull { it.intellect }
+            val charsAtCastleIds = allTeamCharacters.filter { it.currentSector == teamCastleId }.map { it.id }.toSet()
 
-        for (char in snapshot.botCharacters) {
-            if (char.hasActedThisTurn || char.isDead || char.currentSector == null) {
-                continue
+            for (char in snapshot.botCharacters) {
+                if (char.hasActedThisTurn || char.isDead || char.currentSector == null) {
+                    continue
+                }
+
+                val isAtCastle = char.currentSector == teamCastleId
+                val isDesignatedGuardian = char.id == designatedGuardian?.id
+                val isOnlyGuardian = isAtCastle && charsAtCastleIds.size == 1
+                val mustStayAtCastle = isAtCastle && (isDesignatedGuardian || isOnlyGuardian)
+
+                val action = decideForCharacter(char, snapshot, mustStayAtCastle)
+                actions.add(action)
             }
 
-            val isAtCastle = char.currentSector == teamCastleId
-            val isDesignatedGuardian = char.id == designatedGuardian?.id
-            val isOnlyGuardian = isAtCastle && charsAtCastleIds.size == 1
-            val mustStayAtCastle = isAtCastle && (isDesignatedGuardian || isOnlyGuardian)
-
-            // Rule-Based Triage (The "Deterministic Override" Pattern)
-            // Pre-filter critical game states / existential threats to bypass costly, stochastic LLM HTTP call
-            val triageOverride = DeterministicTriageEngine.evaluateCriticalStateOverride(char, snapshot, mustStayAtCastle)
-            if (triageOverride != null) {
-                logger.info("Deterministic Override: Critical threat detected for Commander ${char.name}. Executing survival action: $triageOverride (Skipping LLM)")
-                actions.add(triageOverride)
-                continue
-            }
-
-            val action = decideForCharacter(char, snapshot, mustStayAtCastle)
-            actions.add(action)
+            actions
+        } catch (e: Exception) {
+            logger.warn("Unexpected exception during LlmAiDecisionService turn execution: ${e.message}. Falling back to HeuristicAiService.", e)
+            fallbackService.decideTurn(snapshot)
         }
-
-        return actions
     }
 
     private suspend fun decideForCharacter(
@@ -282,7 +278,7 @@ class LlmAiDecisionService(
             }
         }
 
-        val chosenMove = opponentService.requestComputerMove(
+        val decisionResult = opponentService.requestDecision(
             gameId = snapshot.gameState.gameName ?: "game",
             turn = snapshot.gameState.currentTurn,
             playerId = char.playerId,
@@ -290,12 +286,47 @@ class LlmAiDecisionService(
             legalMoves = legalMovesForLlm
         )
 
-        val baseChosenMove = chosenMove.substringBefore(" (").trim()
-        val action = legalMoveActionMap[chosenMove]
-            ?: legalMoveActionMap[baseChosenMove]
-            ?: viableCandidates.firstOrNull()?.action
-            ?: BotAction.Skip(char.id)
-        return action
+        return decisionResult.fold(
+            onSuccess = { chosenMove ->
+                val baseChosenMove = chosenMove.substringBefore(" (").trim()
+                val action = legalMoveActionMap[chosenMove]
+                    ?: legalMoveActionMap[baseChosenMove]
+
+                if (action != null) {
+                    logger.info("AI Agent selected action for Commander ${char.name}: $action (move: '$chosenMove')")
+                    action
+                } else {
+                    logger.warn("AI Agent chose move '$chosenMove' for ${char.name} which does not map to a BotAction. Falling back to HeuristicAiService.")
+                    executeHeuristicFallback(char, snapshot, mustStayAtCastle)
+                }
+            },
+            onFailure = { error ->
+                logger.warn(
+                    "AI Agent issue for Commander ${char.name} (${error.javaClass.simpleName}: ${error.message}). " +
+                    "Falling back to HeuristicAiService."
+                )
+                executeHeuristicFallback(char, snapshot, mustStayAtCastle)
+            }
+        )
+    }
+
+    private suspend fun executeHeuristicFallback(
+        char: Character,
+        snapshot: BotGameStateSnapshot,
+        mustStayAtCastle: Boolean
+    ): BotAction {
+        if (fallbackService is HeuristicAiService) {
+            return fallbackService.decideForCharacter(char, snapshot, mustStayAtCastle)
+        }
+        return fallbackService.decideTurn(snapshot).find { act ->
+            when (act) {
+                is BotAction.Move -> act.characterId == char.id
+                is BotAction.Recruit -> act.characterId == char.id
+                is BotAction.CollectResources -> act.characterId == char.id
+                is BotAction.UpgradeTerritory -> act.characterId == char.id
+                is BotAction.Skip -> act.characterId == char.id
+            }
+        } ?: BotAction.Skip(char.id)
     }
 }
 

@@ -38,7 +38,7 @@ data class DecisionResponse(
  * Ktor client service to interact with the local Python FastAPI decision service.
  * Implements strict request timeout, runCatching safety wrapper, and resilient fallback handling.
  */
-class AiOpponentService(
+open class AiOpponentService(
     private val client: HttpClient,
     private val agentUrl: String = "http://127.0.0.1:8000",
     private val timeoutMillis: Long = 60000L
@@ -52,30 +52,30 @@ class AiOpponentService(
     }
 
     /**
-     * Request a move decision for a computer character from the local AI agent.
+     * Request a move decision for a computer character from the local AI agent microservice.
      *
      * @param gameId Current game identifier.
      * @param turn Current turn number.
      * @param playerId Identifier of the computer player/character.
      * @param summary Tactical battlefield situation and state summary.
      * @param legalMoves Available legal actions to choose from.
-     * @return The chosen legal move, or a safe fallback move if timeout/error occurs.
+     * @return [Result] containing chosen legal move if the Python agent responded successfully,
+     *         or a failure if agent timed out, returned an HTTP error, returned an invalid/blank move,
+     *         or was unreachable.
      */
-    suspend fun requestComputerMove(
+    open suspend fun requestDecision(
         gameId: String,
         turn: Int,
         playerId: String,
         summary: String,
         legalMoves: List<String>
-    ): String {
-        val defaultFallback = legalMoves.firstOrNull() ?: "WAIT"
-
+    ): Result<String> {
         if (legalMoves.isEmpty()) {
             logger.warn(
-                "AiOpponentService.requestComputerMove invoked with empty legalMoves list. (gameId={}, turn={}, playerId={})",
+                "AiOpponentService.requestDecision invoked with empty legalMoves list. (gameId={}, turn={}, playerId={})",
                 gameId, turn, playerId
             )
-            return defaultFallback
+            return Result.failure(IllegalArgumentException("legalMoves list is empty"))
         }
 
         // Heuristic Pruning (Commander vs. Minister Pattern):
@@ -103,7 +103,7 @@ class AiOpponentService(
 
         val targetEndpoint = "$baseUrl/api/v1/decide"
 
-        val result = runCatching {
+        return runCatching {
             withTimeout(timeoutMillis) {
                 val httpResponse = client.post(targetEndpoint) {
                     contentType(ContentType.Application.Json)
@@ -133,25 +133,43 @@ class AiOpponentService(
                     ?: prunedLegalMoves.find { it.startsWith(selectedMove, ignoreCase = true) || selectedMove.startsWith(it.substringBefore(" (").trim(), ignoreCase = true) }
 
                 if (matchedMove == null) {
-                    logger.warn(
-                        "AI Agent chose invalid move '{}' not found in legalMoves {}. Reasoning: '{}'. Falling back to '{}'.",
-                        selectedMove, prunedLegalMoves, decision.reasoning, defaultFallback
+                    throw IllegalStateException(
+                        "AI Agent chose invalid move '$selectedMove' not found in legalMoves $prunedLegalMoves. Reasoning: '${decision.reasoning}'"
                     )
-                    defaultFallback
-                } else {
-                    logger.info(
-                        "AI Agent selected move '{}' (matched: '{}') for gameId={}, turn={}, playerId={}. Reasoning: '{}'",
-                        selectedMove, matchedMove, gameId, turn, playerId, decision.reasoning
-                    )
-                    matchedMove
                 }
+
+                logger.info(
+                    "AI Agent selected move '{}' (matched: '{}') for gameId={}, turn={}, playerId={}. Reasoning: '{}'",
+                    selectedMove, matchedMove, gameId, turn, playerId, decision.reasoning
+                )
+                matchedMove
             }
         }
+    }
 
+    /**
+     * Request a move decision for a computer character from the local AI agent.
+     *
+     * @param gameId Current game identifier.
+     * @param turn Current turn number.
+     * @param playerId Identifier of the computer player/character.
+     * @param summary Tactical battlefield situation and state summary.
+     * @param legalMoves Available legal actions to choose from.
+     * @return The chosen legal move, or a safe fallback move if timeout/error occurs.
+     */
+    open suspend fun requestComputerMove(
+        gameId: String,
+        turn: Int,
+        playerId: String,
+        summary: String,
+        legalMoves: List<String>
+    ): String {
+        val defaultFallback = legalMoves.firstOrNull() ?: "WAIT"
+        val result = requestDecision(gameId, turn, playerId, summary, legalMoves)
         return result.getOrElse { error ->
             logger.warn(
-                "AiOpponentService request failed for gameId={}, turn={}, playerId={} (target: {}): {}. Falling back to '{}'",
-                gameId, turn, playerId, targetEndpoint, error.message, defaultFallback
+                "AiOpponentService request failed for gameId={}, turn={}, playerId={}: {}. Falling back to '{}'",
+                gameId, turn, playerId, error.message, defaultFallback
             )
             defaultFallback
         }
