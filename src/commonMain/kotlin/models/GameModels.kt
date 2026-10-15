@@ -37,9 +37,9 @@ data class GameResultSummary(
  * Each strategy provides a small bonus to the attacker's combat score if requirements are met.
  *
  * Requirements:
- *   ARCANE_PHALANX       — soldiers > 5
- *   HAMMER_AND_SPELL     — agility >= 6 AND soldiers > 3
- *   SPELL_INFUSED_VOLLEY — wisdom >= 6 AND soldiers > 5
+ *   ARCANE_PHALANX       — archon >= 6 AND army.total() > 5
+ *   HAMMER_AND_SPELL     — warlord >= 6 AND army.total() > 3
+ *   SPELL_INFUSED_VOLLEY — vanguard >= 6 AND army.total() > 5
  */
 @Serializable
 enum class BattleStrategy {

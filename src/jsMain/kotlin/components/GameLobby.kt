@@ -73,6 +73,8 @@ fun IComponent.GameLobby(
     var pveTeamColor by remember { mutableStateOf(predefinedColors[0].first) }
     var pveColorError by remember { mutableStateOf(false) }
     var pveSelectedAdvisor by remember { mutableStateOf("ZORAX") }
+    var pveRoleFilter by remember { mutableStateOf("ALL") }
+    var mpRoleFilter by remember { mutableStateOf("ALL") }
 
     
     div(className = "lobby-container glass p-4 text-center w-full") {
@@ -156,8 +158,39 @@ fun IComponent.GameLobby(
                 
                 div(className = "mb-2") {
                     p(className = "m-0 mb-05") { textNode(t("lobby.choose_heroes", pveSelectedHeroes.size)) }
+                    
+                    div(className = "d-flex gap-1 mb-1 justify-center flex-wrap") {
+                        val filterOptions = listOf(
+                            "ALL" to "All (${PredefinedCharacters.size})",
+                            "MAGE" to "Mages (${PredefinedCharacters.count { it.isMage }})",
+                            "ARCHER" to "Archers (${PredefinedCharacters.count { it.isArcher }})",
+                            "SOLDIER" to "Soldiers (${PredefinedCharacters.count { it.isSoldier }})"
+                        )
+                        for ((key, labelText) in filterOptions) {
+                            val isActive = pveRoleFilter == key
+                            button(
+                                labelText,
+                                className = "btn ${if (isActive) "btn-primary" else "bg-dark-gray text-gray"}"
+                            ) {
+                                style("padding", "0.35rem 0.8rem")
+                                style("font-size", "0.85rem")
+                                style("border-radius", "8px")
+                                onClick { pveRoleFilter = key }
+                            }
+                        }
+                    }
+
+                    val pveFilteredHeroes = PredefinedCharacters.filter { hero ->
+                        when (pveRoleFilter) {
+                            "MAGE" -> hero.isMage
+                            "ARCHER" -> hero.isArcher
+                            "SOLDIER" -> hero.isSoldier
+                            else -> true
+                        }
+                    }
+
                     div(className = "hero-grid") {
-                        for (hero in PredefinedCharacters) {
+                        for (hero in pveFilteredHeroes) {
                             val isSelected = hero.templateId in pveSelectedHeroes
                             val selectionIndex = if (isSelected) pveSelectedHeroes.indexOf(hero.templateId) + 1 else null
                             div(className = "hero-card ${if (isSelected) "selected" else ""}") {
@@ -524,9 +557,39 @@ fun IComponent.GameLobby(
                 p(className = "text-gray text-sm mt-0 mb-2") {
                     textNode(t("lobby.choose_heroes_desc"))
                 }
+
+                div(className = "d-flex gap-1 mb-1 justify-center flex-wrap") {
+                    val filterOptions = listOf(
+                        "ALL" to "All (${PredefinedCharacters.size})",
+                        "MAGE" to "Mages (${PredefinedCharacters.count { it.isMage }})",
+                        "ARCHER" to "Archers (${PredefinedCharacters.count { it.isArcher }})",
+                        "SOLDIER" to "Soldiers (${PredefinedCharacters.count { it.isSoldier }})"
+                    )
+                    for ((key, labelText) in filterOptions) {
+                        val isActive = mpRoleFilter == key
+                        button(
+                            labelText,
+                            className = "btn ${if (isActive) "btn-primary" else "bg-dark-gray text-gray"}"
+                        ) {
+                            style("padding", "0.35rem 0.8rem")
+                            style("font-size", "0.85rem")
+                            style("border-radius", "8px")
+                            onClick { mpRoleFilter = key }
+                        }
+                    }
+                }
+
+                val mpFilteredHeroes = PredefinedCharacters.filter { hero ->
+                    when (mpRoleFilter) {
+                        "MAGE" -> hero.isMage
+                        "ARCHER" -> hero.isArcher
+                        "SOLDIER" -> hero.isSoldier
+                        else -> true
+                    }
+                }
                 
                 div(className = "hero-grid") {
-                    for (hero in PredefinedCharacters) {
+                    for (hero in mpFilteredHeroes) {
                         val isSelected = hero.templateId in selectedHeroIds
                         val selectionIndex = if (isSelected) selectedHeroIds.indexOf(hero.templateId) + 1 else null
                         
