@@ -91,6 +91,7 @@ fun Route.gameSocket() {
                             is GameAction.AskAdvisor -> game.askAdvisor(playerId, action.questionType)
                             is GameAction.SelectAdvisor -> game.selectAdvisor(playerId, action.advisorId)
                             is GameAction.ConsultCastleLord -> game.consultCastleLord(playerId, action.sectorId, action.characterId)
+                            is GameAction.TalkToTavernPatron -> game.talkToTavernPatron(playerId, action.sectorId, action.patronId, action.characterId)
                             is GameAction.EndGame -> {
                                 val isPvE = game.gameState.isPvE
                                 game.endGame(playerId)

@@ -9,7 +9,6 @@
   "nav.tab_map": "War Map",
   "nav.tab_history": "Game History",
   "nav.language": "Language",
-
   "lobby.title": "Gothic Fire Team Battle",
   "lobby.no_game": "No game is currently active.",
   "lobby.game_name": "Game Name",
@@ -64,7 +63,6 @@
   "lobby.status_not_ready": "NOT READY",
   "lobby.start_game": "Start Game",
   "lobby.creator_waiting": "You are the Creator. Waiting for both teams to be created and all players to be ready...",
-
   "hud.turn": "Turn {0} / {1}",
   "hud.game_over_win": "Game Over! {0} Wins!",
   "hud.your_turn": "Your Team's Turn ({0})",
@@ -78,7 +76,6 @@
   "hud.finish_game": "🛑 Finish Game",
   "hud.finish_game_tip": "End and reset the game for everyone.",
   "hud.turns_end_auto": "Turns end automatically.",
-
   "char.your_heroes": "Your Heroes",
   "char.acted_count": "{0}/{1} Acted",
   "char.status_defeated": "Defeated",
@@ -110,12 +107,10 @@
   "char.scroll_use_tip": "Permanently boost {0}'s {1} by +{2}",
   "char.scrolls_empty": "No scrolls. Search territories to find them!",
   "char.no_heroes": "You haven't selected any heroes.",
-
   "scroll.warlord": "Warlord",
   "scroll.intellect": "Intellect",
   "scroll.vanguard": "Vanguard",
   "scroll.archon": "Archon",
-
   "unit.light_infantry": "Light Infantry",
   "unit.archers": "Archers",
   "unit.heavy_infantry": "Heavy Infantry",
@@ -123,7 +118,6 @@
   "unit.selected": "Selected",
   "unit.requires_prot": "Requires {0} 🛡️",
   "unit.req_prot": "Req: {0} 🛡️",
-
   "market.title": "⚖️ Merchant Caravan",
   "market.desc": "Trade resources with the traveling merchants. The exchange rates are fixed.",
   "market.no_heroes": "You have no living heroes to trade with.",
@@ -136,7 +130,6 @@
   "market.gold": "Gold",
   "market.food": "Food",
   "market.complete_trade": "Complete Trade",
-
   "recruit.title": "⚔️ Army Recruitment",
   "recruit.no_heroes": "You have no living heroes to recruit for.",
   "recruit.recruiting_hero": "Recruiting Hero:",
@@ -146,7 +139,6 @@
   "recruit.confirm": "Confirm Recruitment",
   "recruit.army_full": "Army is full (100/100).",
   "recruit.not_enough_gold": "Not enough gold to recruit this unit.",
-
   "kingdom.title": "👑 Kingdom & Realm Overview",
   "kingdom.holdings_of": "Holdings of {0}",
   "kingdom.tab_territories": "🏰 Controlled Territories ({0})",
@@ -168,7 +160,6 @@
   "kingdom.scroll_item": "{0} {1} Scroll (+{2})",
   "kingdom.no_scrolls": "No scrolls found yet.",
   "kingdom.no_heroes": "No heroes selected.",
-
   "territory.owned_you": "Owned by You ({0})",
   "territory.owned_ally": "Owned by Ally ({0})",
   "territory.controlled_enemy": "Controlled by Enemy ({0} - {1})",
@@ -198,7 +189,6 @@
   "territory.buy_siege_btn": "+1 Siege Weapon (50🪙)",
   "territory.siege_acted": "Already acted this turn",
   "territory.siege_buy_tip": "Buy 1 Siege Weapon for 50 gold. Spends your turn.",
-
   "battle.prep_title": "⚔️ Battle Estimation: Sector {0}",
   "battle.win_prob": "Estimated Win Probability",
   "battle.domination_attacker": "⚡ Overwhelming Army (10x+ Soldiers): 100% Guaranteed Victory with minimal casualties (<5%)!",
@@ -233,7 +223,6 @@
   "battle.retreat_tip": "Do not attack. Any scrolls already consumed will remain used.",
   "battle.confirm_attack": "⚔️ Confirm Attack",
   "battle.confirm_attack_tip": "Engage in battle at Sector {0}!",
-
   "popup.acknowledge": "Acknowledge",
   "popup.battle_report": "Battle Report",
   "popup.battle_message": "Battle at Sector {0}!\n{1} defeated {2}{3}{4}",
@@ -243,7 +232,6 @@
   "popup.scroll_found_msg": "{0} found a {1} scroll! (+{2})",
   "popup.scroll_failed_title": "Search Failed",
   "popup.scroll_failed_msg": "{0} searched but found nothing...",
-
   "nature.harvest_title": "Abundant Harvest",
   "nature.harvest_desc": "A bountiful harvest has occurred! Food production in this territory is greatly increased for the turn.",
   "nature.volunteers_title": "Volunteers",
@@ -252,12 +240,10 @@
   "nature.hurricane_desc": "A devastating hurricane has struck! Buildings are damaged and protection is reduced.",
   "nature.flood_title": "Flood",
   "nature.flood_desc": "Severe flooding has ruined the fields! Stored food in this territory has been washed away.",
-
   "victory.title": "Game Over!",
   "victory.subtitle": "{0} claims absolute victory!",
   "victory.desc": "The battle is won, and the realm bends to your will.",
   "victory.return_map": "Return to Map",
-
   "history.title": "Game History",
   "history.error": "Error loading history",
   "history.loading": "Loading history...",
@@ -268,7 +254,6 @@
   "history.ended": "Ended: {0}",
   "history.turns": "{0} Turns",
   "history.no_players": "No players",
-
   "notes.title": "Secure Notes & Global Discussions",
   "notes.desc": "Login to create your private notes and participate in the community discussion.",
   "notes.add_note": "Add Note",
@@ -304,5 +289,15 @@
   "castle.inquiry_label": "Commander's Inquiry:",
   "castle.inquiry_text": "\"What is our current situation and standing against our rivals?\"",
   "castle.directives_title": "⚔️ Tactical Directives & Observations:",
-  "castle.farewell_btn": "Understood, My Lord / Farewell"
+  "castle.farewell_btn": "Understood, My Lord / Farewell",
+  "tavern.title": "🍺 The Harbor Tavern of Khorinis",
+  "tavern.subtitle": "Kardif's drinking den in the harbor quarter",
+  "tavern.speaking_with": "Speaking with {0}",
+  "tavern.patrons_title": "Patrons at the Tables:",
+  "tavern.talk_btn": "Talk",
+  "tavern.leave_btn": "Leave Tavern",
+  "tavern.enter_btn": "Enter Harbor Tavern",
+  "tavern.enter_tip": "Visit Kardif's tavern to hear harbor gossip and check standing",
+  "tavern.control_khorinis_notice": "Control the City of Khorinis to access the harbor tavern.",
+  "tavern.station_hero_notice": "Station a commander in the City of Khorinis to visit the harbor tavern."
 }

@@ -72,6 +72,8 @@ fun IComponent.StrategicMap(
     activeFight: models.GameEvent.FightOccurred? = null,
     activeNatureEvents: List<models.GameEvent.NatureEventOccurred> = emptyList(),
     activeTransfers: List<models.GameEvent.ResourceTransferred> = emptyList(),
+    activeTavernDialogue: models.GameEvent.TavernDialogueReceived? = null,
+    onDismissTavernDialogue: () -> Unit = {},
     sendAction: (GameAction) -> Unit
 ) {
     var openedTerritoryId by remember { mutableStateOf<String?>(null) }
@@ -382,6 +384,8 @@ fun IComponent.StrategicMap(
                 playerId = playerId,
                 gameState = gameState,
                 selectedCharacterId = activeChar?.id,
+                activeTavernDialogue = activeTavernDialogue,
+                onDismissTavernDialogue = onDismissTavernDialogue,
                 onClose = { openedTerritoryId = null },
                 sendAction = sendAction
             )

@@ -106,6 +106,7 @@ class App : Application() {
             var latestAdvisorAdvice by remember { mutableStateOf<GameEvent.AdvisorAdviceReceived?>(null) }
             var advisorLoading by remember { mutableStateOf(false) }
             var activeCastleDialogue by remember { mutableStateOf<GameEvent.CastleDialogueReceived?>(null) }
+            var activeTavernDialogue by remember { mutableStateOf<GameEvent.TavernDialogueReceived?>(null) }
             LaunchedEffect(gameState?.status) {
                 if (gameState?.status == models.GameStatus.GAME_OVER) {
                     victoryAcknowledged = false
@@ -192,6 +193,9 @@ class App : Application() {
                     },
                     onCastleDialogueReceived = { event ->
                         activeCastleDialogue = event
+                    },
+                    onTavernDialogueReceived = { event ->
+                        activeTavernDialogue = event
                     }
                 )
             }
@@ -564,6 +568,8 @@ class App : Application() {
                                     activeFight = activeFight,
                                     activeNatureEvents = activeNatureEvents,
                                     activeTransfers = activeTransfers,
+                                    activeTavernDialogue = activeTavernDialogue,
+                                    onDismissTavernDialogue = { activeTavernDialogue = null },
                                     sendAction = { ws.sendAction(it) }
                                 )
                             }

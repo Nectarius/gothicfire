@@ -93,6 +93,13 @@ sealed class GameAction {
     ) : GameAction()
 
     @Serializable
+    data class TalkToTavernPatron(
+        val sectorId: String,
+        val characterId: String,
+        val patronId: String
+    ) : GameAction()
+
+    @Serializable
     data object EndGame : GameAction()
     
     @Serializable
@@ -149,6 +156,15 @@ sealed class GameEvent {
         val sectorId: String,
         val speech: String,
         val keyPoints: List<String> = emptyList(),
+        val timestamp: Long = 0L
+    ) : GameEvent()
+
+    @Serializable
+    data class TavernDialogueReceived(
+        val patronId: String,
+        val patronName: String,
+        val greeting: String,
+        val responseText: String,
         val timestamp: Long = 0L
     ) : GameEvent()
 }

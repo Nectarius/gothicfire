@@ -312,7 +312,17 @@ private val fallbackEn = mapOf(
     "castle.inquiry_label" to "Commander's Inquiry:",
     "castle.inquiry_text" to "\"What is our current situation and standing against our rivals?\"",
     "castle.directives_title" to "⚔️ Tactical Directives & Observations:",
-    "castle.farewell_btn" to "Understood, My Lord / Farewell"
+    "castle.farewell_btn" to "Understood, My Lord / Farewell",
+    "tavern.title" to "🍺 The Harbor Tavern of Khorinis",
+    "tavern.subtitle" to "Kardif's drinking den in the harbor quarter",
+    "tavern.speaking_with" to "Speaking with {0}",
+    "tavern.patrons_title" to "Patrons at the Tables:",
+    "tavern.talk_btn" to "Talk",
+    "tavern.leave_btn" to "Leave Tavern",
+    "tavern.enter_btn" to "Enter Harbor Tavern",
+    "tavern.enter_tip" to "Visit Kardif's tavern to hear harbor gossip and check standing",
+    "tavern.control_khorinis_notice" to "Control the City of Khorinis to access the harbor tavern.",
+    "tavern.station_hero_notice" to "Station a commander in the City of Khorinis to visit the harbor tavern."
 )
 
 private val fallbackEl = mapOf(
@@ -606,7 +616,17 @@ private val fallbackEl = mapOf(
     "castle.inquiry_label" to "Ερώτημα Διοικητή:",
     "castle.inquiry_text" to "«Ποια είναι η τρέχουσα κατάστασή μας και η θέση μας απέναντι στους αντιπάλους;»",
     "castle.directives_title" to "⚔️ Τακτικές Οδηγίες & Παρατηρήσεις:",
-    "castle.farewell_btn" to "Γένοιτο, Άρχοντά μου / Εις το επανιδείν"
+    "castle.farewell_btn" to "Γένοιτο, Άρχοντά μου / Εις το επανιδείν",
+    "tavern.title" to "🍺 Η Ταβέρνα του Λιμανιού του Χορίνις",
+    "tavern.subtitle" to "Το στέκι του Κάρντιφ στη συνοικία του λιμανιού",
+    "tavern.speaking_with" to "Συνομιλία με {0}",
+    "tavern.patrons_title" to "Θαμώνες στα τραπέζια:",
+    "tavern.talk_btn" to "Μίλα",
+    "tavern.leave_btn" to "Έξοδος από την Ταβέρνα",
+    "tavern.enter_btn" to "Είσοδος στην Ταβέρνα Λιμανιού",
+    "tavern.enter_tip" to "Επισκεφθείτε την ταβέρνα του Κάρντιφ για να ακούσετε κουτσομπολιά και την κατάσταση",
+    "tavern.control_khorinis_notice" to "Ελέγξτε την Πόλη του Χορίνις για να αποκτήσετε πρόσβαση στην ταβέρνα του λιμανιού.",
+    "tavern.station_hero_notice" to "Τοποθετήστε έναν διοικητή στην Πόλη του Χορίνις για να επισκεφθείτε την ταβέρνα του λιμανιού."
 )
 
 private val fallbackRu = mapOf(
@@ -900,7 +920,17 @@ private val fallbackRu = mapOf(
     "castle.inquiry_label" to "Запрос полководца:",
     "castle.inquiry_text" to "«Каково наше текущее положение и перевес над соперниками?»",
     "castle.directives_title" to "⚔️ Тактические указания и наблюдения:",
-    "castle.farewell_btn" to "Слушаюсь, милорд / Прощайте"
+    "castle.farewell_btn" to "Слушаюсь, милорд / Прощайте",
+    "tavern.title" to "🍺 Таверна гавани Хориниса",
+    "tavern.subtitle" to "Питейное заведение Кардифа в портовом квартале",
+    "tavern.speaking_with" to "Разговор с {0}",
+    "tavern.patrons_title" to "Посетители за столами:",
+    "tavern.talk_btn" to "Поговорить",
+    "tavern.leave_btn" to "Покинуть таверну",
+    "tavern.enter_btn" to "Войти в таверну гавани",
+    "tavern.enter_tip" to "Посетить таверну Кардифа, чтобы узнать слухи гавани и положение дел",
+    "tavern.control_khorinis_notice" to "Захватите город Хоринис, чтобы получить доступ к таверне гавани.",
+    "tavern.station_hero_notice" to "Разместите полководца в городе Хоринис, чтобы посетить таверну гавани."
 )
 
 
