@@ -37,6 +37,7 @@ fun IComponent.StrategicMap(
     var openedTerritoryId by remember { mutableStateOf<String?>(null) }
     var pendingBattle by remember { mutableStateOf<PendingBattle?>(null) }
     var selectedStrategy by remember { mutableStateOf(BattleStrategy.NONE) }
+    var showAllLabels by remember { mutableStateOf(false) }
     
     val myPlayer = gameState?.players?.find { it.id == playerId }
     val myCharacters = gameState?.characters?.filter { it.playerId == playerId } ?: emptyList()
@@ -48,6 +49,24 @@ fun IComponent.StrategicMap(
 
     div(className = "strategic-map-container") {
         div(className = "strategic-map-viewport") {
+            // Map Labels Toggle Button
+            button("🏷️ " + if (showAllLabels) "All Names" else "Key Names", className = "btn btn-sm glass map-labels-toggle-btn") {
+                style("position", "absolute")
+                style("top", "12px")
+                style("right", "12px")
+                style("z-index", "25")
+                style("background", "rgba(15, 23, 42, 0.75)")
+                style("backdrop-filter", "blur(6px)")
+                style("border", "1px solid rgba(255, 255, 255, 0.2)")
+                style("color", "#f1f5f9")
+                style("font-size", "0.75rem")
+                style("padding", "4px 8px")
+                style("cursor", "pointer")
+                onClick {
+                    showAllLabels = !showAllLabels
+                }
+            }
+
             // The background map image
             img(src = "/gothic_fire_map.png", alt = "Gothic Strategic Map", className = "strategic-map-image")
 
@@ -75,6 +94,9 @@ fun IComponent.StrategicMap(
                     val leftPerc = (territory.x / 1205.0) * 100
                     val topPerc = (territory.y / 1095.0) * 100
 
+                    val curProt = terrState?.protection ?: territory.protection
+                    val curCult = terrState?.cultivation ?: territory.cultivation
+
                     val cellClasses = mutableListOf("territory-node")
                     if (isSectorSelected) cellClasses.add("territory-node-selected")
                     if (isValidMoveTarget) cellClasses.add("territory-node-valid-move")
@@ -89,14 +111,15 @@ fun IComponent.StrategicMap(
                         }
                     }
                     
-                    if (terrState != null && terrState.protection > 20) {
+                    if (curProt >= 16) {
                         cellClasses.add("territory-node-high-protection")
                     }
-                    if (terrState != null && terrState.cultivation > 30) {
+                    if (curCult >= 16) {
                         cellClasses.add("territory-node-high-cultivation")
                     }
 
                     div(className = cellClasses.joinToString(" ")) {
+                        title("${territory.name ?: "Sector $sector"} (#$sector) | 🛡️ Prot: $curProt | 🌾 Cult: $curCult (+${(curCult / 2).coerceAtLeast(1)} Food/turn)")
                         style("left", "$leftPerc%")
                         style("top", "$topPerc%")
                         
@@ -119,8 +142,19 @@ fun IComponent.StrategicMap(
                             }
                         }
 
+                        val shouldShowLabel = territory.name != null && (
+                            showAllLabels ||
+                            territory.isCastle ||
+                            isSectorSelected ||
+                            openedTerritoryId == sector ||
+                            sectorOccupiedBy != null ||
+                            territory.protection >= 16 ||
+                            territory.cultivation >= 17 ||
+                            territory.adjacentIds.size >= 6
+                        )
                         if (territory.name != null) {
-                            div(className = "territory-name-label") {
+                            val labelClass = if (shouldShowLabel) "territory-name-label" else "territory-name-label territory-name-label-hover"
+                            div(className = labelClass) {
                                 textNode(territory.name)
                             }
                         }

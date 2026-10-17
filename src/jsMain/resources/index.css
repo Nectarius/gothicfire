@@ -280,6 +280,15 @@ input:focus, textarea:focus {
     pointer-events: none;
 }
 
+.territory-name-label-hover {
+    display: none;
+}
+
+.territory-node:hover .territory-name-label-hover {
+    display: block;
+    z-index: 30;
+}
+
 .unit-marker {
     position: absolute;
     width: 40px;

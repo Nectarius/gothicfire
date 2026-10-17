@@ -325,8 +325,8 @@ class GameSession(
                     sectorId = sectorId,
                     ownerPlayerId = null,
                     ownerTeam = null,
-                    cultivation = 10,
-                    protection = if (territory.isCastle) 20 else 5,
+                    cultivation = territory.cultivation,
+                    protection = territory.protection,
                     food = 0,
                     gold = 0
                 )
@@ -336,8 +336,7 @@ class GameSession(
             val updatedCharacters = gameState.characters.map { char ->
                 val player = gameState.players.find { it.id == char.playerId }
                 val team = player?.team ?: Team.RED
-                val defaultCastles = MapData.values.filter { it.isCastle }.map { it.id }
-                val castleSector = gameState.teamCastles[team] ?: if (team == Team.RED) (defaultCastles.getOrNull(0) ?: "14") else (defaultCastles.getOrNull(1) ?: "23")
+                val castleSector = gameState.teamCastles[team] ?: if (team == Team.RED) "14" else "23"
                 
                 // Assign starting castle ownership to the player/team
                 val castleTerr = initialTerritories[castleSector]
@@ -449,8 +448,19 @@ class GameSession(
             }
             gameState = gameState.copy(characters = newChars)
             
+            val preferredOpposite = when (chosenCastle) {
+                "14" -> "23"
+                "23" -> "14"
+                "7" -> "52"
+                "52" -> "7"
+                else -> null
+            }
             val defaultCastles = MapData.values.filter { it.isCastle }.map { it.id }
-            val botCastle = defaultCastles.firstOrNull { it != chosenCastle } ?: "14"
+            val botCastle = if (preferredOpposite != null && preferredOpposite != chosenCastle && preferredOpposite in defaultCastles) {
+                preferredOpposite
+            } else {
+                defaultCastles.filter { it != chosenCastle }.randomOrNull() ?: "14"
+            }
             
             gameState = gameState.copy(teamCastles = mapOf(playerTeam to chosenCastle, Team.YELLOW to botCastle))
             
@@ -460,8 +470,8 @@ class GameSession(
                     sectorId = sectorId,
                     ownerPlayerId = null,
                     ownerTeam = null,
-                    cultivation = 10,
-                    protection = if (territory.isCastle) 20 else 5,
+                    cultivation = territory.cultivation,
+                    protection = territory.protection,
                     food = 0,
                     gold = 0
                 )
@@ -622,10 +632,12 @@ class GameSession(
     )
 
     private fun handleCaptureTerritory(territories: Map<String, TerritoryState>, sectorId: String, player: Player): CaptureResult {
+        val baseCultivation = MapData[sectorId]?.cultivation ?: 10
+        val baseProtection = MapData[sectorId]?.protection ?: 5
         val currentTerr = territories[sectorId] ?: TerritoryState(
             sectorId = sectorId,
-            cultivation = 10,
-            protection = MapData[sectorId]?.protection ?: 5
+            cultivation = baseCultivation,
+            protection = baseProtection
         )
         val wasOwnedByAnother = currentTerr.ownerPlayerId != null && currentTerr.ownerPlayerId != player.id
         val (lootedFood, lootedGold) = if (wasOwnedByAnother) {
@@ -633,13 +645,13 @@ class GameSession(
         } else {
             0 to 0
         }
-        
+
         val updatedTerr = if (currentTerr.ownerPlayerId != player.id) {
             currentTerr.copy(
                 ownerPlayerId = player.id,
                 ownerTeam = player.team,
-                cultivation = if (currentTerr.cultivation > 10) 10 else currentTerr.cultivation,
-                protection = MapData[sectorId]?.protection ?: 5,
+                cultivation = if (currentTerr.cultivation > baseCultivation) baseCultivation else currentTerr.cultivation,
+                protection = baseProtection,
                 food = 0,
                 gold = 0
             )
@@ -701,7 +713,11 @@ class GameSession(
                 
                 // Collateral damage to territory
                 val siegeDamage = if (charToPlace.siegeWeapons > 0) 5 else 1
-                val oldTerr = newTerritories[targetSector] ?: TerritoryState(sectorId = targetSector, protection = MapData[targetSector]?.protection ?: 5)
+                val oldTerr = newTerritories[targetSector] ?: TerritoryState(
+                    sectorId = targetSector,
+                    cultivation = MapData[targetSector]?.cultivation ?: 10,
+                    protection = MapData[targetSector]?.protection ?: 5
+                )
                 val damagedTerr = oldTerr.copy(
                     protection = (oldTerr.protection - siegeDamage).coerceAtLeast(0),
                     cultivation = (oldTerr.cultivation - siegeDamage).coerceAtLeast(0)
@@ -852,7 +868,11 @@ class GameSession(
                 
                 // Collateral damage to territory
                 val siegeDamage = if (charToMove.siegeWeapons > 0) 5 else 1
-                val oldTerr = newTerritories[targetSector] ?: TerritoryState(sectorId = targetSector, protection = MapData[targetSector]?.protection ?: 5)
+                val oldTerr = newTerritories[targetSector] ?: TerritoryState(
+                    sectorId = targetSector,
+                    cultivation = MapData[targetSector]?.cultivation ?: 10,
+                    protection = MapData[targetSector]?.protection ?: 5
+                )
                 val damagedTerr = oldTerr.copy(
                     protection = (oldTerr.protection - siegeDamage).coerceAtLeast(0),
                     cultivation = (oldTerr.cultivation - siegeDamage).coerceAtLeast(0)

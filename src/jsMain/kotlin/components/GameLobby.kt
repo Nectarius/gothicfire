@@ -235,7 +235,7 @@ fun IComponent.GameLobby(
                     val availableCastles = MapData.values.filter { it.isCastle }
                     select(className = "w-full max-w-xs") {
                         for (c in availableCastles) {
-                            option(value = c.id, label = c.name ?: "Castle ${c.id}")
+                            option(value = c.id, label = c.name ?: "Castle ${c.id}", selected = c.id == pveSelectedCastle)
                         }
                         onChange { pveSelectedCastle = this.value ?: "14" }
                     }
@@ -688,13 +688,14 @@ fun IComponent.GameLobby(
                                 }
                             }
                         } else if (availableCastles.size > 1) {
-                            var selectedCastle by remember { mutableStateOf(availableCastles.first().first) }
+                            val defaultChoice = if (myPlayer.team == Team.RED) "14" else "23"
+                            var selectedCastle by remember { mutableStateOf(if (availableCastles.any { it.first == defaultChoice }) defaultChoice else availableCastles.first().first) }
                             
                             div(className = "d-flex flex-col items-center gap-1 mb-2") {
                                 p(className = "text-sm text-gray m-0") { textNode(t("lobby.choose_team_castle")) }
                                 select(className = "stat-input w-full max-w-xs text-center") {
                                     for (c in availableCastles) {
-                                        option(value = c.first, label = c.second)
+                                        option(value = c.first, label = c.second, selected = c.first == selectedCastle)
                                     }
                                     onChange { selectedCastle = this.value ?: availableCastles.first().first }
                                 }

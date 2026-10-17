@@ -87,11 +87,17 @@ class AdvisorService(
         }
 
         // 5. Enemy Commander Locations
+        val enemyHomeCastleIds = enemyPlayers.mapNotNull { gameState.teamCastles[it.team] }.toSet()
         val enemyCommanderHighlights = enemyChars.map { enemy ->
             val enemyTeam = enemyPlayers.find { it.id == enemy.playerId }?.team ?: "Enemy"
             val enemyLocName = enemy.currentSector?.let { MapData[it]?.name ?: "Sector $it" } ?: "Unknown"
-            val isCastle = enemy.currentSector?.let { MapData[it]?.isCastle } == true
-            val castleNote = if (isCastle) " [Enemy Fortress Garrison]" else ""
+            val isHomeCastle = enemy.currentSector != null && enemy.currentSector in enemyHomeCastleIds
+            val isCitadel = enemy.currentSector?.let { MapData[it]?.isCastle } == true && !isHomeCastle
+            val castleNote = when {
+                isHomeCastle -> " [Enemy Fortress Garrison]"
+                isCitadel -> " [Citadel Stronghold]"
+                else -> ""
+            }
             val enemyArmyComp = formatArmyBreakdown(enemy.army)
             "Enemy ${enemy.name} (Team $enemyTeam): ${enemy.army.total()} troops ($enemyArmyComp) stationed at $enemyLocName$castleNote"
         }
@@ -107,8 +113,13 @@ class AdvisorService(
                 if (enemy != null) {
                     val enemyLocName = MapData[adj]?.name ?: "Sector $adj"
                     val enemyTeam = enemyPlayers.find { it.id == enemy.playerId }?.team ?: "Enemy"
-                    val isEnemyCastle = MapData[adj]?.isCastle == true
-                    val castleTag = if (isEnemyCastle) " (Enemy Fortress!)" else ""
+                    val isEnemyHomeCastle = adj in enemyHomeCastleIds
+                    val isCitadel = MapData[adj]?.isCastle == true && !isEnemyHomeCastle
+                    val castleTag = when {
+                        isEnemyHomeCastle -> " (Enemy Fortress!)"
+                        isCitadel -> " (Citadel Stronghold)"
+                        else -> ""
+                    }
                     val mySize = char.army.total()
                     val enemySize = enemy.army.total()
                     if (mySize >= enemySize * 10 && enemySize > 0) {
