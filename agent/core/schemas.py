@@ -65,3 +65,35 @@ class AdvisorResponse(BaseModel):
     advice: str
     key_points: List[str] = Field(default_factory=list)
     keyPoints: Optional[List[str]] = None
+
+
+class CastleAudienceRequest(BaseModel):
+    game_id: str = Field(default="", validation_alias=AliasChoices("game_id", "gameId"))
+    turn: int = Field(default=1)
+    player_id: str = Field(default="", validation_alias=AliasChoices("player_id", "playerId"))
+    lord_id: str = Field(default="LORD_HAGEN", validation_alias=AliasChoices("lord_id", "lordId"))
+    lord_name: str = Field(default="Lord Hagen", validation_alias=AliasChoices("lord_name", "lordName"))
+    castle_sector_id: str = Field(default="14", validation_alias=AliasChoices("castle_sector_id", "castleSectorId"))
+    player_team: str = Field(default="RED", validation_alias=AliasChoices("player_team", "playerTeam"))
+    player_summary: str = Field(default="", validation_alias=AliasChoices("player_summary", "playerSummary"))
+    opponents_summary: str = Field(default="", validation_alias=AliasChoices("opponents_summary", "opponentsSummary"))
+    map_summary: str = Field(default="", validation_alias=AliasChoices("map_summary", "mapSummary"))
+    is_under_siege: bool = Field(default=False, validation_alias=AliasChoices("is_under_siege", "isUnderSiege"))
+
+    model_config = {
+        "populate_by_name": True
+    }
+
+
+class CastleAudienceResponse(BaseModel):
+    lord_id: str
+    lordId: Optional[str] = None
+    lord_name: str
+    lordName: Optional[str] = None
+    castle_sector_id: str
+    castleSectorId: Optional[str] = None
+    speech: str
+    key_points: List[str] = Field(default_factory=list)
+    keyPoints: Optional[List[str]] = None
+    timestamp: int = 0
+

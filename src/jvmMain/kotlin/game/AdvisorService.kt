@@ -332,4 +332,164 @@ class AdvisorService(
         if (army.mages > 0) parts.add("${army.mages} Mages")
         return if (parts.isNotEmpty()) parts.joinToString(", ") else "0 units"
     }
+
+    suspend fun consultCastleLord(
+        gameState: GameState,
+        playerId: String,
+        sectorId: String,
+        characterId: String
+    ): CastleDialogueResponse {
+        val lord = getCastleLordForSector(sectorId) ?: return fallbackCastleLord(
+            lordId = "LORD_HAGEN",
+            lordName = "Lord Hagen",
+            castleSectorId = sectorId
+        )
+
+        val player = gameState.players.find { it.id == playerId }
+        val playerTeam = player?.team ?: Team.RED
+        val myChars = gameState.characters.filter { it.playerId == playerId && !it.isDead }
+        val myTerritories = gameState.territories.values.filter { it.ownerTeam == playerTeam || it.ownerPlayerId == playerId }
+
+        val enemyPlayers = gameState.players.filter { it.team != playerTeam }
+        val enemyChars = gameState.characters.filter { char -> enemyPlayers.any { it.id == char.playerId } && !char.isDead }
+        val enemyTerritories = gameState.territories.values.filter { it.ownerTeam != null && it.ownerTeam != playerTeam }
+
+        val myTotalArmy = myChars.sumOf { it.army.total() }
+        val myTotalGold = myChars.sumOf { it.gold }
+        val myTotalFood = myChars.sumOf { it.food }
+        val enemyTotalArmy = enemyChars.sumOf { it.army.total() }
+
+        val foodConsumption = myTotalArmy
+        val foodDeficit = myTotalFood < foodConsumption
+        val foodTurnsRemaining = if (foodConsumption > 0) myTotalFood / foodConsumption else 99
+        val uncollectedFood = myTerritories.sumOf { it.food }
+        val uncollectedGold = myTerritories.sumOf { it.gold }
+
+        // Castle Garrison & Threat status
+        val castleGarrisonChars = gameState.characters.filter { it.currentSector == sectorId && !it.isDead }
+        val castleGarrisonArmy = castleGarrisonChars.sumOf { it.army.total() }
+        val castleAdjSectors = MapData[sectorId]?.adjacentIds?.toSet() ?: emptySet()
+        val enemiesNearCastle = enemyChars.filter { it.currentSector in castleAdjSectors || it.currentSector == sectorId }
+        val isUnderSiege = enemiesNearCastle.isNotEmpty()
+
+        val totalMages = myChars.sumOf { it.army.mages }
+        val totalHeavy = myChars.sumOf { it.army.heavyInfantry }
+        val totalLight = myChars.sumOf { it.army.lightInfantry }
+        val totalArchers = myChars.sumOf { it.army.archers }
+
+        val activeTroopList = mutableListOf<String>()
+        if (totalLight > 0) activeTroopList.add("$totalLight Light Infantry")
+        if (totalHeavy > 0) activeTroopList.add("$totalHeavy Heavy Infantry")
+        if (totalArchers > 0) activeTroopList.add("$totalArchers Archers")
+        if (totalMages > 0) activeTroopList.add("$totalMages Mages")
+        val troopBreakdownStr = if (activeTroopList.isNotEmpty()) activeTroopList.joinToString(", ") else "0 troops"
+        val mageWarning = if (totalMages == 0) "; NOTE: We have 0 Mages" else ""
+
+        val visitingChar = myChars.find { it.id == characterId }
+        val visitorNote = if (visitingChar != null) "Audience requested by Commander ${visitingChar.name} (Army: ${visitingChar.army.total()} troops). " else ""
+
+        val playerSummary = buildString {
+            append(visitorNote)
+            append("Team: $playerTeam. Controlled Sectors: ${myTerritories.size}. Castle ${lord.castleName} (Garrison: $castleGarrisonArmy troops). ")
+            append("Our Total Army: $myTotalArmy troops ($troopBreakdownStr$mageWarning). ")
+            append("Treasury: $myTotalGold Gold, $myTotalFood Food (Upkeep: $foodConsumption Food/turn, ${if (foodDeficit) "STARVATION RISK" else "$foodTurnsRemaining turns reserve"}). ")
+            if (isUnderSiege) {
+                append("ALERT: Castle ${lord.castleName} is threatened by enemies on adjacent sectors! ")
+            }
+        }
+
+        val opponentsSummary = buildString {
+            append("Rival Teams: ${enemyPlayers.map { it.team }.distinct().joinToString()}. Enemy Sectors: ${enemyTerritories.size}. Enemy Army Total: $enemyTotalArmy units across ${enemyChars.size} active commanders.")
+        }
+
+        val mapSummary = "Current Turn: ${gameState.currentTurn}/${gameState.maxTurns}. Market Rate: 1 Gold buys 1 Food, 2 Food sells for 1 Gold. Unharvested in sectors: $uncollectedGold Gold, $uncollectedFood Food."
+
+        val request = CastleAudienceRequest(
+            gameId = gameState.gameName ?: "campaign",
+            turn = gameState.currentTurn,
+            playerId = playerId,
+            lordId = lord.id,
+            lordName = lord.name,
+            castleSectorId = sectorId,
+            playerTeam = playerTeam.name,
+            playerSummary = playerSummary,
+            opponentsSummary = opponentsSummary,
+            mapSummary = mapSummary,
+            isUnderSiege = isUnderSiege
+        )
+
+        val baseUrl = agentUrl.trimEnd('/')
+            .removeSuffix("/api/v1/decide")
+            .removeSuffix("/api/v1/advisor/consult")
+            .removeSuffix("/api/v1/castle/audience")
+            .removeSuffix("/api/v1")
+
+        val targetEndpoint = "$baseUrl/api/v1/castle/audience"
+
+        logger.info("Seeking audience with Castle Lord ${lord.name} at $targetEndpoint (timeout: ${timeoutMillis}ms)...")
+
+        val result = runCatching {
+            withTimeout(timeoutMillis) {
+                val response = client.post(targetEndpoint) {
+                    contentType(ContentType.Application.Json)
+                    setBody(json.encodeToString(request))
+                    timeout {
+                        requestTimeoutMillis = timeoutMillis
+                        connectTimeoutMillis = timeoutMillis
+                        socketTimeoutMillis = timeoutMillis
+                    }
+                }
+                if (!response.status.isSuccess()) {
+                    throw IllegalStateException("Castle Audience HTTP ${response.status}")
+                }
+                val body = response.bodyAsText()
+                val decoded = json.decodeFromString<CastleDialogueResponse>(body)
+                decoded.copy(
+                    lordId = decoded.lordId.ifBlank { lord.id },
+                    lordName = decoded.lordName.ifBlank { lord.name },
+                    castleSectorId = decoded.castleSectorId.ifBlank { sectorId },
+                    timestamp = System.currentTimeMillis()
+                )
+            }
+        }
+
+        return result.getOrElse { err ->
+            logger.warn("Castle audience request failed at $targetEndpoint ($err). Using in-character fallback.")
+            fallbackCastleLord(lord.id, lord.name, sectorId)
+        }
+    }
+
+    private fun fallbackCastleLord(lordId: String, lordName: String, castleSectorId: String): CastleDialogueResponse {
+        val (speech, keyPoints) = when (lordId.uppercase()) {
+            "LORD_HAGEN" -> Pair(
+                "Commander, our royal forces stand ready, but we cannot afford complacency. Keep our infantry disciplined, secure our borders, and ensure our fortress is never left unguarded.",
+                listOf("Discipline our royal infantry", "Guard the city fortress")
+            )
+            "ONAR" -> Pair(
+                "Look at the ledgers! If we have grain in the storehouse and gold to pay the mercenaries, we'll outlast the King's taxes and the militia dogs alike.",
+                listOf("Stock grain in storehouses", "Pay Lee's mercenaries")
+            )
+            "PYROKAR" -> Pair(
+                "The Eye of Innos watches over us, my child. Sustain our people, recruit disciples of magic, and the shadows gathering over Khorinis will break.",
+                listOf("Recruit disciples of magic", "Hold divine faith against shadows")
+            )
+            "GAROND" -> Pair(
+                "We need every sword and ration we can muster! Keep our perimeter fortified and don't let our troops starve in this godforsaken place.",
+                listOf("Reinforce perimeter defense", "Prevent soldier starvation")
+            )
+            else -> Pair(
+                "Hold this stronghold with your life, Commander. We stand resolute against all enemies of the realm.",
+                listOf("Maintain castle garrison", "Defend our stronghold")
+            )
+        }
+
+        return CastleDialogueResponse(
+            lordId = lordId,
+            lordName = lordName,
+            castleSectorId = castleSectorId,
+            speech = speech,
+            keyPoints = keyPoints,
+            timestamp = System.currentTimeMillis()
+        )
+    }
 }

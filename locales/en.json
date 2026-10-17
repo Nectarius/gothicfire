@@ -297,5 +297,12 @@
   "map.names_all": "🏷️ All Names",
   "map.names_key": "🏷️ Key Names",
   "map.legend_path": "Path between locations ({0} total)",
-  "map.legend_focus": "Routes from selected location"
+  "map.legend_focus": "Routes from selected location",
+  "castle.seek_audience": "🏛️ Seek Audience with {0}",
+  "castle.seek_audience_tip": "Inquire about state of affairs with {0}",
+  "castle.station_hero_notice": "Station a commander inside this stronghold to confer with {0}.",
+  "castle.inquiry_label": "Commander's Inquiry:",
+  "castle.inquiry_text": "\"What is our current situation and standing against our rivals?\"",
+  "castle.directives_title": "⚔️ Tactical Directives & Observations:",
+  "castle.farewell_btn": "Understood, My Lord / Farewell"
 }

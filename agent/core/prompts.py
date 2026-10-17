@@ -3,7 +3,7 @@
 import os
 from typing import Dict, List, Tuple
 from .schemas import AdvisorRequest
-from .personas import get_advisor_persona
+from .personas import get_advisor_persona, get_castle_lord_persona
 
 
 _COMMON_GROUNDING_RULES = (
@@ -158,3 +158,42 @@ def build_advisor_prompts(request: AdvisorRequest) -> Tuple[str, str, int, str]:
         sys_prompt, user_prompt, tokens_limit = build_next_move_advisor_prompts(request, persona_info)
 
     return sys_prompt, user_prompt, tokens_limit, advisor_name
+ 
+ 
+def build_castle_lord_prompts(
+    lord_id: str,
+    turn: int,
+    player_summary: str,
+    opponents_summary: str,
+    map_summary: str,
+    is_under_siege: bool = False
+) -> Tuple[str, str, int, str]:
+    """Constructs system and user prompts for in-character Castle Lord audience evaluation."""
+    tokens_limit = int(os.getenv("AI_CASTLE_AUDIENCE_MAX_TOKENS", "220"))
+    persona_info = get_castle_lord_persona(lord_id)
+    lord_name = persona_info["name"]
+
+    siege_context = "CRITICAL: The castle is currently under imminent siege or threatened by enemy units nearby! Address this with utmost urgency.\n" if is_under_siege else ""
+
+    sys_prompt = (
+        f"{persona_info['system_prompt']}\n"
+        "Role: Castle Lord & Sovereign Stronghold Leader\n"
+        "Situation: A hero commander stationed at your stronghold has formally requested an audience, asking: "
+        '"What is our current situation and standing against our rivals?"\n'
+        f"{siege_context}"
+        "Instructions: Directly evaluate the player's military strength, economy (gold & food), garrisons, and enemy threats from your unique perspective and faction values. "
+        "Contrast their standing against their opponents in character (2 to 4 sentences, 40-70 words). "
+        'Return output strictly as JSON matching: {"speech": "<in-character assessment 40-70 words>", "key_points": ["<standing insight>", "<urgent advice>"]}.\n'
+        f"{_COMMON_GROUNDING_RULES}"
+    )
+
+    user_prompt = (
+        f"Turn: {turn}\n"
+        f"Commander's Standing: {player_summary}\n"
+        f"Rivals Standing: {opponents_summary}\n"
+        f"Map & Economy: {map_summary}\n"
+        f"{'Castle Status: UNDER SIEGE OR NEARBY ENEMY UNITS DETECTED!' if is_under_siege else 'Castle Status: Secure and garrisoned.'}\n"
+        'Inquiry: "What is our current situation and standing against our rivals?"'
+    )
+    return sys_prompt, user_prompt, tokens_limit, lord_name
+

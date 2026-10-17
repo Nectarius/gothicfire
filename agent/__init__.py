@@ -15,13 +15,21 @@ if _REPO_ROOT not in sys.path:
 from google.adk.agents import LlmAgent
 from google.genai import types
 
-from .core.schemas import DecisionRequest, DecisionResponse, AdvisorRequest, AdvisorResponse
+from .core.schemas import (
+    DecisionRequest,
+    DecisionResponse,
+    AdvisorRequest,
+    AdvisorResponse,
+    CastleAudienceRequest,
+    CastleAudienceResponse,
+)
 from .core.llm_adapter import LlamaCppLlm
 from .core.workflows import (
     build_decide_workflow,
     run_decide_workflow,
     build_advisor_workflow,
     run_advisor_workflow,
+    run_castle_audience_workflow,
 )
 from .server import app, get_adk_llm
 
@@ -65,8 +73,12 @@ __all__ = [
     "DecisionResponse",
     "AdvisorRequest",
     "AdvisorResponse",
+    "CastleAudienceRequest",
+    "CastleAudienceResponse",
     "build_decide_workflow",
     "run_decide_workflow",
     "build_advisor_workflow",
     "run_advisor_workflow",
+    "run_castle_audience_workflow",
 ]
+

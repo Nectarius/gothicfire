@@ -243,3 +243,88 @@ def get_advisor_fallback(advisor_id: str, question_type: str, turn: int = 1) -> 
         f"Hold fast, Commander. Weigh your moves with care on turn {turn}.",
         ["Maintain vigilant watch", "Strike when prepared"]
     )
+
+
+CASTLE_LORD_FALLBACK_MAP: Dict[str, Tuple[str, List[str]]] = {
+    "LORD_HAGEN": (
+        "Commander, our royal forces stand ready, but we cannot afford complacency. Keep our infantry disciplined, secure our borders, and ensure our fortress is never left unguarded.",
+        ["Discipline our royal infantry", "Guard the city fortress"]
+    ),
+    "ONAR": (
+        "Look at the ledgers! If we have grain in the storehouse and gold to pay the mercenaries, we'll outlast the King's taxes and the militia dogs alike.",
+        ["Stock grain in storehouses", "Pay Lee's mercenaries"]
+    ),
+    "PYROKAR": (
+        "The Eye of Innos watches over us, my child. Sustain our people, recruit disciples of magic, and the shadows gathering over Khorinis will break.",
+        ["Recruit disciples of magic", "Hold divine faith against shadows"]
+    ),
+    "GAROND": (
+        "We need every sword and ration we can muster! Keep our perimeter fortified and don't let our troops starve in this godforsaken place.",
+        ["Reinforce perimeter defense", "Prevent soldier starvation"]
+    )
+}
+
+
+def get_castle_lord_fallback(lord_id: str) -> Tuple[str, List[str]]:
+    """Returns in-character fallback speech and key points for Castle Lord consultations."""
+    key = str(lord_id or "").upper().strip()
+    fallback = CASTLE_LORD_FALLBACK_MAP.get(key)
+    if fallback:
+        return fallback[0], list(fallback[1])
+    return (
+        "Hold this stronghold at all costs, Commander. Keep our garrison fed and our defenses unbroken.",
+        ["Hold the castle garrison", "Secure perimeter defense"]
+    )
+
+
+def safe_parse_castle_lord_json(raw_text: str) -> Tuple[Optional[str], List[str]]:
+    """Robustly parses Castle Lord audience completion JSON, extracting speech and key points."""
+    text = clean_json_markdown(raw_text)
+
+    # 1. Normal JSON load
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            speech = parsed.get("speech") or parsed.get("advice")
+            kps = parsed.get("key_points") or parsed.get("keyPoints", [])
+            if isinstance(speech, str) and speech.strip():
+                return speech.strip(), [str(kp) for kp in kps if kp]
+    except Exception:
+        pass
+
+    # 2. Repair truncated JSON
+    repaired = text.strip()
+    if not repaired.endswith("}"):
+        if repaired.count('"') % 2 != 0:
+            repaired += '"'
+        if repaired.count('[') > repaired.count(']'):
+            repaired += ']'
+        if repaired.count('{') > repaired.count('}'):
+            repaired += '}'
+        try:
+            parsed = json.loads(repaired)
+            if isinstance(parsed, dict):
+                speech = parsed.get("speech") or parsed.get("advice")
+                kps = parsed.get("key_points") or parsed.get("keyPoints", [])
+                if isinstance(speech, str) and speech.strip():
+                    return speech.strip(), [str(kp) for kp in kps if kp]
+        except Exception:
+            pass
+
+    # 3. Regex fallback
+    sp_match = re.search(r'"(?:speech|advice)"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)', text)
+    speech = sp_match.group(1).replace('\\"', '"').replace('\\n', ' ').strip() if sp_match else None
+
+    kps = []
+    kp_match = re.search(r'"(?:key_points|keyPoints)"\s*:\s*\[(.*)', text, re.DOTALL)
+    if kp_match:
+        found = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', kp_match.group(1))
+        kps = [k.replace('\\"', '"').strip() for k in found if k.strip()]
+
+    if speech and not speech.endswith(('.', '!', '?')) and len(speech) > 25:
+        last_punct = max(speech.rfind('.'), speech.rfind('!'), speech.rfind('?'))
+        if last_punct > len(speech) // 2:
+            speech = speech[:last_punct + 1].strip()
+
+    return speech, kps
+

@@ -7,11 +7,15 @@ from .schemas import (
     DecisionResponse,
     AdvisorRequest,
     AdvisorResponse,
+    CastleAudienceRequest,
+    CastleAudienceResponse,
 )
 
 from .personas import (
     ADVISOR_PERSONAS,
     get_advisor_persona,
+    CASTLE_LORD_PERSONAS,
+    get_castle_lord_persona,
 )
 
 from .prompts import (
@@ -20,6 +24,7 @@ from .prompts import (
     build_status_advisor_prompts,
     build_strategy_advisor_prompts,
     build_next_move_advisor_prompts,
+    build_castle_lord_prompts,
 )
 
 from .parser import (
@@ -29,6 +34,9 @@ from .parser import (
     safe_parse_advisor_json,
     sanitize_advisor_advice,
     get_advisor_fallback,
+    CASTLE_LORD_FALLBACK_MAP,
+    get_castle_lord_fallback,
+    safe_parse_castle_lord_json,
 )
 
 from .cache import (
@@ -48,6 +56,7 @@ from .workflows import (
     run_decide_workflow,
     build_advisor_workflow,
     run_advisor_workflow,
+    run_castle_audience_workflow,
 )
 
 __all__ = [
@@ -78,4 +87,14 @@ __all__ = [
     "run_decide_workflow",
     "build_advisor_workflow",
     "run_advisor_workflow",
+    "CastleAudienceRequest",
+    "CastleAudienceResponse",
+    "CASTLE_LORD_PERSONAS",
+    "get_castle_lord_persona",
+    "build_castle_lord_prompts",
+    "CASTLE_LORD_FALLBACK_MAP",
+    "get_castle_lord_fallback",
+    "safe_parse_castle_lord_json",
+    "run_castle_audience_workflow",
 ]
+

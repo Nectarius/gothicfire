@@ -282,5 +282,12 @@
   "map.names_all": "🏷️ Все Названия",
   "map.names_key": "🏷️ Ключевые Названия",
   "map.legend_path": "Путь между локациями (всего {0})",
-  "map.legend_focus": "Пути из выбранной локации"
+  "map.legend_focus": "Пути из выбранной локации",
+  "castle.seek_audience": "🏛️ Просить аудиенции у {0}",
+  "castle.seek_audience_tip": "Узнать о текущем положении дел у {0}",
+  "castle.station_hero_notice": "Разместите полководца в этой цитадели, чтобы переговорить с {0}.",
+  "castle.inquiry_label": "Запрос полководца:",
+  "castle.inquiry_text": "«Каково наше текущее положение и перевес над соперниками?»",
+  "castle.directives_title": "⚔️ Тактические указания и наблюдения:",
+  "castle.farewell_btn": "Слушаюсь, милорд / Прощайте"
 }

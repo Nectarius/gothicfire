@@ -87,6 +87,12 @@ sealed class GameAction {
     data class SelectAdvisor(val advisorId: String) : GameAction()
 
     @Serializable
+    data class ConsultCastleLord(
+        val sectorId: String,
+        val characterId: String
+    ) : GameAction()
+
+    @Serializable
     data object EndGame : GameAction()
     
     @Serializable
@@ -135,4 +141,14 @@ sealed class GameEvent {
     
     @Serializable
     data class ResourceTransferred(val fromCharId: String, val toCharId: String, val fromSectorId: String, val toSectorId: String, val food: Int, val gold: Int) : GameEvent()
+    
+    @Serializable
+    data class CastleDialogueReceived(
+        val lordId: String,
+        val lordName: String,
+        val sectorId: String,
+        val speech: String,
+        val keyPoints: List<String> = emptyList(),
+        val timestamp: Long = 0L
+    ) : GameEvent()
 }

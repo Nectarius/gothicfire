@@ -23,6 +23,8 @@ from core import (
     DecisionResponse,
     AdvisorRequest,
     AdvisorResponse,
+    CastleAudienceRequest,
+    CastleAudienceResponse,
     ADVISOR_PERSONAS,
     get_advisor_persona,
     build_decision_prompts,
@@ -34,6 +36,7 @@ from core import (
     LlamaCppLlm,
     run_decide_workflow,
     run_advisor_workflow,
+    run_castle_audience_workflow,
     advisor_cache,
     decide_cache,
     _inference_lock,
@@ -185,6 +188,12 @@ async def post_decide(request: DecisionRequest) -> DecisionResponse:
 async def post_consult_advisor(request: AdvisorRequest) -> AdvisorResponse:
     """Advisor consultation endpoint providing thematic counsel."""
     return await consult_advisor(request)
+
+
+@api_v1_router.post("/castle/audience", response_model=CastleAudienceResponse)
+async def post_castle_audience(request: CastleAudienceRequest) -> CastleAudienceResponse:
+    """Castle Lord audience endpoint providing in-character evaluations."""
+    return await run_castle_audience_workflow(request, get_adk_llm())
 
 
 app.include_router(api_v1_router)

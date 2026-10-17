@@ -1483,6 +1483,37 @@ class GameSession(
         broadcastEvent(event)
     }
 
+    suspend fun consultCastleLord(playerId: String, sectorId: String, characterId: String) {
+        if (gameState.status != GameStatus.IN_PROGRESS) {
+            logger.warn("Cannot consult castle lord: Game is not in progress")
+            return
+        }
+        val territory = MapData[sectorId]
+        if (territory?.isCastle != true) {
+            logger.warn("Cannot consult castle lord: Sector {} is not a castle", sectorId)
+            return
+        }
+        val char = gameState.characters.find { it.id == characterId && it.playerId == playerId && !it.isDead }
+        if (char == null || char.currentSector != sectorId) {
+            logger.warn("Cannot consult castle lord: Character {} is dead or not stationed at castle sector {}", characterId, sectorId)
+            return
+        }
+        val lord = getCastleLordForSector(sectorId) ?: return
+        logger.info("Player {} commander {} seeking audience with Castle Lord {} at sector {}", playerId, char.name, lord.name, sectorId)
+
+        val dialogueResponse = advisorService.consultCastleLord(gameState, playerId, sectorId, characterId)
+
+        val event = GameEvent.CastleDialogueReceived(
+            lordId = dialogueResponse.lordId.ifBlank { lord.id },
+            lordName = dialogueResponse.lordName.ifBlank { lord.name },
+            sectorId = sectorId,
+            speech = dialogueResponse.speech,
+            keyPoints = dialogueResponse.keyPoints,
+            timestamp = System.currentTimeMillis()
+        )
+        broadcastEvent(event)
+    }
+
     suspend fun selectAdvisor(playerId: String, advisorId: String) {
         mutex.withLock {
             val updatedPlayers = gameState.players.map { p ->

@@ -114,6 +114,49 @@ fun IComponent.TerritoryCard(
                     span(className = "stat-value font-600") { textNode("${territoryState.gold}") }
                 }
             }
+
+            // Castle Lord Audience Section
+            val castleLord = getCastleLordForSector(sectorId)
+            if (territoryDef?.isCastle == true && castleLord != null) {
+                val heroAtCastle = myCharacters.find { it.currentSector == sectorId && !it.isDead }
+                val commanderForAudience = if (activeChar != null && activeChar.currentSector == sectorId && !activeChar.isDead) activeChar else heroAtCastle
+
+                div(className = "castle-lord-section glass mb-1") {
+                    div(className = "d-flex items-center gap-1 mb-05") {
+                        img(src = castleLord.portraitUrl, alt = castleLord.name, className = "castle-lord-avatar")
+                        div {
+                            div(className = "font-600 text-primary castle-lord-name-title") {
+                                textNode(castleLord.name)
+                            }
+                            div(className = "text-xs text-light-gray font-600") {
+                                textNode(castleLord.title)
+                            }
+                            div(className = "text-xs text-gray font-italic") {
+                                textNode(castleLord.faction)
+                            }
+                        }
+                    }
+                    div(className = "castle-greeting-banner mb-05") {
+                        textNode("\"${castleLord.greeting}\"")
+                    }
+
+                    if (commanderForAudience != null) {
+                        button(t("castle.seek_audience", castleLord.name), className = "btn btn-sm btn-primary w-full castle-audience-btn") {
+                            title(t("castle.seek_audience_tip", castleLord.name))
+                            onClick {
+                                sendAction(GameAction.ConsultCastleLord(sectorId, commanderForAudience.id))
+                            }
+                        }
+                    } else {
+                        div(className = "castle-notice-unoccupied") {
+                            span(className = "text-xs text-warning") {
+                                textNode(t("castle.station_hero_notice", castleLord.name))
+                            }
+                        }
+                    }
+                }
+            }
+
             
             // Actions Section
             if (isOwner || isTeamOwner) {

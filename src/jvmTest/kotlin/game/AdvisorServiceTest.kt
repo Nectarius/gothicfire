@@ -97,4 +97,62 @@ class AdvisorServiceTest {
         assertEquals("Hold the line, Commander.", decoded.advice)
         assertEquals(1, decoded.keyPoints.size)
     }
+
+    @Test
+    fun testCastleLordOfflineFallbacksForAllFourCastles() = runBlocking {
+        val httpClient = HttpClient(CIO)
+        val advisorService = AdvisorService(httpClient, agentUrl = "http://127.0.0.1:59999", timeoutMillis = 1000L)
+        val gameState = createTestGameState()
+
+        // Sector 14: Lord Hagen
+        val hagenResp = advisorService.consultCastleLord(gameState, "player_1", "14", "char_1")
+        assertEquals("LORD_HAGEN", hagenResp.lordId)
+        assertEquals("Lord Hagen", hagenResp.lordName)
+        assertEquals("14", hagenResp.castleSectorId)
+        assertTrue(hagenResp.speech.contains("royal forces") && hagenResp.speech.contains("disciplined"))
+        assertTrue(hagenResp.keyPoints.isNotEmpty())
+
+        // Sector 23: Onar
+        val onarResp = advisorService.consultCastleLord(gameState, "player_1", "23", "char_1")
+        assertEquals("ONAR", onarResp.lordId)
+        assertEquals("Onar", onarResp.lordName)
+        assertEquals("23", onarResp.castleSectorId)
+        assertTrue(onarResp.speech.contains("ledgers") && onarResp.speech.contains("mercenaries"))
+
+        // Sector 7: Pyrokar
+        val pyrokarResp = advisorService.consultCastleLord(gameState, "player_1", "7", "char_1")
+        assertEquals("PYROKAR", pyrokarResp.lordId)
+        assertEquals("Pyrokar", pyrokarResp.lordName)
+        assertEquals("7", pyrokarResp.castleSectorId)
+        assertTrue(pyrokarResp.speech.contains("Eye of Innos") && pyrokarResp.speech.contains("magic"))
+
+        // Sector 52: Commander Garond
+        val garondResp = advisorService.consultCastleLord(gameState, "player_1", "52", "char_1")
+        assertEquals("GAROND", garondResp.lordId)
+        assertEquals("Commander Garond", garondResp.lordName)
+        assertEquals("52", garondResp.castleSectorId)
+        assertTrue(garondResp.speech.contains("sword and ration") && garondResp.speech.contains("godforsaken place"))
+    }
+
+    @Test
+    fun testCastleDialogueJsonDeserialization() {
+        val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+        val snakeCasePayload = """
+            {
+                "lord_id": "LORD_HAGEN",
+                "lord_name": "Lord Hagen",
+                "castle_sector_id": "14",
+                "speech": "In the name of the King!",
+                "key_points": ["Guard the gate", "Hold the city"]
+            }
+        """.trimIndent()
+
+        val decoded = json.decodeFromString<CastleDialogueResponse>(snakeCasePayload)
+        assertEquals("LORD_HAGEN", decoded.lordId)
+        assertEquals("Lord Hagen", decoded.lordName)
+        assertEquals("14", decoded.castleSectorId)
+        assertEquals("In the name of the King!", decoded.speech)
+        assertEquals(2, decoded.keyPoints.size)
+    }
 }
+

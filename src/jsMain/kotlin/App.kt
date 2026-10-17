@@ -25,6 +25,7 @@ import components.NatureEventModal
 import components.MarketPanel
 import components.ArmyRecruitmentPanel
 import components.AdvisorModal
+import components.CastleDialogueModal
 import components.EventPopupModal
 import components.VictoryPopupModal
 import game.GameWebSocket
@@ -104,6 +105,7 @@ class App : Application() {
             var showAdvisor by remember { mutableStateOf(false) }
             var latestAdvisorAdvice by remember { mutableStateOf<GameEvent.AdvisorAdviceReceived?>(null) }
             var advisorLoading by remember { mutableStateOf(false) }
+            var activeCastleDialogue by remember { mutableStateOf<GameEvent.CastleDialogueReceived?>(null) }
             LaunchedEffect(gameState?.status) {
                 if (gameState?.status == models.GameStatus.GAME_OVER) {
                     victoryAcknowledged = false
@@ -187,6 +189,9 @@ class App : Application() {
                         latestAdvisorAdvice = event
                         advisorLoading = false
                         showAdvisor = true
+                    },
+                    onCastleDialogueReceived = { event ->
+                        activeCastleDialogue = event
                     }
                 )
             }
@@ -456,6 +461,13 @@ class App : Application() {
                                         ws.sendAction(GameAction.AskAdvisor(qType))
                                     },
                                     onClose = { showAdvisor = false }
+                                )
+                            }
+
+                            if (activeCastleDialogue != null) {
+                                CastleDialogueModal(
+                                    dialogue = activeCastleDialogue!!,
+                                    onClose = { activeCastleDialogue = null }
                                 )
                             }
 

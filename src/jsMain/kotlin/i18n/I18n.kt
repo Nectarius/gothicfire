@@ -305,7 +305,14 @@ private val fallbackEn = mapOf(
     "map.names_all" to "🏷️ All Names",
     "map.names_key" to "🏷️ Key Names",
     "map.legend_path" to "Path between locations ({0} total)",
-    "map.legend_focus" to "Routes from selected location"
+    "map.legend_focus" to "Routes from selected location",
+    "castle.seek_audience" to "🏛️ Seek Audience with {0}",
+    "castle.seek_audience_tip" to "Inquire about state of affairs with {0}",
+    "castle.station_hero_notice" to "Station a commander inside this stronghold to confer with {0}.",
+    "castle.inquiry_label" to "Commander's Inquiry:",
+    "castle.inquiry_text" to "\"What is our current situation and standing against our rivals?\"",
+    "castle.directives_title" to "⚔️ Tactical Directives & Observations:",
+    "castle.farewell_btn" to "Understood, My Lord / Farewell"
 )
 
 private val fallbackEl = mapOf(
@@ -592,7 +599,14 @@ private val fallbackEl = mapOf(
     "map.names_all" to "🏷️ Όλα τα Ονόματα",
     "map.names_key" to "🏷️ Κύρια Ονόματα",
     "map.legend_path" to "Διαδρομή μεταξύ τοποθεσιών ({0} συνολικά)",
-    "map.legend_focus" to "Διαδρομές από την επιλεγμένη τοποθεσία"
+    "map.legend_focus" to "Διαδρομές από την επιλεγμένη τοποθεσία",
+    "castle.seek_audience" to "🏛️ Ακρόαση με τον {0}",
+    "castle.seek_audience_tip" to "Ενημερωθείτε για την κατάσταση των πραγμάτων από τον {0}",
+    "castle.station_hero_notice" to "Σταθμεύστε έναν διοικητή μέσα σε αυτό το οχυρό για να συνδιαλεχθείτε με τον {0}.",
+    "castle.inquiry_label" to "Ερώτημα Διοικητή:",
+    "castle.inquiry_text" to "«Ποια είναι η τρέχουσα κατάστασή μας και η θέση μας απέναντι στους αντιπάλους;»",
+    "castle.directives_title" to "⚔️ Τακτικές Οδηγίες & Παρατηρήσεις:",
+    "castle.farewell_btn" to "Γένοιτο, Άρχοντά μου / Εις το επανιδείν"
 )
 
 private val fallbackRu = mapOf(
@@ -879,7 +893,14 @@ private val fallbackRu = mapOf(
     "map.names_all" to "🏷️ Все Названия",
     "map.names_key" to "🏷️ Ключевые Названия",
     "map.legend_path" to "Путь между локациями (всего {0})",
-    "map.legend_focus" to "Пути из выбранной локации"
+    "map.legend_focus" to "Пути из выбранной локации",
+    "castle.seek_audience" to "🏛️ Просить аудиенции у {0}",
+    "castle.seek_audience_tip" to "Узнать о текущем положении дел у {0}",
+    "castle.station_hero_notice" to "Разместите полководца в этой цитадели, чтобы переговорить с {0}.",
+    "castle.inquiry_label" to "Запрос полководца:",
+    "castle.inquiry_text" to "«Каково наше текущее положение и перевес над соперниками?»",
+    "castle.directives_title" to "⚔️ Тактические указания и наблюдения:",
+    "castle.farewell_btn" to "Слушаюсь, милорд / Прощайте"
 )
 
 
