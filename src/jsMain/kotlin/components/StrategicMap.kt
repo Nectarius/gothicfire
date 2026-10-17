@@ -23,6 +23,46 @@ data class PendingBattle(
     val isPlacement: Boolean
 )
 
+/** Map image native size; all territory coordinates are expressed in this space. */
+private const val MAP_WIDTH = 1205
+private const val MAP_HEIGHT = 1095
+
+/** All unique undirected connections between territories (computed once from MapData). */
+private val MapConnections: List<Pair<String, String>> by lazy {
+    val seen = mutableSetOf<String>()
+    val edges = mutableListOf<Pair<String, String>>()
+    for ((id, territory) in MapData) {
+        for (adj in territory.adjacentIds) {
+            if (!MapData.containsKey(adj)) continue
+            val (a, b) = if (id < adj) id to adj else adj to id
+            if (seen.add("$a-$b")) edges.add(a to b)
+        }
+    }
+    edges
+}
+
+/** Builds the SVG markup drawing every connection; edges touching [focusSector] are highlighted. */
+private fun buildConnectionsSvg(focusSector: String?): String {
+    val sb = StringBuilder()
+    sb.append("<svg class=\"map-connections-svg\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 $MAP_WIDTH $MAP_HEIGHT\" preserveAspectRatio=\"none\">")
+    val normal = StringBuilder()
+    val focused = StringBuilder()
+    for ((a, b) in MapConnections) {
+        val ta = MapData[a] ?: continue
+        val tb = MapData[b] ?: continue
+        val isFocus = focusSector != null && (a == focusSector || b == focusSector)
+        val target = if (isFocus) focused else normal
+        val cls = if (isFocus) "map-path map-path-focus" else "map-path"
+        val coords = "x1=\"${ta.x}\" y1=\"${ta.y}\" x2=\"${tb.x}\" y2=\"${tb.y}\""
+        target.append("<line class=\"map-path-glow${if (isFocus) " map-path-glow-focus" else ""}\" $coords vector-effect=\"non-scaling-stroke\"/>")
+        target.append("<line class=\"$cls\" $coords vector-effect=\"non-scaling-stroke\"/>")
+    }
+    // Focused edges are drawn last so they sit on top of the regular network
+    sb.append(normal).append(focused)
+    sb.append("</svg>")
+    return sb.toString()
+}
+
 @Composable
 fun IComponent.StrategicMap(
     playerId: String,
@@ -38,6 +78,8 @@ fun IComponent.StrategicMap(
     var pendingBattle by remember { mutableStateOf<PendingBattle?>(null) }
     var selectedStrategy by remember { mutableStateOf(BattleStrategy.NONE) }
     var showAllLabels by remember { mutableStateOf(false) }
+    var showPaths by remember { mutableStateOf(false) }
+    var hideLabels by remember { mutableStateOf(false) }
     
     val myPlayer = gameState?.players?.find { it.id == playerId }
     val myCharacters = gameState?.characters?.filter { it.playerId == playerId } ?: emptyList()
@@ -48,27 +90,65 @@ fun IComponent.StrategicMap(
         ?: myCharacters.firstOrNull()
 
     div(className = "strategic-map-container") {
-        div(className = "strategic-map-viewport") {
-            // Map Labels Toggle Button
-            button("🏷️ " + if (showAllLabels) "All Names" else "Key Names", className = "btn btn-sm glass map-labels-toggle-btn") {
-                style("position", "absolute")
-                style("top", "12px")
-                style("right", "12px")
-                style("z-index", "25")
-                style("background", "rgba(15, 23, 42, 0.75)")
-                style("backdrop-filter", "blur(6px)")
-                style("border", "1px solid rgba(255, 255, 255, 0.2)")
-                style("color", "#f1f5f9")
-                style("font-size", "0.75rem")
-                style("padding", "4px 8px")
-                style("cursor", "pointer")
-                onClick {
-                    showAllLabels = !showAllLabels
+        div(className = if (hideLabels) "strategic-map-viewport map-clean-mode" else "strategic-map-viewport") {
+            // Map visualisation toolbar
+            div(className = "map-toolbar") {
+                // Connections / paths toggle
+                button(
+                    if (showPaths) t("map.paths_hide") else t("map.paths_show"),
+                    className = if (showPaths) "map-toolbar-btn map-toolbar-btn-active" else "map-toolbar-btn"
+                ) {
+                    id("map-toggle-paths-btn")
+                    title(t("map.paths_tip"))
+                    onClick {
+                        showPaths = !showPaths
+                    }
+                }
+                // Hide / show all labels (clean map view)
+                button(
+                    if (hideLabels) t("map.labels_show") else t("map.labels_hide"),
+                    className = if (hideLabels) "map-toolbar-btn map-toolbar-btn-active" else "map-toolbar-btn"
+                ) {
+                    id("map-toggle-labels-btn")
+                    title(t("map.labels_tip"))
+                    onClick {
+                        hideLabels = !hideLabels
+                    }
+                }
+                // Map Labels density toggle (only meaningful while labels are visible)
+                if (!hideLabels) {
+                    button(
+                        if (showAllLabels) t("map.names_all") else t("map.names_key"),
+                        className = "map-toolbar-btn map-labels-toggle-btn"
+                    ) {
+                        id("map-toggle-names-btn")
+                        onClick {
+                            showAllLabels = !showAllLabels
+                        }
+                    }
                 }
             }
 
             // The background map image
             img(src = "/gothic_fire_map.png", alt = "Gothic Strategic Map", className = "strategic-map-image")
+
+            // Connections layer: every path between locations, drawn beneath the territory nodes
+            if (showPaths) {
+                val focusSector = openedTerritoryId ?: activeChar?.currentSector
+                div(className = "map-connections-layer") {
+                    rawHtmlBlock(buildConnectionsSvg(focusSector))
+                }
+                div(className = "map-paths-legend") {
+                    div(className = "map-paths-legend-row") {
+                        span(className = "map-paths-legend-swatch") {}
+                        span { textNode(t("map.legend_path", MapConnections.size)) }
+                    }
+                    div(className = "map-paths-legend-row") {
+                        span(className = "map-paths-legend-swatch map-paths-legend-swatch-focus") {}
+                        span { textNode(t("map.legend_focus")) }
+                    }
+                }
+            }
 
             // The Territory Nodes and Unit Markers Overlay (unified coordinate system)
             div(className = "strategic-map-overlay strategic-map-grid") {
@@ -136,7 +216,7 @@ fun IComponent.StrategicMap(
                         
                         if (territory.isCastle) {
                             img(src = "/Castle_icon.png?v=2", alt = "Castle", className = "territory-castle-icon")
-                        } else {
+                        } else if (!hideLabels) {
                             span(className = "territory-label") {
                                 textNode(sector)
                             }
@@ -152,7 +232,7 @@ fun IComponent.StrategicMap(
                             territory.cultivation >= 17 ||
                             territory.adjacentIds.size >= 6
                         )
-                        if (territory.name != null) {
+                        if (territory.name != null && !hideLabels) {
                             val labelClass = if (shouldShowLabel) "territory-name-label" else "territory-name-label territory-name-label-hover"
                             div(className = labelClass) {
                                 textNode(territory.name)
@@ -181,7 +261,7 @@ fun IComponent.StrategicMap(
                             }
                         }
                         
-                        if (terrState != null && (terrState.food > 0 || terrState.gold > 0)) {
+                        if (!hideLabels && terrState != null && (terrState.food > 0 || terrState.gold > 0)) {
                             div(className = "territory-res-pill") {
                                 if (terrState.food > 0) span(className = "res-tag") { textNode("🌾${terrState.food}") }
                                 if (terrState.gold > 0) span(className = "res-tag") { textNode("🪙${terrState.gold}") }

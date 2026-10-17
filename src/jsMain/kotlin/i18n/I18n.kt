@@ -295,7 +295,17 @@ private val fallbackEn = mapOf(
     "lobby.observing_desc" to "Would you like to play your own game against the computer instead?",
     "hud.leave_game" to "🚪 Leave Game",
     "hud.leave_game_tip" to "Leave this match and return to the main menu or play vs computer.",
-    "nav.play_pve" to "⚔️ Play vs Computer"
+    "nav.play_pve" to "⚔️ Play vs Computer",
+    "map.paths_show" to "🗺️ Show Paths",
+    "map.paths_hide" to "🗺️ Hide Paths",
+    "map.paths_tip" to "Show all connections between locations on the map",
+    "map.labels_hide" to "🙈 Hide Labels",
+    "map.labels_show" to "👁️ Show Labels",
+    "map.labels_tip" to "Hide all labels so the map is completely visible",
+    "map.names_all" to "🏷️ All Names",
+    "map.names_key" to "🏷️ Key Names",
+    "map.legend_path" to "Path between locations ({0} total)",
+    "map.legend_focus" to "Routes from selected location"
 )
 
 private val fallbackEl = mapOf(
@@ -572,7 +582,17 @@ private val fallbackEl = mapOf(
     "lobby.observing_desc" to "Θέλετε να ξεκινήσετε το δικό σας παιχνίδι εναντίον του υπολογιστή;",
     "hud.leave_game" to "🚪 Έξοδος από το Παιχνίδι",
     "hud.leave_game_tip" to "Έξοδος από αυτόν τον αγώνα και επιστροφή στο αρχικό μενού ή παιχνίδι εναντίον του υπολογιστή.",
-    "nav.play_pve" to "⚔️ Παιχνίδι εναντίον Υπολογιστή"
+    "nav.play_pve" to "⚔️ Παιχνίδι εναντίον Υπολογιστή",
+    "map.paths_show" to "🗺️ Εμφάνιση Διαδρομών",
+    "map.paths_hide" to "🗺️ Απόκρυψη Διαδρομών",
+    "map.paths_tip" to "Εμφάνιση όλων των συνδέσεων μεταξύ τοποθεσιών στον χάρτη",
+    "map.labels_hide" to "🙈 Απόκρυψη Ετικετών",
+    "map.labels_show" to "👁️ Εμφάνιση Ετικετών",
+    "map.labels_tip" to "Απόκρυψη όλων των ετικετών ώστε ο χάρτης να είναι πλήρως ορατός",
+    "map.names_all" to "🏷️ Όλα τα Ονόματα",
+    "map.names_key" to "🏷️ Κύρια Ονόματα",
+    "map.legend_path" to "Διαδρομή μεταξύ τοποθεσιών ({0} συνολικά)",
+    "map.legend_focus" to "Διαδρομές από την επιλεγμένη τοποθεσία"
 )
 
 private val fallbackRu = mapOf(
@@ -849,7 +869,17 @@ private val fallbackRu = mapOf(
     "lobby.observing_desc" to "Хотите начать свою собственную игру против компьютера?",
     "hud.leave_game" to "🚪 Покинуть Игру",
     "hud.leave_game_tip" to "Покинуть этот матч и вернуться в главное меню или играть против компьютера.",
-    "nav.play_pve" to "⚔️ Игра против Компьютера"
+    "nav.play_pve" to "⚔️ Игра против Компьютера",
+    "map.paths_show" to "🗺️ Показать Пути",
+    "map.paths_hide" to "🗺️ Скрыть Пути",
+    "map.paths_tip" to "Показать все связи между локациями на карте",
+    "map.labels_hide" to "🙈 Скрыть Метки",
+    "map.labels_show" to "👁️ Показать Метки",
+    "map.labels_tip" to "Скрыть все метки, чтобы карта была полностью видна",
+    "map.names_all" to "🏷️ Все Названия",
+    "map.names_key" to "🏷️ Ключевые Названия",
+    "map.legend_path" to "Путь между локациями (всего {0})",
+    "map.legend_focus" to "Пути из выбранной локации"
 )
 
 

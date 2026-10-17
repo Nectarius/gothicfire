@@ -118,7 +118,10 @@ With all 55 territories named, label decluttering is handled in [StrategicMap.kt
    - Active selected or inspected sectors (`isSectorSelected || openedTerritoryId == sector`)
    - Occupied sectors (`sectorOccupiedBy != null`)
    - Major landmarks (`protection >= 16 || cultivation >= 17 || adjacentIds.size >= 6`)
-2. **View Mode Toggle**: A header button (`🏷️ All Names / Key Names`) allows toggling display of all 55 labels simultaneously.
+2. **Map Toolbar** (top-right of the map, `.map-toolbar`):
+   - **`🗺️ Show Paths / Hide Paths`**: Draws all 100 connections between locations as an animated SVG overlay (`viewBox 0 0 1205 1095`, built from `adjacentIds` via `MapConnections`). Routes from the inspected sector (`openedTerritoryId`), or failing that the active character's sector, are highlighted in orange. A legend appears bottom-left while paths are on.
+   - **`🙈 Hide Labels / 👁️ Show Labels`**: Clean map mode (`.map-clean-mode`). Hides name labels (hover ones too), sector numbers, and resource pills, and fades territory pins so the map art shows through. Castle icons, unit markers, and move/placement highlights stay visible.
+   - **`🏷️ All Names / Key Names`**: Switches between showing all 55 labels and only the key ones (hidden while clean mode is on).
 3. **Instant Hover Reveal**: Non-permanent labels render with `.territory-name-label-hover` (`display: none`), expanding via CSS `:hover` whenever the mouse rests on any territory pin.
 4. **Rich Tooltips**: Every node contains a comprehensive `title(...)` attribute displaying:
    `"<Name> (#<id>) | 🛡️ Prot: <protection> | 🌾 Cult: <cultivation> (+<food> Food/turn)"`

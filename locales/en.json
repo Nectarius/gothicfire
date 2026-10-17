@@ -287,5 +287,15 @@
   "lobby.observing_desc": "Would you like to play your own game against the computer instead?",
   "hud.leave_game": "🚪 Leave Game",
   "hud.leave_game_tip": "Leave this match and return to the main menu or play vs computer.",
-  "nav.play_pve": "⚔️ Play vs Computer"
+  "nav.play_pve": "⚔️ Play vs Computer",
+  "map.paths_show": "🗺️ Show Paths",
+  "map.paths_hide": "🗺️ Hide Paths",
+  "map.paths_tip": "Show all connections between locations on the map",
+  "map.labels_hide": "🙈 Hide Labels",
+  "map.labels_show": "👁️ Show Labels",
+  "map.labels_tip": "Hide all labels so the map is completely visible",
+  "map.names_all": "🏷️ All Names",
+  "map.names_key": "🏷️ Key Names",
+  "map.legend_path": "Path between locations ({0} total)",
+  "map.legend_focus": "Routes from selected location"
 }
