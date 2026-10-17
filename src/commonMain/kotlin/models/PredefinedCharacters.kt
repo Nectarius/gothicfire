@@ -20,48 +20,48 @@ val PredefinedCharacters = listOf(
     // Mages (7 Heroes — Circle of Fire, Circle of Water, Necromancy & Sleeper)
     // =========================================================================
     CharacterTemplate(
-        templateId = "milten",
-        name = "Milten",
-        warlord = 3,
-        intellect = 10,
-        vanguard = 2,
-        archon = 10,
-        isMage = true
-    ),
-    CharacterTemplate(
-        templateId = "xardas",
-        name = "Xardas",
-        warlord = 4,
-        intellect = 10,
+        templateId = "riordian",
+        name = "Riordian",
+        warlord = 6,
+        intellect = 8,
         vanguard = 2,
         archon = 9,
         isMage = true
     ),
     CharacterTemplate(
-        templateId = "saturas",
-        name = "Saturas",
-        warlord = 3,
+        templateId = "merdarion",
+        name = "Merdarion",
+        warlord = 5,
         intellect = 10,
-        vanguard = 3,
+        vanguard = 2,
         archon = 8,
         isMage = true
     ),
     CharacterTemplate(
-        templateId = "pyrokar",
-        name = "Pyrokar",
-        warlord = 5,
+        templateId = "neoras",
+        name = "Neoras",
+        warlord = 3,
         intellect = 9,
-        vanguard = 2,
-        archon = 9,
+        vanguard = 4,
+        archon = 8,
         isMage = true
     ),
     CharacterTemplate(
-        templateId = "torrez",
-        name = "Torrez",
+        templateId = "parlan",
+        name = "Parlan",
+        warlord = 5,
+        intellect = 8,
+        vanguard = 5,
+        archon = 7,
+        isMage = true
+    ),
+    CharacterTemplate(
+        templateId = "daron",
+        name = "Daron",
         warlord = 4,
-        intellect = 9,
+        intellect = 8,
         vanguard = 2,
-        archon = 9,
+        archon = 8,
         isMage = true
     ),
     CharacterTemplate(
@@ -145,21 +145,21 @@ val PredefinedCharacters = listOf(
     // Soldiers / Mercenaries / Wardens (7 Heroes — Mercenaries, Barons & Templars)
     // =========================================================================
     CharacterTemplate(
-        templateId = "lee",
-        name = "Lee",
-        warlord = 10,
+        templateId = "wulfgar",
+        name = "Wulfgar",
+        warlord = 8,
         intellect = 5,
         vanguard = 8,
         archon = 1,
         isSoldier = true
     ),
     CharacterTemplate(
-        templateId = "gomez",
-        name = "Gomez",
-        warlord = 9,
-        intellect = 7,
-        vanguard = 6,
-        archon = 2,
+        templateId = "parcival",
+        name = "Parcival",
+        warlord = 10,
+        intellect = 8,
+        vanguard = 5,
+        archon = 5,
         isSoldier = true
     ),
     CharacterTemplate(
@@ -201,8 +201,8 @@ val PredefinedCharacters = listOf(
     CharacterTemplate(
         templateId = "lares",
         name = "Lares",
-        warlord = 6,
-        intellect = 6,
+        warlord = 5,
+        intellect = 8,
         vanguard = 10,
         archon = 2,
         isSoldier = true
