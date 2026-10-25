@@ -158,7 +158,8 @@ data class Character(
     val gold: Int = 0,
     val army: Army = Army(),
     val siegeWeapons: Int = 0,
-    val scrolls: List<Scroll> = emptyList()
+    val scrolls: List<Scroll> = emptyList(),
+    val hides: Map<HideType, Int> = emptyMap()
 )
 
 @Serializable
@@ -213,5 +214,8 @@ data class GameState(
     val teamCastles: Map<Team, String> = emptyMap(),
     val territories: Map<String, TerritoryState> = emptyMap(),
     val marketRate: Float = 3.0f,
-    val isPvE: Boolean = false
+    val isPvE: Boolean = false,
+    val huntingCamps: List<HuntingCamp> = emptyList(),
+    val furMarket: Map<HideType, FurMarketEntry> = FurMarket.initial(),
+    val furSalesThisTurn: Map<String, Set<HideType>> = emptyMap()
 )

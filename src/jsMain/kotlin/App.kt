@@ -107,6 +107,7 @@ class App : Application() {
             var advisorLoading by remember { mutableStateOf(false) }
             var activeCastleDialogue by remember { mutableStateOf<GameEvent.CastleDialogueReceived?>(null) }
             var activeTavernDialogue by remember { mutableStateOf<GameEvent.TavernDialogueReceived?>(null) }
+            var activeHunterIntel by remember { mutableStateOf<GameEvent.HunterIntelReceived?>(null) }
             LaunchedEffect(gameState?.status) {
                 if (gameState?.status == models.GameStatus.GAME_OVER) {
                     victoryAcknowledged = false
@@ -196,6 +197,25 @@ class App : Application() {
                     },
                     onTavernDialogueReceived = { event ->
                         activeTavernDialogue = event
+                    },
+                    onHideHarvested = { event ->
+                        activePopups = activePopups + PopupEvent(
+                            title = t("popup.harvest_success_title", "Pelt Harvested!"),
+                            icon = event.hideType.emoji,
+                            message = t("popup.harvest_success_msg", "${event.characterName} harvested 1 ${event.hideType.displayName} in Sector ${event.sectorId}"),
+                            colorClass = "text-primary"
+                        )
+                    },
+                    onHideSold = { event ->
+                        activePopups = activePopups + PopupEvent(
+                            title = t("popup.hide_sold_title", "Pelt Sold!"),
+                            icon = "🪙",
+                            message = t("popup.hide_sold_msg", "Sold 1 ${event.hideType.displayName} for ${event.price} gold"),
+                            colorClass = "text-warning"
+                        )
+                    },
+                    onHunterIntelReceived = { event ->
+                        activeHunterIntel = event
                     }
                 )
             }
@@ -569,7 +589,9 @@ class App : Application() {
                                     activeNatureEvents = activeNatureEvents,
                                     activeTransfers = activeTransfers,
                                     activeTavernDialogue = activeTavernDialogue,
+                                    activeHunterIntel = activeHunterIntel,
                                     onDismissTavernDialogue = { activeTavernDialogue = null },
+                                    onDismissHunterIntel = { activeHunterIntel = null },
                                     sendAction = { ws.sendAction(it) }
                                 )
                             }

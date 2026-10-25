@@ -1,0 +1,109 @@
+### Feature Specification: Animal Hide Harvesting & Dynamic Fur Trading
+
+#### 1. Overview
+Implement a turn-based hunting and dynamic trade mechanic. Players can establish camps in specific map sectors, harvest mammal skins, consult hunter NPCs for tracking information, and sell pelts to a fluctuating local commodity market.
+
+---
+
+#### 2. Core Mechanics & Rules
+
+##### A. Hunting Camp Setup
+* **Cost:** 20 Gold coins (deducted immediately upon creation).
+* **Requirement:** The player must be physically present in the target location sector.
+* **Persistent State:** Once pitched, a camp remains active in that sector until abandoned or dismantled.
+
+##### B. Harvesting Animal Hides
+* **Turn Cost:** 1 complete turn per harvesting attempt.
+* **Presence Requirement:** The player must be currently located in a sector where an active hunting camp has been set up.
+* **Availability Check:** Pelts can only be harvested if the player's current sector matches the authorized hunting grounds for that beast type (see Section 3: Sector Hunting Table).
+* **Yield:** A successful harvest adds 1 corresponding hide item into the player's inventory.
+
+##### C. Hunter NPC Intel
+* **Dialogue Interaction:** Any NPC tagged with the `Hunter` role (e.g., Bartok, Grimbald, Niclas, Grom, Dragomir) provides a dialogue topic: *"Where can I hunt [Hide Type]?"*
+* **Response:** Directly outputs the valid sectors, titles, and habitat descriptions specified in the hunting table below.
+
+---
+
+#### 3. Dedicated Hunting Locations by Pelt Type
+
+Use the following sector mapping to validate hide harvesting attempts and populate Hunter NPC dialogue:
+
+##### 1. Wolf Fur (`ItAt_WolfFur`)
+* **Sector 1: Northern Grimwald**  
+  * The dense woods north of the city are prime hunting territory where packs of wolves roam beneath the trees. Bartok also takes the hero hunting here specifically for wolves.
+* **Sector 30: Onar's Wheatfields**  
+  * Wolves lurk in the nearby treelines and ravines, frequently preying on Pepe’s flock (tied to the quest *Four Wolves for Pepe*).
+* **Sector 38: Western Crags & Sector 27: Cavalorn's Valley**  
+  * Young wolves and standard wolves stalk the brush and rocky slopes leading down from Xardas's tower.
+* **Sector 17: Sekob's Farm & Sector 20: Akil's Farm**  
+  * The fringes of the crop fields and stone paths are regularly contested by packs of wolves.
+
+##### 2. Warg Fur (`ItAt_WargFur`)
+* **Sector 41: Shadowbeast Woods & Sector 40: Grom's Camp**  
+  * The deeper southern pine forests house higher-tier predators, including packs of wargs roaming near the rock faces and orc encampments.
+* **Sector 50: Paladin Barricade & Sector 48: Pass Gorge**  
+  * Wargs accompany orc scouts and warrior patrols stationed along the approach gorges and defensive lines to the Valley of Mines.
+* **Sector 52: Castle of the Valley of Mines (Outer Ring)**  
+  * The valley surrounding the castle is infested with orc raiding bands, which consistently keep wargs at their camps.
+
+##### 3. Shadowbeast Fur (`ItAt_ShadowFur`)
+* **Sector 41: Shadowbeast Woods**  
+  * Explicitly identified as a deep pine forest ruled by shadowbeasts, where they rest inside rocky hollows and caves.
+* **Sector 1: Northern Grimwald**  
+  * Young shadowbeasts roam the deeper parts of this northern forest. Additionally, Bartok's hunting excursion leads directly into a cave sheltering an aggressive shadowbeast.
+* **Sector 19: Sagitta's Grove (Woods behind Sekob's Farm)**  
+  * The thick forest surrounding Sagitta’s cave features rocky caverns containing sleeping shadowbeasts (such as the cave with the Sun Aloe herb).
+* **Sector 2: Black Troll Gorge (Southern approach)**  
+  * In the wooded pass leading up to the Black Troll’s lake, a shadowbeast makes its den inside an alcove cave.
+
+##### 4. Troll Fur (`ItAt_TrollFur`)
+* **Sector 39: Troll Canyon**  
+  * A deep, narrow gorge in the southern mountains where mountain trolls directly block the paths.
+* **Sector 2: Black Troll Gorge (Surroundings)**  
+  * Standard brown trolls spawn along the plateau edges and paths approaching Grimbald's camp near the mountain basin.
+* **Sector 40: Grom's Camp**  
+  * Two standard trolls guard the forest clearing near Grom’s campfire at the foot of the southern peaks. Grom even tasks the hero with providing food before offering hunting training.
+
+##### 5. Black Troll Fur (`ItAt_TrollBlackFur`)
+* **Sector 2: Black Troll Gorge**  
+  * This is the unique habitat of the legendary Black Troll on Khorinis. Grimbald camps just outside the basin waiting for a partner to help bring it down. Its fur is required for Bosper’s master trial or can be shown to Falk.
+
+##### 6. Boar Skin / Boarskin (`ItAt_Addon_KeilerFur`) *(Night of the Raven)*
+* **Sector 4: Vino's Hollow & Sector 6: Northgate Woods**  
+  * Wild boars (*Keiler*) spawn in the dense thickets and clearings around Vino’s distillery and along the timber borders near Lobart’s fields.
+* **Sector 16: Erol's Bridge & Sector 20: Akil's Farm**  
+  * The forested hills between the city road, Erol’s bridge, and the path to Akil's farm contain several small groups of roaming boars.
+* **Sector 43: Ruins of the Builders (Pyramids plateau)**  
+  * The scrubland and outer valley leading up to the ancient stepped pyramids are frequented by wild boars.
+
+---
+
+#### 4. Economy & Market Price Dynamics
+
+##### A. Base Valuation
+* **Wolf Fur (`ItAt_WolfFur`):** 5 coins
+* **Warg Fur (`ItAt_WargFur`):** 10 coins
+* **Boarskin (`ItAt_Addon_KeilerFur`):** 20 coins
+* **Shadowbeast Fur (`ItAt_ShadowFur`):** 20 coins
+* **Troll Fur (`ItAt_TrollFur`):** 30 coins
+* **Black Troll Fur (`ItAt_TrollBlackFur`):** 35 coins
+
+##### B. Price Fluctuation Algorithm
+* **Turn Evaluation:** At the end of every turn, update the market multiplier independently for each of the 6 hide categories.
+* **Clamping Limits:** Multipliers must strictly stay within `0.50` (50%) to `2.00` (200%).
+  $$\text{Effective Price} = \text{round}(\text{Base Price} \times \text{Multiplier})$$
+* **Incremental Delta:** On turn change, each multiplier shifts by a random step (e.g., $\pm 0.05$ to $\pm 0.20$), preserving trend continuity rather than jumping wildly across the range.
+
+##### C. Sales Quota & Throttling
+* **Transaction Cap:** Merchants purchase a maximum of **one (1) pelt of any given type per turn**.
+* **Quota Enforcement:** Attempting to sell more than one hide of the same type within the same turn is blocked (*"The merchant has bought their fill of this pelt for now. Check back next turn."*). Quotas reset at the start of the next turn.
+
+---
+
+#### 5. Acceptance Criteria
+1. **Camp Setup Check:** Pitching a camp deducts 20 gold; fails if player has less than 20 gold. Camp remains bound to the current sector.
+2. **Turn Consumption:** Harvesting an animal hide consumes exactly 1 turn.
+3. **Sector Whitelisting:** Harvesting fails if the player is in a sector that is not registered for that pelt type (e.g., attempting to harvest Black Troll Fur outside of Sector 2).
+4. **Dialogue Data Accuracy:** Inquiring with a Hunter NPC accurately returns the listed sectors and descriptions matching that pelt category.
+5. **Trade Enforcement:** Selling 1 Wolf Fur is accepted; a second sale of Wolf Fur in the same turn is rejected until the turn advances.
+6. **Value Boundaries:** Item payouts remain clamped between 50% and 200% of the defined base price at all times.

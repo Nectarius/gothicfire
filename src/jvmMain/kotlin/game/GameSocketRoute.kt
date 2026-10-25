@@ -92,6 +92,11 @@ fun Route.gameSocket() {
                             is GameAction.SelectAdvisor -> game.selectAdvisor(playerId, action.advisorId)
                             is GameAction.ConsultCastleLord -> game.consultCastleLord(playerId, action.sectorId, action.characterId)
                             is GameAction.TalkToTavernPatron -> game.talkToTavernPatron(playerId, action.sectorId, action.patronId, action.characterId)
+                            is GameAction.PitchHuntingCamp -> game.pitchHuntingCamp(playerId, action.characterId)
+                            is GameAction.DismantleHuntingCamp -> game.dismantleHuntingCamp(playerId, action.characterId)
+                            is GameAction.HarvestHide -> game.harvestHide(playerId, action.characterId, action.hideType)
+                            is GameAction.SellHide -> game.sellHide(playerId, action.characterId, action.hideType)
+                            is GameAction.AskHunterAboutHide -> game.askHunterAboutHide(playerId, action.sectorId, action.patronId, action.hideType, action.characterId)
                             is GameAction.EndGame -> {
                                 val isPvE = game.gameState.isPvE
                                 game.endGame(playerId)

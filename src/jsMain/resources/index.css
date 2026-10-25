@@ -3175,3 +3175,99 @@ input:focus, textarea:focus {
     .location-info-body { padding: 0.9rem 1rem 1rem; }
     .location-info-characters { grid-template-columns: 1fr; }
 }
+
+/* ==========================================================================
+   ANIMAL HIDE HARVESTING & DYNAMIC FUR TRADING
+   ========================================================================== */
+
+/* Strategic Map Camp Marker */
+.territory-camp-marker {
+    position: absolute;
+    top: -14px;
+    right: -14px;
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+    line-height: 22px;
+    text-align: center;
+    border-radius: 50%;
+    background: rgba(20, 15, 10, 0.9);
+    border: 2px solid #eab308;
+    box-shadow: 0 0 8px rgba(234, 179, 8, 0.6), inset 0 0 4px rgba(0, 0, 0, 0.8);
+    z-index: 8;
+    cursor: pointer;
+    animation: campPulse 2.5s infinite alternate ease-in-out;
+}
+
+@keyframes campPulse {
+    0% { transform: scale(1); box-shadow: 0 0 6px rgba(234, 179, 8, 0.4); }
+    100% { transform: scale(1.15); box-shadow: 0 0 12px rgba(234, 179, 8, 0.8); }
+}
+
+/* Hunting Grounds section in TerritoryCard */
+.hunting-section {
+    background: rgba(18, 14, 10, 0.6);
+    border-color: rgba(234, 179, 8, 0.25) !important;
+}
+
+/* Fur Exchange Table and Rows */
+.fur-exchange-container {
+    max-height: 380px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.fur-row {
+    background: rgba(25, 20, 15, 0.7);
+    border: 1px solid rgba(180, 140, 60, 0.2);
+    transition: all 0.2s ease-in-out;
+}
+
+.fur-row:hover {
+    background: rgba(35, 28, 20, 0.85);
+    border-color: rgba(234, 179, 8, 0.5);
+    transform: translateY(-1px);
+}
+
+.text-success {
+    color: #4ade80 !important;
+}
+
+.text-danger {
+    color: #f87171 !important;
+}
+
+/* Hunter Intel Box and Cards */
+.hunter-intel-box {
+    background: radial-gradient(circle at 10% 20%, rgba(45, 30, 15, 0.85), rgba(15, 10, 5, 0.95));
+    border-color: #f59e0b !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), inset 0 0 12px rgba(245, 158, 11, 0.15);
+}
+
+.hunting-ground-card {
+    border-left: 3px solid #f59e0b;
+    transition: background 0.2s ease;
+}
+
+.hunting-ground-card:hover {
+    background: rgba(45, 35, 20, 0.5);
+}
+
+.hunter-inquiry-box {
+    background: rgba(10, 8, 5, 0.3);
+    padding: 6px;
+    border-radius: 4px;
+}
+
+.btn-xxs {
+    padding: 2px 6px;
+    font-size: 0.68rem;
+    line-height: 1.2;
+    border-radius: 3px;
+}
+
+.hides-section {
+    background: rgba(15, 12, 8, 0.4);
+    padding: 6px;
+    border-radius: 4px;
+}

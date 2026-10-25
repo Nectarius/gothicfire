@@ -73,7 +73,9 @@ fun IComponent.StrategicMap(
     activeNatureEvents: List<models.GameEvent.NatureEventOccurred> = emptyList(),
     activeTransfers: List<models.GameEvent.ResourceTransferred> = emptyList(),
     activeTavernDialogue: models.GameEvent.TavernDialogueReceived? = null,
+    activeHunterIntel: models.GameEvent.HunterIntelReceived? = null,
     onDismissTavernDialogue: () -> Unit = {},
+    onDismissHunterIntel: () -> Unit = {},
     sendAction: (GameAction) -> Unit
 ) {
     var openedTerritoryId by remember { mutableStateOf<String?>(null) }
@@ -269,6 +271,17 @@ fun IComponent.StrategicMap(
                                 if (terrState.gold > 0) span(className = "res-tag") { textNode("🪙${terrState.gold}") }
                             }
                         }
+
+                        val sectorCamps = gameState?.huntingCamps?.filter { it.sectorId == sector } ?: emptyList()
+                        if (sectorCamps.isNotEmpty()) {
+                            val camp = sectorCamps.first()
+                            val teamColor = gameState?.teamInfos?.get(camp.ownerTeam)?.color ?: "#FFD700"
+                            div(className = "territory-camp-marker") {
+                                title("⛺ Hunting Camp (${camp.ownerTeam.name})")
+                                style("borderColor", teamColor)
+                                textNode("⛺")
+                            }
+                        }
                         
                         if (activeFight?.sectorId == sector) {
                             val fightStrategy = activeFight?.strategy ?: BattleStrategy.NONE
@@ -406,7 +419,9 @@ fun IComponent.StrategicMap(
                 gameState = gameState,
                 selectedCharacterId = activeChar?.id,
                 activeTavernDialogue = activeTavernDialogue,
+                activeHunterIntel = activeHunterIntel,
                 onDismissTavernDialogue = onDismissTavernDialogue,
+                onDismissHunterIntel = onDismissHunterIntel,
                 onClose = { openedTerritoryId = null },
                 sendAction = sendAction
             )

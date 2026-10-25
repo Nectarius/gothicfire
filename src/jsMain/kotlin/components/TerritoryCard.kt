@@ -14,7 +14,9 @@ fun IComponent.TerritoryCard(
     gameState: GameState?,
     selectedCharacterId: String? = null,
     activeTavernDialogue: GameEvent.TavernDialogueReceived? = null,
+    activeHunterIntel: GameEvent.HunterIntelReceived? = null,
     onDismissTavernDialogue: () -> Unit = {},
+    onDismissHunterIntel: () -> Unit = {},
     onClose: () -> Unit,
     sendAction: (GameAction) -> Unit
 ) {
@@ -315,6 +317,86 @@ fun IComponent.TerritoryCard(
                     }
                 }
             }
+
+            // Hunting Grounds & Camp Section
+            val huntableHides = HuntingCatalog.huntableHidesIn(sectorId)
+            val myCamp = gameState.huntingCamps.find { it.sectorId == sectorId && it.ownerPlayerId == playerId }
+            div(className = "hunting-section mt-1 pt-1 border-t") {
+                div(className = "d-flex justify-between items-center mb-05") {
+                    h4(className = "m-0 text-sm font-600 text-warning") {
+                        textNode("🏹 " + t("hunting.title", "Hunting Grounds"))
+                    }
+                    if (myCamp != null) {
+                        span(className = "badge badge-success text-xs") {
+                            textNode("⛺ " + t("hunting.camp_active", "Active Camp"))
+                        }
+                    }
+                }
+
+                if (huntableHides.isEmpty()) {
+                    p(className = "text-xs text-dark-gray m-0 mb-05 text-center") {
+                        textNode(t("hunting.no_game", "No wild beasts roam these grounds."))
+                    }
+                } else {
+                    div(className = "d-flex flex-wrap gap-05 mb-05") {
+                        for (hide in huntableHides) {
+                            span(className = "badge badge-outline text-xs") {
+                                textNode("${hide.emoji} ${hide.displayName}")
+                            }
+                        }
+                    }
+                }
+
+                if (charAtLocation != null && isMyTurn) {
+                    if (myCamp == null) {
+                        if (huntableHides.isNotEmpty()) {
+                            val canAffordCamp = charAtLocation.gold >= FurMarket.CAMP_COST
+                            button(
+                                t("hunting.pitch_camp_btn", FurMarket.CAMP_COST),
+                                className = "btn btn-sm btn-outline w-full ${if (!canAffordCamp) "btn-disabled" else ""}"
+                            ) {
+                                title(if (!canAffordCamp) t("hunting.need_gold", FurMarket.CAMP_COST) else t("hunting.pitch_camp_tip"))
+                                onClick {
+                                    if (canAffordCamp) {
+                                        sendAction(GameAction.PitchHuntingCamp(charAtLocation.id))
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        div(className = "d-flex flex-col gap-05") {
+                            val canHarvest = !charAtLocation.hasActedThisTurn
+                            for (hide in huntableHides) {
+                                button(
+                                    t("hunting.harvest_btn", hide.emoji, hide.displayName),
+                                    className = "btn btn-sm btn-primary w-full ${if (!canHarvest) "btn-disabled" else ""}"
+                                ) {
+                                    title(if (!canHarvest) t("territory.already_acted", charAtLocation.name) else t("hunting.harvest_tip", hide.displayName))
+                                    onClick {
+                                        if (canHarvest) {
+                                            sendAction(GameAction.HarvestHide(charAtLocation.id, hide))
+                                        }
+                                    }
+                                }
+                            }
+
+                            button(
+                                t("hunting.dismantle_btn", "Dismantle Camp"),
+                                className = "btn btn-sm btn-outline text-red w-full"
+                            ) {
+                                title(t("hunting.dismantle_tip", "Dismantle this hunting camp"))
+                                onClick {
+                                    sendAction(GameAction.DismantleHuntingCamp(charAtLocation.id))
+                                }
+                            }
+                        }
+                    }
+                } else if (huntableHides.isNotEmpty() && charAtLocation == null) {
+                    p(className = "text-xs text-dark-gray m-0 text-center font-italic") {
+                        textNode(t("hunting.move_hero_notice", "Station a hero here to pitch a camp or harvest pelts."))
+                    }
+                }
+            }
         }
 
         if (isTavernOpen && commanderForSubLocation != null && subLocation != null) {
@@ -323,12 +405,17 @@ fun IComponent.TerritoryCard(
                 characterId = commanderForSubLocation.id,
                 commanderName = commanderForSubLocation.name,
                 activeDialogue = activeTavernDialogue,
+                activeHunterIntel = activeHunterIntel,
                 onClose = {
                     isTavernOpen = false
                     onDismissTavernDialogue()
+                    onDismissHunterIntel()
                 },
                 onTalk = { patronId ->
                     sendAction(GameAction.TalkToTavernPatron(sectorId, commanderForSubLocation.id, patronId))
+                },
+                onAskHunter = { patronId, hideType ->
+                    sendAction(GameAction.AskHunterAboutHide(sectorId, commanderForSubLocation.id, patronId, hideType))
                 }
             )
         }

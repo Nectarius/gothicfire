@@ -234,6 +234,27 @@ fun IComponent.CharacterPanel(
                                 }
                             }
                         }
+
+                        val totalHides = activeChar.hides.values.sum()
+                        if (totalHides > 0) {
+                            div(className = "hides-section mt-05 pt-05 border-top-dark") {
+                                div(className = "d-flex justify-between items-center mb-02") {
+                                    span(className = "font-600 text-sm") { textNode("🏷️ " + t("char.pelts_title", "Animal Hides")) }
+                                    span(className = "text-xs text-dark-gray") {
+                                        textNode(t("char.pelts_count", "$totalHides pelts"))
+                                    }
+                                }
+                                div(className = "d-flex flex-wrap gap-05") {
+                                    for ((hide, count) in activeChar.hides) {
+                                        if (count > 0) {
+                                            span(className = "badge badge-outline text-xs") {
+                                                textNode("${hide.emoji} ${hide.displayName}: $count")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

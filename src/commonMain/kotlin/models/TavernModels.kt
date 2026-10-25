@@ -3,6 +3,11 @@ package models
 import kotlinx.serialization.Serializable
 
 @Serializable
+enum class NpcTag {
+    HUNTER
+}
+
+@Serializable
 data class TavernPatron(
     val id: String,
     val name: String,
@@ -10,9 +15,11 @@ data class TavernPatron(
     val iconUrl: String,
     val catchphrase: String,
     val topicDescription: String = "",
-    val defaultResponse: String = ""
+    val defaultResponse: String = "",
+    val tags: Set<NpcTag> = emptySet()
 ) {
     val greeting: String get() = catchphrase
+    val isHunter: Boolean get() = tags.contains(NpcTag.HUNTER)
 }
 
 @Serializable
@@ -121,7 +128,8 @@ val SectorSubLocations: Map<String, SectorSubLocation> = mapOf(
                 iconUrl = "/characters/alrik.png",
                 catchphrase = "Fifty gold coins and we hunt together—just don't expect me to walk past that shadowbeast in the deep woods!",
                 topicDescription = "Ask about hunting in the deep woods and missing hunters",
-                defaultResponse = "Inside detail: My old friend Trokar went deeper into these woods after drinking too much at Coragon's tavern and never came back—only his hunting horn remained. Strategic Hint: Northern Grimwald bridges the Circle of the Sun (#5) and Black Troll Gorge (#2). Use Search Scrolls here before advancing on the Monastery!"
+                defaultResponse = "Inside detail: My old friend Trokar went deeper into these woods after drinking too much at Coragon's tavern and never came back—only his hunting horn remained. Strategic Hint: Northern Grimwald bridges the Circle of the Sun (#5) and Black Troll Gorge (#2). Use Search Scrolls here before advancing on the Monastery!",
+                tags = setOf(NpcTag.HUNTER)
             )
         )
     ),
@@ -141,7 +149,8 @@ val SectorSubLocations: Map<String, SectorSubLocation> = mapOf(
                 iconUrl = "/characters/alrik.png",
                 catchphrase = "Keep your voice down! That hulking black beast across the stream has hide thicker than castle iron.",
                 topicDescription = "Ask about big game hunting and the Black Troll's weakness",
-                defaultResponse = "Inside detail: You don't need an army to slay the Black Troll—a single Shrink Monster scroll bought from Zuris shrinks it to the size of a sheep in seconds! Strategic Hint: This gorge has 12 natural Protection and borders the Monastery of Innos (#7) directly. Station a hero here to maintain Fog-of-War vision over the Monastery's northern flank."
+                defaultResponse = "Inside detail: You don't need an army to slay the Black Troll—a single Shrink Monster scroll bought from Zuris shrinks it to the size of a sheep in seconds! Strategic Hint: This gorge has 12 natural Protection and borders the Monastery of Innos (#7) directly. Station a hero here to maintain Fog-of-War vision over the Monastery's northern flank.",
+                tags = setOf(NpcTag.HUNTER)
             )
         )
     ),
@@ -161,7 +170,8 @@ val SectorSubLocations: Map<String, SectorSubLocation> = mapOf(
                 iconUrl = "/characters/alrik.png",
                 catchphrase = "Have a piece of roasted meat! Down in the city everyone's scrambling for gold and paladin decrees—up here I answer only to the wind.",
                 topicDescription = "Ask about hermit life, archery training, and cliff shortcuts",
-                defaultResponse = "Inside detail: Most travelers never climb the ledge behind Jack's road, missing out on the earliest free bow-training on the island. Strategic Hint: My cliff connects 5 different sectors (#0, #1, #4, #5, #12). Controlling this hub lets your archers pivot between the northern coast and the central crossroads in a single turn."
+                defaultResponse = "Inside detail: Most travelers never climb the ledge behind Jack's road, missing out on the earliest free bow-training on the island. Strategic Hint: My cliff connects 5 different sectors (#0, #1, #4, #5, #12). Controlling this hub lets your archers pivot between the northern coast and the central crossroads in a single turn.",
+                tags = setOf(NpcTag.HUNTER)
             )
         )
     ),
@@ -734,7 +744,8 @@ val SectorSubLocations: Map<String, SectorSubLocation> = mapOf(
                 iconUrl = "/characters/alrik.png",
                 catchphrase = "Don't go near the Circle of the Sun without silver or fire! I dropped my prized crossbow fleeing the undead up there.",
                 topicDescription = "Ask about crossbow marksmanship and lost hunting gear",
-                defaultResponse = "Inside detail: Return my lost crossbow from the Circle of the Sun and I'll train your Crossbow skill up to 60% for just 150 gold! Strategic Hint: Dragomir's Camp yields 5 Food/turn and sits directly below The Dead Harpy Inn (#21)—a critical stepping stone toward Gaan's Crossroads (#33)."
+                defaultResponse = "Inside detail: Return my lost crossbow from the Circle of the Sun and I'll train your Crossbow skill up to 60% for just 150 gold! Strategic Hint: Dragomir's Camp yields 5 Food/turn and sits directly below The Dead Harpy Inn (#21)—a critical stepping stone toward Gaan's Crossroads (#33).",
+                tags = setOf(NpcTag.HUNTER)
             )
         )
     ),
@@ -981,7 +992,8 @@ val SectorSubLocations: Map<String, SectorSubLocation> = mapOf(
                 iconUrl = "/characters/halvor.png",
                 catchphrase = "Look at me—chopping logs all day beneath two mountain trolls on an empty stomach! Got any milk, bread, and ham?",
                 topicDescription = "Trade foodstuffs for big-game skinning and trophy-pulling lessons",
-                defaultResponse = "Inside detail: Feed me milk, bread, and a slab of ham, and I'll teach you how to skin shadowbeasts, pull mandibles, and harvest troll tusks! Strategic Hint: Grom's Camp yields 5 Food/turn and links Xardas's Valley (#46) to the southern woods (#41) and Golem Defile (#47)."
+                defaultResponse = "Inside detail: Feed me milk, bread, and a slab of ham, and I'll teach you how to skin shadowbeasts, pull mandibles, and harvest troll tusks! Strategic Hint: Grom's Camp yields 5 Food/turn and links Xardas's Valley (#46) to the southern woods (#41) and Golem Defile (#47).",
+                tags = setOf(NpcTag.HUNTER)
             )
         )
     ),

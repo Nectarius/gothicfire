@@ -100,6 +100,26 @@ sealed class GameAction {
     ) : GameAction()
 
     @Serializable
+    data class PitchHuntingCamp(val characterId: String) : GameAction()
+
+    @Serializable
+    data class DismantleHuntingCamp(val characterId: String) : GameAction()
+
+    @Serializable
+    data class HarvestHide(val characterId: String, val hideType: HideType) : GameAction()
+
+    @Serializable
+    data class SellHide(val characterId: String, val hideType: HideType) : GameAction()
+
+    @Serializable
+    data class AskHunterAboutHide(
+        val sectorId: String,
+        val characterId: String,
+        val patronId: String,
+        val hideType: HideType
+    ) : GameAction()
+
+    @Serializable
     data object EndGame : GameAction()
     
     @Serializable
@@ -165,6 +185,30 @@ sealed class GameEvent {
         val patronName: String,
         val greeting: String,
         val responseText: String,
+        val timestamp: Long = 0L
+    ) : GameEvent()
+
+    @Serializable
+    data class HideHarvested(
+        val characterId: String,
+        val characterName: String,
+        val sectorId: String,
+        val hideType: HideType
+    ) : GameEvent()
+
+    @Serializable
+    data class HideSold(
+        val characterId: String,
+        val hideType: HideType,
+        val price: Int
+    ) : GameEvent()
+
+    @Serializable
+    data class HunterIntelReceived(
+        val patronId: String,
+        val patronName: String,
+        val hideType: HideType,
+        val grounds: List<HuntingGround>,
         val timestamp: Long = 0L
     ) : GameEvent()
 }

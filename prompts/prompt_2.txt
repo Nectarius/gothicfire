@@ -1,0 +1,12 @@
+Let’s create an implementation plan for a new feature: mini-games within the game. Our game is a turn-based strategy; currently, battles are resolved automatically based on an algorithm. We want to introduce a mini-game mode for combat. When a user attacks another player or the computer, this mini-game mode is triggered. A map of the location appears, featuring a grid for movement. Depending on the troops recruited, a player may have between 1 and 5 units on the board:
+1.  **Hero:**
+*   *Warrior Hero:* Receives a bonus to defense and attack; can move twice and then attack. 
+*   *Archer Hero:* Can move three times and attack targets up to two squares away (horizontally or vertically). 
+*   *Mage Hero:* Can move twice and attack targets up to three squares away (in any direction).
+2.  **Archer:** (Available if archers have been recruited) Can move twice and attack targets up to two squares away (diagonally or vertically).
+3.  **Heavy Infantry:** Can move twice and attack adjacent squares (in any direction); possesses a higher defense bonus than an archer.
+4.  **Light Infantry:** (Available if recruited) Can move three times and attack adjacent squares (in any direction).
+5.  **Mage:** Can move twice and attack targets up to two squares away (in any direction).
+
+A squad can consist of up to 20 fighters in total (we should establish this limit if it isn't already in place). These can be any combination of the three fighter types; the strength of the units on the board will scale based on which fighter type is most prevalent in the squad. Locations may contain obstacles—such as forests or rivers—that cannot be traversed. In the case of fortress locations, there may also be structures that block movement. Let’s generate these locations based on the existing map and the data we currently have.
+Images need to be generated for the figurines and cards.

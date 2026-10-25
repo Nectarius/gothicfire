@@ -1444,13 +1444,18 @@ class GameSession(
                 val fluctuation = kotlin.random.Random.nextDouble(-2.0, 2.0).toFloat()
                 newMarketRate = (newMarketRate + fluctuation).coerceIn(1.0f, 15.0f)
             }
+            val newFurMarket = gameState.furMarket.mapValues { (_, entry) ->
+                FurMarket.nextEntry(entry)
+            }
             
             gameState = gameState.copy(
                 activeTeamTurn = newTeamTurn,
                 currentTurn = newTurnCount,
                 characters = finalUpdatedChars,
                 territories = updatedTerritories,
-                marketRate = newMarketRate
+                marketRate = newMarketRate,
+                furMarket = newFurMarket,
+                furSalesThisTurn = emptyMap()
             )
             
             generatedEvents.forEach { broadcastEvent(it) }
@@ -1644,6 +1649,184 @@ class GameSession(
             )
             broadcastEvent(event)
         }
+    }
+
+    suspend fun pitchHuntingCamp(playerId: String, characterId: String) {
+        mutex.withLock {
+            if (gameState.status != GameStatus.IN_PROGRESS) return
+            val player = gameState.players.find { it.id == playerId } ?: return
+            if (gameState.activeTeamTurn != player.team) return
+
+            val char = gameState.characters.find { it.id == characterId && it.playerId == playerId && !it.isDead } ?: return
+            val sectorId = char.currentSector ?: return
+
+            if (!HuntingCatalog.hasGameIn(sectorId)) {
+                broadcastError(playerId, "No huntable beasts roam this sector.")
+                return
+            }
+
+            val alreadyHasCamp = gameState.huntingCamps.any { it.sectorId == sectorId && it.ownerPlayerId == playerId }
+            if (alreadyHasCamp) {
+                broadcastError(playerId, "You already have an active hunting camp in this sector.")
+                return
+            }
+
+            if (char.gold < FurMarket.CAMP_COST) {
+                broadcastError(playerId, "Not enough gold to pitch a hunting camp (requires ${FurMarket.CAMP_COST} gold).")
+                return
+            }
+
+            val camp = HuntingCamp(
+                sectorId = sectorId,
+                ownerPlayerId = playerId,
+                ownerTeam = player.team,
+                pitchedByCharId = char.id,
+                pitchedOnTurn = gameState.currentTurn
+            )
+            val newChars = gameState.characters.map {
+                if (it.id == char.id) it.copy(gold = it.gold - FurMarket.CAMP_COST) else it
+            }
+            gameState = gameState.copy(
+                characters = newChars,
+                huntingCamps = gameState.huntingCamps + camp
+            )
+        }
+        broadcastState()
+    }
+
+    suspend fun dismantleHuntingCamp(playerId: String, characterId: String) {
+        mutex.withLock {
+            if (gameState.status != GameStatus.IN_PROGRESS) return
+            val player = gameState.players.find { it.id == playerId } ?: return
+            if (gameState.activeTeamTurn != player.team) return
+
+            val char = gameState.characters.find { it.id == characterId && it.playerId == playerId && !it.isDead } ?: return
+            val sectorId = char.currentSector ?: return
+
+            val camp = gameState.huntingCamps.find { it.sectorId == sectorId && it.ownerPlayerId == playerId }
+            if (camp == null) {
+                broadcastError(playerId, "You do not have a hunting camp in this sector to dismantle.")
+                return
+            }
+
+            gameState = gameState.copy(
+                huntingCamps = gameState.huntingCamps.filter { it != camp }
+            )
+        }
+        broadcastState()
+    }
+
+    suspend fun harvestHide(playerId: String, characterId: String, hideType: HideType) {
+        var harvestedEvent: GameEvent.HideHarvested? = null
+
+        mutex.withLock {
+            if (gameState.status != GameStatus.IN_PROGRESS) return
+            val player = gameState.players.find { it.id == playerId } ?: return
+            if (gameState.activeTeamTurn != player.team) return
+
+            val char = gameState.characters.find { it.id == characterId && it.playerId == playerId && !it.isDead } ?: return
+            if (char.hasActedThisTurn) {
+                broadcastError(playerId, "${char.name} has already acted this turn.")
+                return
+            }
+            val sectorId = char.currentSector ?: return
+
+            val hasCamp = gameState.huntingCamps.any { it.sectorId == sectorId && it.ownerPlayerId == playerId }
+            if (!hasCamp) {
+                broadcastError(playerId, "You must establish a hunting camp in this sector before harvesting hides.")
+                return
+            }
+
+            if (!HuntingCatalog.isHuntable(hideType, sectorId)) {
+                broadcastError(playerId, "${hideType.displayName} cannot be harvested in Sector $sectorId.")
+                return
+            }
+
+            val currentCount = char.hides[hideType] ?: 0
+            val updatedHides = char.hides + (hideType to (currentCount + 1))
+            val newChars = gameState.characters.map {
+                if (it.id == char.id) it.copy(hides = updatedHides, hasActedThisTurn = true) else it
+            }
+            gameState = gameState.copy(characters = newChars)
+            harvestedEvent = GameEvent.HideHarvested(char.id, char.name, sectorId, hideType)
+            checkTurnEnd()
+        }
+
+        harvestedEvent?.let { broadcastEvent(it) }
+        broadcastState()
+    }
+
+    suspend fun sellHide(playerId: String, characterId: String, hideType: HideType) {
+        var soldEvent: GameEvent.HideSold? = null
+
+        mutex.withLock {
+            if (gameState.status != GameStatus.IN_PROGRESS) return
+            val player = gameState.players.find { it.id == playerId } ?: return
+            if (gameState.activeTeamTurn != player.team) return
+
+            val char = gameState.characters.find { it.id == characterId && it.playerId == playerId && !it.isDead } ?: return
+            val currentCount = char.hides[hideType] ?: 0
+            if (currentCount <= 0) {
+                broadcastError(playerId, "You do not have any ${hideType.displayName} to sell.")
+                return
+            }
+
+            val playerSales = gameState.furSalesThisTurn[playerId] ?: emptySet()
+            if (playerSales.contains(hideType)) {
+                broadcastError(playerId, "The merchant has bought their fill of this pelt for now. Check back next turn.")
+                return
+            }
+
+            val marketEntry = gameState.furMarket[hideType] ?: FurMarketEntry(1.0)
+            val payout = FurMarket.effectivePrice(hideType, marketEntry.multiplier)
+
+            val updatedHides = if (currentCount - 1 > 0) char.hides + (hideType to (currentCount - 1)) else char.hides - hideType
+            val newChars = gameState.characters.map {
+                if (it.id == char.id) it.copy(hides = updatedHides, gold = it.gold + payout) else it
+            }
+            val updatedSales = gameState.furSalesThisTurn + (playerId to (playerSales + hideType))
+            gameState = gameState.copy(characters = newChars, furSalesThisTurn = updatedSales)
+            soldEvent = GameEvent.HideSold(char.id, hideType, payout)
+        }
+
+        soldEvent?.let { broadcastEvent(it) }
+        broadcastState()
+    }
+
+    suspend fun askHunterAboutHide(playerId: String, sectorId: String, patronId: String, hideType: HideType, characterId: String) {
+        val player = gameState.players.find { it.id == playerId } ?: return
+        val char = gameState.characters.find { it.id == characterId && it.playerId == playerId } ?: return
+        if (char.currentSector != sectorId || char.isDead) {
+            logger.warn("Cannot consult hunter: Character {} is dead or not stationed at sector {}", characterId, sectorId)
+            return
+        }
+
+        val myTeam = player.team
+        val currentTerr = gameState.territories[sectorId]
+        val isOwner = currentTerr?.ownerTeam == myTeam || gameState.teamCastles[myTeam] == sectorId
+        if (!isOwner) {
+            broadcastError(playerId, "You must control this sector to consult with the hunter.")
+            return
+        }
+
+        val patron = getPatronForSector(sectorId, patronId)
+            ?: KhorinisTavernPatrons.find { it.id == patronId }
+        if (patron == null) return
+
+        if (!patron.isHunter) {
+            broadcastError(playerId, "${patron.name} does not possess hunter tracking information.")
+            return
+        }
+
+        val grounds = HuntingCatalog.groundsFor(hideType)
+        val event = GameEvent.HunterIntelReceived(
+            patronId = patron.id,
+            patronName = patron.name,
+            hideType = hideType,
+            grounds = grounds,
+            timestamp = System.currentTimeMillis()
+        )
+        broadcastEvent(event)
     }
 
     suspend fun selectAdvisor(playerId: String, advisorId: String) {
