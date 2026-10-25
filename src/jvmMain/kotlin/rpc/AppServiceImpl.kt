@@ -79,13 +79,14 @@ class AppServiceImpl(private val call: ApplicationCall) : AppService {
                 val savedAt = doc.getLong("savedAt") ?: 0L
                 val state = json.decodeFromString<GameState>(stateJson)
                 
-                val redTeam = state.teamInfos[Team.RED]
-                val blueTeam = state.teamInfos[Team.BLUE]
+                val teams = state.teamInfos.values.toList()
+                val team1 = state.teamInfos[Team.RED] ?: teams.getOrNull(0)
+                val team2 = state.teamInfos[Team.BLUE] ?: teams.getOrNull(1)
                 
                 val winningTeamInfo = state.winningTeam?.let { state.teamInfos[it] }
                 
-                val redPlayers = state.players.filter { it.team == Team.RED }.map { it.name }
-                val bluePlayers = state.players.filter { it.team == Team.BLUE }.map { it.name }
+                val redPlayers = team1?.let { t -> state.players.filter { it.team == t.id }.map { it.name } } ?: emptyList()
+                val bluePlayers = team2?.let { t -> state.players.filter { it.team == t.id }.map { it.name } } ?: emptyList()
                 
                 GameResultSummary(
                     gameId = gameId,
@@ -93,8 +94,8 @@ class AppServiceImpl(private val call: ApplicationCall) : AppService {
                     winningTeamColor = winningTeamInfo?.color,
                     totalTurns = state.currentTurn,
                     finishedAt = savedAt,
-                    redTeamName = redTeam?.name,
-                    blueTeamName = blueTeam?.name,
+                    redTeamName = team1?.name,
+                    blueTeamName = team2?.name,
                     redPlayers = redPlayers,
                     bluePlayers = bluePlayers
                 )

@@ -6,7 +6,64 @@ import kotlinx.serialization.Serializable
 enum class Team {
     RED,
     BLUE,
-    YELLOW
+    GREEN,
+    PURPLE,
+    ORANGE,
+    CYAN,
+    PINK,
+    TEAL,
+    WHITE,
+    BLACK,
+    YELLOW;
+
+    val defaultHex: String
+        get() = when (this) {
+            RED -> "#D32F2F"
+            BLUE -> "#1976D2"
+            GREEN -> "#2E7D32"
+            PURPLE -> "#7B1FA2"
+            ORANGE -> "#F57C00"
+            CYAN -> "#00BCD4"
+            PINK -> "#E91E63"
+            TEAL -> "#00796B"
+            WHITE -> "#FFFFFF"
+            BLACK -> "#212121"
+            YELLOW -> "#EAB308"
+        }
+
+    val defaultColorName: String
+        get() = when (this) {
+            RED -> "Crimson Red"
+            BLUE -> "Cobalt Blue"
+            GREEN -> "Emerald Green"
+            PURPLE -> "Royal Purple"
+            ORANGE -> "Blaze Orange"
+            CYAN -> "Electric Cyan"
+            PINK -> "Magenta Pink"
+            TEAL -> "Teal / Sea Green"
+            WHITE -> "Pure White"
+            BLACK -> "Charcoal Black"
+            YELLOW -> "Sun Yellow"
+        }
+
+    val i18nKey: String
+        get() = "lobby.${name.lowercase()}_team"
+
+    companion object {
+        /** The 10 playable team colors available for selection. */
+        val PLAYABLE_TEAMS: List<Team> = listOf(
+            RED,
+            BLUE,
+            GREEN,
+            PURPLE,
+            ORANGE,
+            CYAN,
+            PINK,
+            TEAL,
+            WHITE,
+            BLACK
+        )
+    }
 }
 
 @Serializable

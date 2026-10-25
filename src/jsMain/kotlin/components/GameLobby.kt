@@ -101,16 +101,14 @@ fun IComponent.GameLobby(
                 div(className = "mb-2") {
                     p(className = "m-0 mb-05") { textNode(t("lobby.choose_team")) }
                     select(className = "w-full max-w-xs mb-1") {
-                        option(value = "RED", label = t("lobby.red_team"))
-                        option(value = "BLUE", label = t("lobby.blue_team"))
+                        for (team in Team.PLAYABLE_TEAMS) {
+                            option(value = team.name, label = t(team.i18nKey), selected = team == pveTeam)
+                        }
                         onChange { 
-                            pveTeam = if (this.value == "BLUE") Team.BLUE else Team.RED 
-                            // Auto-update color based on standard team if user hasn't chosen one
-                            if (this.value == "BLUE" && pveTeamColor == predefinedColors[0].first) {
-                                pveTeamColor = predefinedColors[1].first
-                            } else if (this.value == "RED" && pveTeamColor == predefinedColors[1].first) {
-                                pveTeamColor = predefinedColors[0].first
-                            }
+                            val chosen = try { Team.valueOf(this.value ?: "RED") } catch (e: Exception) { Team.RED }
+                            pveTeam = chosen
+                            pveTeamColor = chosen.defaultHex
+                            pveColorError = false
                         }
                     }
                     
@@ -284,7 +282,7 @@ fun IComponent.GameLobby(
                         }
                         if (effectivePlayerName.isNotBlank() && pveSelectedHeroes.size == 2 && !pveColorError) {
                             ws.connect {
-                                val colorName = predefinedColors.find { it.first.uppercase() == pveTeamColor.uppercase() }?.second ?: if (pveTeam == Team.RED) "Red Team" else "Blue Team"
+                                val colorName = predefinedColors.find { it.first.uppercase() == pveTeamColor.uppercase() }?.second ?: t(pveTeam.i18nKey)
                                 ws.sendAction(
                                     GameAction.StartPvEGame(
                                         playerName = effectivePlayerName,
@@ -400,14 +398,37 @@ fun IComponent.GameLobby(
             }
             
             div(className = "d-flex justify-center gap-20") {
-                // TEAM RED logic
+                val existingTeams = gameState.teamInfos.values.toList()
+                val team1Info = existingTeams.getOrNull(0)
+                val team2Info = existingTeams.getOrNull(1)
+
+                // TEAM 1 logic
                 div(className = "glass p-2 w-full") {
-                    val teamRedInfo = gameState.teamInfos[Team.RED]
-                    if (teamRedInfo == null) {
-                        h3(className = "text-red m-0 mb-1") { textNode(t("lobby.create_team_1")) }
+                    if (team1Info == null) {
+                        var chosenTeam1 by remember { mutableStateOf(Team.RED) }
                         var teamName by remember { mutableStateOf("") }
-                        var teamColor by remember { mutableStateOf(predefinedColors[0].first) }
+                        var teamColor by remember(chosenTeam1) { mutableStateOf(chosenTeam1.defaultHex) }
                         var colorError by remember { mutableStateOf(false) }
+                        
+                        h3(className = "m-0 mb-1") { 
+                            style("color", teamColor)
+                            textNode(t("lobby.create_team_1")) 
+                        }
+
+                        div(className = "mb-1 text-center") {
+                            label(className = "text-xs text-gray mb-05 d-block") { textNode(t("lobby.choose_team")) }
+                            select(className = "w-full max-w-xs mb-1") {
+                                for (team in Team.PLAYABLE_TEAMS) {
+                                    option(value = team.name, label = t(team.i18nKey), selected = team == chosenTeam1)
+                                }
+                                onChange {
+                                    val chosen = try { Team.valueOf(this.value ?: "RED") } catch (e: Exception) { Team.RED }
+                                    chosenTeam1 = chosen
+                                    teamColor = chosen.defaultHex
+                                    colorError = false
+                                }
+                            }
+                        }
                         
                         text(value = teamName, placeholder = t("lobby.team_name"), className = "w-full mb-1 text-center") {
                             onInput { teamName = this.value ?: "" }
@@ -430,7 +451,7 @@ fun IComponent.GameLobby(
                             label(className = "text-xs text-gray mb-05") { textNode(t("lobby.custom_color")) }
                             colorPicker(value = teamColor, className = "w-full max-w-xs") {
                                 onInput {
-                                    val newColor = this.value ?: "#ef4444"
+                                    val newColor = this.value ?: chosenTeam1.defaultHex
                                     if (isYellowish(newColor)) {
                                         colorError = true
                                     } else {
@@ -446,24 +467,25 @@ fun IComponent.GameLobby(
                         
                         button(t("lobby.create_team_btn"), className = "btn btn-primary w-full ${if(colorError) "btn-disabled" else ""}") {
                             onClick {
-                                if (playerName.isNotBlank() && teamName.isNotBlank() && !colorError) {
+                                val effectiveTeamName = teamName.trim().ifBlank { t(chosenTeam1.i18nKey) }
+                                if (playerName.isNotBlank() && !colorError) {
                                     ws.connect {
-                                        ws.sendAction(GameAction.CreateTeam(Team.RED, teamName, teamColor, playerName))
+                                        ws.sendAction(GameAction.CreateTeam(chosenTeam1, effectiveTeamName, teamColor, playerName))
                                     }
                                 }
                             }
                         }
                     } else {
                         h3(className = "m-0 mb-1") { 
-                            style("color", teamRedInfo.color)
-                            textNode(teamRedInfo.name) 
+                            style("color", team1Info.color)
+                            textNode(team1Info.name) 
                         }
-                        val redCount = gameState.players.count { it.team == Team.RED }
-                        button(t("lobby.join_team", teamRedInfo.name, redCount), className = "btn btn-primary w-full ${if(redCount >= 5) "opacity-50 pointer-events-none" else ""}") {
+                        val team1Count = gameState.players.count { it.team == team1Info.id }
+                        button(t("lobby.join_team", team1Info.name, team1Count), className = "btn btn-primary w-full ${if(team1Count >= 5) "opacity-50 pointer-events-none" else ""}") {
                             onClick {
-                                if (playerName.isNotBlank() && redCount < 5) {
+                                if (playerName.isNotBlank() && team1Count < 5) {
                                     ws.connect {
-                                        ws.sendAction(GameAction.JoinTeam(Team.RED, playerName))
+                                        ws.sendAction(GameAction.JoinTeam(team1Info.id, playerName))
                                     }
                                 }
                             }
@@ -471,14 +493,35 @@ fun IComponent.GameLobby(
                     }
                 }
                 
-                // TEAM BLUE logic
+                // TEAM 2 logic
                 div(className = "glass p-2 w-full") {
-                    val teamBlueInfo = gameState.teamInfos[Team.BLUE]
-                    if (teamBlueInfo == null) {
-                        h3(className = "text-blue m-0 mb-1") { textNode(t("lobby.create_team_2")) }
+                    if (team2Info == null) {
+                        val availableTeamsForSlot2 = Team.PLAYABLE_TEAMS.filter { it != team1Info?.id }
+                        val defaultSlot2Team = if (team1Info?.id == Team.BLUE) Team.RED else Team.BLUE
+                        var chosenTeam2 by remember(team1Info?.id) { mutableStateOf(defaultSlot2Team) }
                         var teamName by remember { mutableStateOf("") }
-                        var teamColor by remember { mutableStateOf(predefinedColors[1].first) }
+                        var teamColor by remember(chosenTeam2) { mutableStateOf(chosenTeam2.defaultHex) }
                         var colorError by remember { mutableStateOf(false) }
+                        
+                        h3(className = "m-0 mb-1") { 
+                            style("color", teamColor)
+                            textNode(t("lobby.create_team_2")) 
+                        }
+
+                        div(className = "mb-1 text-center") {
+                            label(className = "text-xs text-gray mb-05 d-block") { textNode(t("lobby.choose_team")) }
+                            select(className = "w-full max-w-xs mb-1") {
+                                for (team in availableTeamsForSlot2) {
+                                    option(value = team.name, label = t(team.i18nKey), selected = team == chosenTeam2)
+                                }
+                                onChange {
+                                    val chosen = try { Team.valueOf(this.value ?: "BLUE") } catch (e: Exception) { Team.BLUE }
+                                    chosenTeam2 = chosen
+                                    teamColor = chosen.defaultHex
+                                    colorError = false
+                                }
+                            }
+                        }
                         
                         text(value = teamName, placeholder = t("lobby.team_name"), className = "w-full mb-1 text-center") {
                             onInput { teamName = this.value ?: "" }
@@ -501,7 +544,7 @@ fun IComponent.GameLobby(
                             label(className = "text-xs text-gray mb-05") { textNode(t("lobby.custom_color")) }
                             colorPicker(value = teamColor, className = "w-full max-w-xs") {
                                 onInput {
-                                    val newColor = this.value ?: "#3b82f6"
+                                    val newColor = this.value ?: chosenTeam2.defaultHex
                                     if (isYellowish(newColor)) {
                                         colorError = true
                                     } else {
@@ -517,24 +560,25 @@ fun IComponent.GameLobby(
                         
                         button(t("lobby.create_team_btn"), className = "btn btn-primary w-full ${if(colorError) "btn-disabled" else ""}") {
                             onClick {
-                                if (playerName.isNotBlank() && teamName.isNotBlank() && !colorError) {
+                                val effectiveTeamName = teamName.trim().ifBlank { t(chosenTeam2.i18nKey) }
+                                if (playerName.isNotBlank() && !colorError) {
                                     ws.connect {
-                                        ws.sendAction(GameAction.CreateTeam(Team.BLUE, teamName, teamColor, playerName))
+                                        ws.sendAction(GameAction.CreateTeam(chosenTeam2, effectiveTeamName, teamColor, playerName))
                                     }
                                 }
                             }
                         }
                     } else {
                         h3(className = "m-0 mb-1") { 
-                            style("color", teamBlueInfo.color)
-                            textNode(teamBlueInfo.name) 
+                            style("color", team2Info.color)
+                            textNode(team2Info.name) 
                         }
-                        val blueCount = gameState.players.count { it.team == Team.BLUE }
-                        button(t("lobby.join_team", teamBlueInfo.name, blueCount), className = "btn btn-primary w-full ${if(blueCount >= 5) "opacity-50 pointer-events-none" else ""}") {
+                        val team2Count = gameState.players.count { it.team == team2Info.id }
+                        button(t("lobby.join_team", team2Info.name, team2Count), className = "btn btn-primary w-full ${if(team2Count >= 5) "opacity-50 pointer-events-none" else ""}") {
                             onClick {
-                                if (playerName.isNotBlank() && blueCount < 5) {
+                                if (playerName.isNotBlank() && team2Count < 5) {
                                     ws.connect {
-                                        ws.sendAction(GameAction.JoinTeam(Team.BLUE, playerName))
+                                        ws.sendAction(GameAction.JoinTeam(team2Info.id, playerName))
                                     }
                                 }
                             }
@@ -688,7 +732,8 @@ fun IComponent.GameLobby(
                                 }
                             }
                         } else if (availableCastles.size > 1) {
-                            val defaultChoice = if (myPlayer.team == Team.RED) "14" else "23"
+                            val otherCastle = gameState.teamCastles.entries.find { it.key != myPlayer.team }?.value
+                            val defaultChoice = if (otherCastle == "14") "23" else "14"
                             var selectedCastle by remember { mutableStateOf(if (availableCastles.any { it.first == defaultChoice }) defaultChoice else availableCastles.first().first) }
                             
                             div(className = "d-flex flex-col items-center gap-1 mb-2") {
@@ -723,7 +768,7 @@ fun IComponent.GameLobby(
             }
         }
         
-        if (gameState != null && gameState.status == GameStatus.LOBBY && gameState.creatorPlayerId == currentName) {
+        if (gameState.status == GameStatus.LOBBY && gameState.creatorPlayerId == currentName) {
             div(className = "d-flex justify-center mt-2 mb-1") {
                 button(t("lobby.cancel_game"), className = "btn btn-outline text-red") {
                     title(t("lobby.cancel_game_desc"))
@@ -736,76 +781,42 @@ fun IComponent.GameLobby(
         
         // Show split screen of teams
         div(className = "d-flex justify-between gap-20 mt-2") {
-            // RED TEAM
-            div(className = "glass flex-col items-center p-2 w-full") {
-                val redTeamInfo = gameState.teamInfos[Team.RED]
-                val redCastleId = gameState.teamCastles[Team.RED]
-                val redCastleName = redCastleId?.let { MapData[it]?.name ?: "Castle $it" } ?: t("lobby.no_base")
-                if (redTeamInfo != null) {
-                    h3(className = "m-0 mb-1") { 
-                        style("color", redTeamInfo.color)
-                        textNode(redTeamInfo.name.uppercase()) 
-                    }
-                } else {
-                    h3(className = "text-gray m-0 mb-1") { textNode(t("lobby.team_1_not_created")) }
-                }
-                
-                p(className = "text-xs text-gray mt-0 mb-1") { textNode(t("lobby.base", redCastleName)) }
-                val redPlayers = gameState.players.filter { it.team == Team.RED }
-                for (p in redPlayers) {
-                    val pChars = gameState.characters.filter { it.playerId == p.id }
-                    val heroesStr = if (pChars.isNotEmpty()) " (${pChars.joinToString(", ") { it.name }})" else ""
-                    val botIndicator = if (p.isBot) " 🤖" else ""
-                    div(className = "d-flex justify-between items-center w-full mt-05") {
-                        span { textNode("${p.name}$botIndicator$heroesStr") }
-                        if (p.isReady) {
-                            span(className = "text-sm text-primary font-600") { textNode(t("lobby.status_ready")) }
-                        } else {
-                            span(className = "text-sm text-gray") { textNode(t("lobby.status_not_ready")) }
-                        }
-                    }
-                }
-            }
-            
-            // BLUE TEAM
-            div(className = "glass flex-col items-center p-2 w-full") {
-                val blueTeamInfo = gameState.teamInfos[Team.BLUE]
-                val blueCastleId = gameState.teamCastles[Team.BLUE]
-                val blueCastleName = blueCastleId?.let { MapData[it]?.name ?: "Castle $it" } ?: t("lobby.no_base")
-                if (blueTeamInfo != null) {
-                    h3(className = "m-0 mb-1") { 
-                        style("color", blueTeamInfo.color)
-                        textNode(blueTeamInfo.name.uppercase()) 
-                    }
-                } else {
-                    h3(className = "text-gray m-0 mb-1") { textNode(t("lobby.team_2_not_created")) }
-                }
-                
-                p(className = "text-xs text-gray mt-0 mb-1") { textNode(t("lobby.base", blueCastleName)) }
-                val bluePlayers = gameState.players.filter { it.team == Team.BLUE }
-                for (p in bluePlayers) {
-                    val pChars = gameState.characters.filter { it.playerId == p.id }
-                    val heroesStr = if (pChars.isNotEmpty()) " (${pChars.joinToString(", ") { it.name }})" else ""
-                    val botIndicator = if (p.isBot) " 🤖" else ""
-                    div(className = "d-flex justify-between items-center w-full mt-05") {
-                        span { textNode("${p.name}$botIndicator$heroesStr") }
-                        if (p.isReady) {
-                            span(className = "text-sm text-primary font-600") { textNode(t("lobby.status_ready")) }
-                        } else {
-                            span(className = "text-sm text-gray") { textNode(t("lobby.status_not_ready")) }
-                        }
-                    }
-                }
-            }
-        }
-        
-        
-            // YELLOW TEAM (PvE Enemy)
             if (gameState.isPvE) {
+                // Human team
+                val humanTeamInfo = gameState.teamInfos.values.find { it.id != Team.YELLOW }
+                val humanCastleId = humanTeamInfo?.let { gameState.teamCastles[it.id] }
+                val humanCastleName = humanCastleId?.let { MapData[it]?.name ?: "Castle $it" } ?: t("lobby.no_base")
                 div(className = "glass flex-col items-center p-2 w-full") {
-                    val yellowTeamInfo = gameState.teamInfos[Team.YELLOW]
-                    val yellowCastleId = gameState.teamCastles[Team.YELLOW]
-                    val yellowCastleName = yellowCastleId?.let { MapData[it]?.name ?: "Castle $it" } ?: t("lobby.no_base")
+                    if (humanTeamInfo != null) {
+                        h3(className = "m-0 mb-1") { 
+                            style("color", humanTeamInfo.color)
+                            textNode(humanTeamInfo.name.uppercase()) 
+                        }
+                    } else {
+                        h3(className = "text-gray m-0 mb-1") { textNode(t("lobby.team_1_not_created")) }
+                    }
+                    p(className = "text-xs text-gray mt-0 mb-1") { textNode(t("lobby.base", humanCastleName)) }
+                    val humanPlayers = gameState.players.filter { it.team == (humanTeamInfo?.id ?: Team.RED) }
+                    for (p in humanPlayers) {
+                        val pChars = gameState.characters.filter { it.playerId == p.id }
+                        val heroesStr = if (pChars.isNotEmpty()) " (${pChars.joinToString(", ") { it.name }})" else ""
+                        val botIndicator = if (p.isBot) " 🤖" else ""
+                        div(className = "d-flex justify-between items-center w-full mt-05") {
+                            span { textNode("${p.name}$botIndicator$heroesStr") }
+                            if (p.isReady) {
+                                span(className = "text-sm text-primary font-600") { textNode(t("lobby.status_ready")) }
+                            } else {
+                                span(className = "text-sm text-gray") { textNode(t("lobby.status_not_ready")) }
+                            }
+                        }
+                    }
+                }
+                
+                // Bot team
+                val yellowTeamInfo = gameState.teamInfos[Team.YELLOW]
+                val yellowCastleId = gameState.teamCastles[Team.YELLOW]
+                val yellowCastleName = yellowCastleId?.let { MapData[it]?.name ?: "Castle $it" } ?: t("lobby.no_base")
+                div(className = "glass flex-col items-center p-2 w-full") {
                     if (yellowTeamInfo != null) {
                         h3(className = "m-0 mb-1") { 
                             style("color", yellowTeamInfo.color)
@@ -814,7 +825,6 @@ fun IComponent.GameLobby(
                     } else {
                         h3(className = "text-gray m-0 mb-1") { textNode(t("lobby.enemy_team")) }
                     }
-                    
                     p(className = "text-xs text-gray mt-0 mb-1") { textNode(t("lobby.base", yellowCastleName)) }
                     val yellowPlayers = gameState.players.filter { it.team == Team.YELLOW }
                     for (p in yellowPlayers) {
@@ -831,7 +841,72 @@ fun IComponent.GameLobby(
                         }
                     }
                 }
+            } else {
+                val nonBotTeams = gameState.teamInfos.values.toList()
+                val t1 = nonBotTeams.getOrNull(0)
+                val t2 = nonBotTeams.getOrNull(1)
+
+                // TEAM 1 Slot
+                div(className = "glass flex-col items-center p-2 w-full") {
+                    val t1CastleId = t1?.let { gameState.teamCastles[it.id] }
+                    val t1CastleName = t1CastleId?.let { MapData[it]?.name ?: "Castle $it" } ?: t("lobby.no_base")
+                    if (t1 != null) {
+                        h3(className = "m-0 mb-1") { 
+                            style("color", t1.color)
+                            textNode(t1.name.uppercase()) 
+                        }
+                    } else {
+                        h3(className = "text-gray m-0 mb-1") { textNode(t("lobby.team_1_not_created")) }
+                    }
+                    
+                    p(className = "text-xs text-gray mt-0 mb-1") { textNode(t("lobby.base", t1CastleName)) }
+                    val t1Players = if (t1 != null) gameState.players.filter { it.team == t1.id } else emptyList()
+                    for (p in t1Players) {
+                        val pChars = gameState.characters.filter { it.playerId == p.id }
+                        val heroesStr = if (pChars.isNotEmpty()) " (${pChars.joinToString(", ") { it.name }})" else ""
+                        val botIndicator = if (p.isBot) " 🤖" else ""
+                        div(className = "d-flex justify-between items-center w-full mt-05") {
+                            span { textNode("${p.name}$botIndicator$heroesStr") }
+                            if (p.isReady) {
+                                span(className = "text-sm text-primary font-600") { textNode(t("lobby.status_ready")) }
+                            } else {
+                                span(className = "text-sm text-gray") { textNode(t("lobby.status_not_ready")) }
+                            }
+                        }
+                    }
+                }
+                
+                // TEAM 2 Slot
+                div(className = "glass flex-col items-center p-2 w-full") {
+                    val t2CastleId = t2?.let { gameState.teamCastles[it.id] }
+                    val t2CastleName = t2CastleId?.let { MapData[it]?.name ?: "Castle $it" } ?: t("lobby.no_base")
+                    if (t2 != null) {
+                        h3(className = "m-0 mb-1") { 
+                            style("color", t2.color)
+                            textNode(t2.name.uppercase()) 
+                        }
+                    } else {
+                        h3(className = "text-gray m-0 mb-1") { textNode(t("lobby.team_2_not_created")) }
+                    }
+                    
+                    p(className = "text-xs text-gray mt-0 mb-1") { textNode(t("lobby.base", t2CastleName)) }
+                    val t2Players = if (t2 != null) gameState.players.filter { it.team == t2.id } else emptyList()
+                    for (p in t2Players) {
+                        val pChars = gameState.characters.filter { it.playerId == p.id }
+                        val heroesStr = if (pChars.isNotEmpty()) " (${pChars.joinToString(", ") { it.name }})" else ""
+                        val botIndicator = if (p.isBot) " 🤖" else ""
+                        div(className = "d-flex justify-between items-center w-full mt-05") {
+                            span { textNode("${p.name}$botIndicator$heroesStr") }
+                            if (p.isReady) {
+                                span(className = "text-sm text-primary font-600") { textNode(t("lobby.status_ready")) }
+                            } else {
+                                span(className = "text-sm text-gray") { textNode(t("lobby.status_not_ready")) }
+                            }
+                        }
+                    }
+                }
             }
+        }
 
         if (gameState.creatorPlayerId == currentName) {
             val allReady = gameState.players.isNotEmpty() && gameState.players.all { it.isReady }
