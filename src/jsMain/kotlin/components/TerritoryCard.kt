@@ -50,11 +50,11 @@ fun IComponent.TerritoryCard(
         }
     }
 
-    val isCityOfKhorinis = sectorId == "14"
-    val isOwnedByMe = isOwner || isTeamOwner || (myPlayer != null && gameState.teamCastles[myPlayer.team] == "14")
-    val heroAtKhorinis = myCharacters.find { it.currentSector == "14" && !it.isDead }
-    val commanderForTavern = if (activeChar != null && activeChar.currentSector == "14" && !activeChar.isDead) activeChar else heroAtKhorinis
-    val heroPresent = commanderForTavern != null
+    val subLocation = getSubLocationForSector(sectorId)
+    val isOwnedByMe = isOwner || isTeamOwner || (myPlayer != null && gameState.teamCastles[myPlayer.team] == sectorId)
+    val heroAtSector = myCharacters.find { it.currentSector == sectorId && !it.isDead }
+    val commanderForSubLocation = if (activeChar != null && activeChar.currentSector == sectorId && !activeChar.isDead) activeChar else heroAtSector
+    val heroPresent = commanderForSubLocation != null
     
     val canAct = isMyTurn && activeChar != null && !activeChar.hasActedThisTurn && !activeChar.isDead
     val hasResources = territoryState.food > 0 || territoryState.gold > 0
@@ -245,15 +245,15 @@ fun IComponent.TerritoryCard(
                         }
                     }
 
-                    if (isCityOfKhorinis) {
-                        if (heroPresent && commanderForTavern != null) {
-                            button("🍺 " + t("tavern.enter_btn", "Enter Harbor Tavern"), className = "btn btn-outline text-gold w-full mt-05") {
-                                title(t("tavern.enter_tip", "Visit Kardif's tavern to hear harbor gossip and check standing"))
+                    if (subLocation != null) {
+                        if (heroPresent && commanderForSubLocation != null) {
+                            button("${subLocation.buttonEmoji} ${subLocation.buttonLabel}", className = "btn btn-outline text-gold w-full mt-05") {
+                                title(subLocation.buttonTooltip)
                                 onClick { isTavernOpen = true }
                             }
                         } else {
                             p(className = "text-xs text-dark-gray m-0 mt-05 text-center") {
-                                textNode(t("tavern.station_hero_notice", "Station a commander in the City of Khorinis to visit the harbor tavern."))
+                                textNode("Station a commander in ${territoryDef?.name ?: "this sector"} to visit ${subLocation.modalTitle}.")
                             }
                         }
                     }
@@ -262,9 +262,9 @@ fun IComponent.TerritoryCard(
                 p(className = "text-sm text-dark-gray text-center m-0 mb-1") {
                     textNode(t("territory.capture_tip"))
                 }
-                if (isCityOfKhorinis) {
+                if (subLocation != null) {
                     p(className = "text-xs text-dark-gray mt-1 text-center") {
-                        textNode(t("tavern.control_khorinis_notice", "Control the City of Khorinis to access the harbor tavern."))
+                        textNode("Control ${territoryDef?.name ?: "this sector"} to access ${subLocation.modalTitle}.")
                     }
                 }
             }
@@ -309,16 +309,18 @@ fun IComponent.TerritoryCard(
             }
         }
 
-        if (isTavernOpen && commanderForTavern != null) {
+        if (isTavernOpen && commanderForSubLocation != null && subLocation != null) {
             KhorinisTavernModal(
-                characterId = commanderForTavern.id,
+                subLocation = subLocation,
+                characterId = commanderForSubLocation.id,
+                commanderName = commanderForSubLocation.name,
                 activeDialogue = activeTavernDialogue,
                 onClose = {
                     isTavernOpen = false
                     onDismissTavernDialogue()
                 },
                 onTalk = { patronId ->
-                    sendAction(GameAction.TalkToTavernPatron("14", commanderForTavern.id, patronId))
+                    sendAction(GameAction.TalkToTavernPatron(sectorId, commanderForSubLocation.id, patronId))
                 }
             )
         }

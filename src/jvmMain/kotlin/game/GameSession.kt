@@ -1515,86 +1515,116 @@ class GameSession(
     }
 
     suspend fun talkToTavernPatron(playerId: String, sectorId: String, patronId: String, characterId: String) {
-        if (sectorId != "14") {
-            logger.warn("Cannot visit tavern: Sector {} does not have a tavern", sectorId)
+        val subLocation = getSubLocationForSector(sectorId)
+        if (subLocation == null && sectorId != "14") {
+            logger.warn("Cannot visit sub-location: Sector {} does not have a sub-location", sectorId)
             return
         }
         val player = gameState.players.find { it.id == playerId } ?: return
         val char = gameState.characters.find { it.id == characterId && it.playerId == playerId } ?: return
-        if (char.currentSector != "14" || char.isDead) {
-            logger.warn("Cannot visit tavern: Character {} is dead or not stationed at Khorinis", characterId)
+        if (char.currentSector != sectorId || char.isDead) {
+            logger.warn("Cannot visit sub-location: Character {} is dead or not stationed at sector {}", characterId, sectorId)
             return
         }
 
         val myTeam = player.team
-        val khorinisTerr = gameState.territories["14"]
-        val isOwner = khorinisTerr?.ownerTeam == myTeam || gameState.teamCastles[myTeam] == "14"
+        val currentTerr = gameState.territories[sectorId]
+        val isOwner = currentTerr?.ownerTeam == myTeam || gameState.teamCastles[myTeam] == sectorId
         if (!isOwner) {
-            broadcastError(playerId, "The tavern patrons only speak freely to the rulers of Khorinis.")
+            val locName = subLocation?.modalTitle ?: "this location"
+            broadcastError(playerId, "You must control this sector to visit $locName.")
             return
         }
 
-        val myChars = gameState.characters.filter { it.playerId == playerId && !it.isDead }
-        val totalArmy = myChars.sumOf { it.army.total() }
-        val totalFood = myChars.sumOf { it.food }
-        val totalGold = myChars.sumOf { it.gold }
+        if (sectorId == "14") {
+            val myChars = gameState.characters.filter { it.playerId == playerId && !it.isDead }
+            val totalArmy = myChars.sumOf { it.army.total() }
+            val totalFood = myChars.sumOf { it.food }
+            val totalGold = myChars.sumOf { it.gold }
 
-        val enemyChars = gameState.characters.filter { c ->
-            val p = gameState.players.find { it.id == c.playerId }
-            p?.team != myTeam && !c.isDead
+            val enemyChars = gameState.characters.filter { c ->
+                val p = gameState.players.find { it.id == c.playerId }
+                p?.team != myTeam && !c.isDead
+            }
+            val enemyArmy = enemyChars.sumOf { it.army.total() }
+
+            val patron = getPatronForSector(sectorId, patronId)
+                ?: KhorinisTavernPatrons.find { it.id == patronId }
+                ?: KhorinisTavernPatrons[0]
+
+            val (greeting, gossip) = when (patronId) {
+                "KARDIF" -> {
+                    val foodStatus = when {
+                        totalFood < totalArmy -> "Word on the docks is that your boys are chewing on leather belts. You've only got $totalFood food for $totalArmy men—famine will thin your ranks next turn!"
+                        totalFood > 60 -> "The harbor storehouse is smelling of dried fish and fresh bread. With $totalFood food, your garrison won't be mutinying anytime soon."
+                        else -> "Supplies are holding steady ($totalFood food in the larder), but keep an eye on your supply lines."
+                    }
+                    patron.catchphrase to "Listen closely... $foodStatus Also, our scouts spotted roughly $enemyArmy enemy troops prowling beyond the farm roads."
+                }
+                "MOE" -> {
+                    val prot = currentTerr?.protection ?: (MapData["14"]?.protection ?: 20)
+                    val protLine = if (prot >= 20) {
+                        "The city walls are rock solid with $prot protection. Even the militia paladins can't complain about that."
+                    } else {
+                        "The palisades need work—only $prot protection! If the mercenaries or orcs push from Lobart's side, don't expect me to hold the gate alone!"
+                    }
+                    patron.catchphrase to "You want harbor advice? $protLine Keep your blade sharp and don't turn your back on anyone in the alleys."
+                }
+                "ALRIK" -> {
+                    val militaryLine = when {
+                        totalArmy > enemyArmy * 1.5 -> "Ha! Look at that muster—$totalArmy seasoned men against their measly $enemyArmy. That's not a war, that's a butcher's shop. Forward marches are easy when you outnumber the enemy like that!"
+                        totalArmy < enemyArmy -> "You're outnumbered, Commander ($totalArmy vs $enemyArmy hostiles). In the ring, that means you fight dirty or you die. Don't engage without heavy infantry or defensive walls."
+                        else -> "An even match on the field—$totalArmy troops under our banner against $enemyArmy across the border. It'll come down to who picks the better battle strategy."
+                    }
+                    patron.catchphrase to "My sword arm is always ready for good coin. $militaryLine"
+                }
+                "HALVOR" -> {
+                    val marketLine = "The merchant ship just brought word from the mainland. The merchant exchange rate is ${gameState.marketRate} gold per food sack. You're holding $totalGold gold in the war chest—spend it on archers or grain before the market shifts!"
+                    patron.catchphrase to marketLine
+                }
+                "VALENTINO" -> {
+                    val nobleLine = if (totalGold >= 150) {
+                        "Hmph! Carrying $totalGold gold, are we? Not bad for a rough commander. Still, you couldn't afford a single evening at the hotel in the upper quarter."
+                    } else {
+                        "Only $totalGold gold in your purse? Pathetic! Even the beggars at the Adanos temple collect more copper than that. Go tax Onar's peasants or harvest some wheat before speaking to me."
+                    }
+                    patron.catchphrase to nobleLine
+                }
+                else -> patron.catchphrase to (patron.defaultResponse.ifEmpty { "Drink up, Commander! The harbor is quiet tonight." })
+            }
+
+            val event = GameEvent.TavernDialogueReceived(
+                patronId = patron.id,
+                patronName = patron.name,
+                greeting = greeting,
+                responseText = gossip,
+                timestamp = System.currentTimeMillis()
+            )
+            broadcastEvent(event)
+        } else {
+            val patron = getPatronForSector(sectorId, patronId)
+                ?: subLocation?.patrons?.firstOrNull()
+                ?: KhorinisTavernPatrons[0]
+
+            val terrDef = MapData[sectorId]
+            val prot = currentTerr?.protection ?: (terrDef?.protection ?: 10)
+            val cult = currentTerr?.cultivation ?: (terrDef?.cultivation ?: 10)
+            val food = currentTerr?.food ?: 0
+            val gold = currentTerr?.gold ?: 0
+            val statusSummary = " [Sector Status: $prot Protection | $cult Cultivation | Stored: $food Food, $gold Gold]"
+
+            val greeting = patron.greeting.ifEmpty { patron.catchphrase }
+            val responseText = (patron.defaultResponse.ifEmpty { patron.catchphrase }) + statusSummary
+
+            val event = GameEvent.TavernDialogueReceived(
+                patronId = patron.id,
+                patronName = patron.name,
+                greeting = greeting,
+                responseText = responseText,
+                timestamp = System.currentTimeMillis()
+            )
+            broadcastEvent(event)
         }
-        val enemyArmy = enemyChars.sumOf { it.army.total() }
-
-        val patron = KhorinisTavernPatrons.find { it.id == patronId } ?: KhorinisTavernPatrons[0]
-        val (greeting, gossip) = when (patronId) {
-            "KARDIF" -> {
-                val foodStatus = when {
-                    totalFood < totalArmy -> "Word on the docks is that your boys are chewing on leather belts. You've only got $totalFood food for $totalArmy men—famine will thin your ranks next turn!"
-                    totalFood > 60 -> "The harbor storehouse is smelling of dried fish and fresh bread. With $totalFood food, your garrison won't be mutinying anytime soon."
-                    else -> "Supplies are holding steady ($totalFood food in the larder), but keep an eye on your supply lines."
-                }
-                patron.catchphrase to "Listen closely... $foodStatus Also, our scouts spotted roughly $enemyArmy enemy troops prowling beyond the farm roads."
-            }
-            "MOE" -> {
-                val prot = khorinisTerr?.protection ?: (MapData["14"]?.protection ?: 20)
-                val protLine = if (prot >= 20) {
-                    "The city walls are rock solid with $prot protection. Even the militia paladins can't complain about that."
-                } else {
-                    "The palisades need work—only $prot protection! If the mercenaries or orcs push from Lobart's side, don't expect me to hold the gate alone!"
-                }
-                patron.catchphrase to "You want harbor advice? $protLine Keep your blade sharp and don't turn your back on anyone in the alleys."
-            }
-            "ALRIK" -> {
-                val militaryLine = when {
-                    totalArmy > enemyArmy * 1.5 -> "Ha! Look at that muster—$totalArmy seasoned men against their measly $enemyArmy. That's not a war, that's a butcher's shop. Forward marches are easy when you outnumber the enemy like that!"
-                    totalArmy < enemyArmy -> "You're outnumbered, Commander ($totalArmy vs $enemyArmy hostiles). In the ring, that means you fight dirty or you die. Don't engage without heavy infantry or defensive walls."
-                    else -> "An even match on the field—$totalArmy troops under our banner against $enemyArmy across the border. It'll come down to who picks the better battle strategy."
-                }
-                patron.catchphrase to "My sword arm is always ready for good coin. $militaryLine"
-            }
-            "HALVOR" -> {
-                val marketLine = "The merchant ship just brought word from the mainland. The merchant exchange rate is ${gameState.marketRate} gold per food sack. You're holding $totalGold gold in the war chest—spend it on archers or grain before the market shifts!"
-                patron.catchphrase to marketLine
-            }
-            "VALENTINO" -> {
-                val nobleLine = if (totalGold >= 150) {
-                    "Hmph! Carrying $totalGold gold, are we? Not bad for a rough commander. Still, you couldn't afford a single evening at the hotel in the upper quarter."
-                } else {
-                    "Only $totalGold gold in your purse? Pathetic! Even the beggars at the Adanos temple collect more copper than that. Go tax Onar's peasants or harvest some wheat before speaking to me."
-                }
-                patron.catchphrase to nobleLine
-            }
-            else -> "Drink up, Commander!" to "The harbor is quiet tonight."
-        }
-
-        val event = GameEvent.TavernDialogueReceived(
-            patronId = patron.id,
-            patronName = patron.name,
-            greeting = greeting,
-            responseText = gossip,
-            timestamp = System.currentTimeMillis()
-        )
-        broadcastEvent(event)
     }
 
     suspend fun selectAdvisor(playerId: String, advisorId: String) {

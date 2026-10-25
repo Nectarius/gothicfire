@@ -49,9 +49,46 @@ fun IComponent.TurnHud(
                             textNode(t("hud.your_turn", teamName)) 
                         }
                     } else {
-                        val enemyTeamEnum = if (myPlayer.team == Team.RED) Team.BLUE else Team.RED
-                        val enemyTeam = gameState.teamInfos[enemyTeamEnum]?.name ?: t("hud.enemy_team")
-                        span(className = "text-gray") { textNode(t("hud.waiting_team", enemyTeam)) }
+                        val isAiTurn = models.GothicIndicators.isComputerTurn(gameState)
+                        val aiTurnCount = gameState.currentTurn
+
+                        if (isAiTurn) {
+                            div(className = "ai-turn-hud-status") {
+                                // Feature 2: Colony Chat Log ("Small Talk" Overlay - triggers every 3rd computer turn)
+                                div(className = "hud-colony-chat-wrapper") {
+                                    ColonyChatLog(
+                                        isThinking = true,
+                                        aiTurnCount = aiTurnCount,
+                                        arrowPosition = "bottom-center"
+                                    )
+                                }
+
+                                div(className = "ai-avatar-badge") {
+                                    title("Computer Opponent (Raven) calculating move...")
+                                    img(src = "/portraits/raven.jpg", alt = "Raven (AI Opponent)", className = "ai-avatar-img")
+                                }
+                                div(className = "d-flex flex-col text-left") {
+                                    val botTeam = gameState.teamInfos[gameState.activeTeamTurn]
+                                    val botName = botTeam?.name ?: "Enemy AI"
+                                    span(className = "font-600 text-yellow text-sm") {
+                                        textNode("$botName's Turn")
+                                    }
+                                    span(className = "text-xs text-gray d-flex items-center") {
+                                        textNode("Calculating move")
+                                        span(className = "ai-thinking-dots") {
+                                            span(className = "ai-thinking-dot")
+                                            span(className = "ai-thinking-dot")
+                                            span(className = "ai-thinking-dot")
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            val activeTeamName = gameState.teamInfos[gameState.activeTeamTurn]?.name
+                                ?: (if (myPlayer.team == Team.RED) gameState.teamInfos[Team.BLUE]?.name else gameState.teamInfos[Team.RED]?.name)
+                                ?: t("hud.enemy_team")
+                            span(className = "text-gray") { textNode(t("hud.waiting_team", activeTeamName)) }
+                        }
                     }
                 }
             }

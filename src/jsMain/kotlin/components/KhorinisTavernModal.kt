@@ -5,12 +5,16 @@ import dev.kilua.core.IComponent
 import dev.kilua.html.*
 import models.GameEvent
 import models.KhorinisTavernPatrons
+import models.SectorSubLocation
+import models.getSubLocationForSector
 import i18n.t
 
 @Composable
 fun IComponent.KhorinisTavernModal(
     characterId: String,
     activeDialogue: GameEvent.TavernDialogueReceived?,
+    subLocation: SectorSubLocation? = getSubLocationForSector("14"),
+    commanderName: String? = null,
     onClose: () -> Unit,
     onTalk: (patronId: String) -> Unit
 ) {
@@ -20,41 +24,83 @@ fun IComponent.KhorinisTavernModal(
         div(className = "territory-modal-card glass tavern-modal-container") {
             onClick { it.stopPropagation() }
 
-            // Header with Tavern Banner
+            val modalTitle = subLocation?.modalTitle ?: t("tavern.title", "🍺 The Harbor Tavern of Khorinis")
+            val modalSubtitle = subLocation?.modalSubtitle ?: t("tavern.subtitle", "Kardif's drinking den in the harbor quarter")
+            val bannerImage = subLocation?.bannerImageUrl ?: "/tavern_khorinis.png"
+            val patrons = subLocation?.patrons?.takeIf { it.isNotEmpty() } ?: KhorinisTavernPatrons
+
+            // Header with Location Title
             div(className = "tavern-header d-flex justify-between items-center mb-1") {
                 div {
-                    h2(className = "m-0 text-gold text-lg") { textNode(t("tavern.title", "🍺 The Harbor Tavern of Khorinis")) }
-                    p(className = "text-xs text-gray m-0 mt-02") { textNode(t("tavern.subtitle", "Kardif's drinking den in the harbor quarter")) }
+                    h2(className = "m-0 text-gold text-lg") { textNode(modalTitle) }
+                    p(className = "text-xs text-gray m-0 mt-02") { textNode(modalSubtitle) }
                 }
                 button("✕", className = "btn-modal-close") { onClick { onClose() } }
             }
 
-            // Tavern Atmosphere Artwork
-            div(className = "tavern-banner mb-1") {
+            // Location Atmosphere Artwork (displayed when opened by player)
+            div(className = "tavern-banner-container mb-1") {
                 img(
-                    src = "/tavern_khorinis.png",
-                    alt = "Khorinis Harbor Tavern",
+                    src = bannerImage,
+                    alt = modalTitle,
                     className = "tavern-image w-full rounded"
                 )
+                div(className = "tavern-banner-badge") {
+                    span { textNode("🏰 Controlled Sector • Visited by ${commanderName ?: "Commander"}") }
+                }
             }
 
-            // Dialogue Box (shown on top of patrons when active for high visibility)
+            // Dialogue Box (shown when talking to a character inside the sublocation)
             if (activeDialogue != null) {
-                val speakingPatron = KhorinisTavernPatrons.find { it.id == activeDialogue.patronId }
+                val speakingPatron = patrons.find { it.id == activeDialogue.patronId }
+                    ?: KhorinisTavernPatrons.find { it.id == activeDialogue.patronId }
                 div(className = "tavern-dialogue-box glass p-1 mb-1 border border-gold rounded") {
-                    div(className = "d-flex items-center gap-1 mb-05") {
-                        if (speakingPatron != null) {
-                            img(src = speakingPatron.iconUrl, alt = activeDialogue.patronName, className = "patron-dialogue-avatar")
+                    // Two interlocutors header: Stationed Commander & Local Patron
+                    div(className = "d-flex items-center justify-between gap-1 mb-1 pb-05 border-b border-gold-dim") {
+                        // Left: Commander speaking
+                        div(className = "d-flex items-center gap-05") {
+                            img(
+                                src = "/characters/commander.jpg",
+                                alt = commanderName ?: "Commander",
+                                className = "commander-dialogue-avatar"
+                            )
+                            div {
+                                div(className = "font-600 text-sm text-primary") {
+                                    textNode(commanderName ?: "Commander")
+                                }
+                                span(className = "text-xxs text-light-gray") {
+                                    textNode("Stationed Hero")
+                                }
+                            }
                         }
-                        div {
-                            h4(className = "m-0 text-gold text-sm") {
-                                textNode(t("tavern.speaking_with", activeDialogue.patronName))
+
+                        // Conversational link badge
+                        div(className = "text-center") {
+                            span(className = "text-gold font-600 text-xs px-05 py-02 bg-gold-dim rounded") {
+                                textNode("In Audience 💬")
+                            }
+                        }
+
+                        // Right: Patron speaking
+                        div(className = "d-flex items-center gap-05") {
+                            div(className = "text-right") {
+                                h4(className = "m-0 text-gold text-sm") {
+                                    textNode(activeDialogue.patronName)
+                                }
+                                if (speakingPatron != null) {
+                                    span(className = "text-xxs text-gray") { textNode(speakingPatron.role) }
+                                }
                             }
                             if (speakingPatron != null) {
-                                span(className = "text-xs text-gray") { textNode(speakingPatron.role) }
+                                img(
+                                    src = speakingPatron.iconUrl,
+                                    alt = activeDialogue.patronName,
+                                    className = "patron-dialogue-avatar"
+                                )
                             }
                         }
                     }
+
                     blockquote(className = "m-0 mt-05 text-italic text-sm text-gray") {
                         textNode("\"${activeDialogue.greeting}\"")
                     }
@@ -65,9 +111,14 @@ fun IComponent.KhorinisTavernModal(
             }
 
             // Patron List Grid
-            p(className = "text-xs font-600 text-primary mb-05") { textNode(t("tavern.patrons_title", "Patrons at the Tables:")) }
+            val patronsHeading = if (subLocation?.sectorId == "14" || subLocation == null) {
+                t("tavern.patrons_title", "Patrons at the Tables:")
+            } else {
+                "Notable Figures & Inhabitants:"
+            }
+            p(className = "text-xs font-600 text-primary mb-05") { textNode(patronsHeading) }
             div(className = "d-flex flex-col gap-05 mb-1 tavern-patron-list") {
-                for (patron in KhorinisTavernPatrons) {
+                for (patron in patrons) {
                     val isTalkingToThis = activeDialogue?.patronId == patron.id
                     div(className = "glass p-1 d-flex justify-between items-center patron-row ${if (isTalkingToThis) "patron-active" else ""}") {
                         div(className = "d-flex items-center gap-1 flex-1") {
@@ -75,7 +126,9 @@ fun IComponent.KhorinisTavernModal(
                             div {
                                 div(className = "font-600 text-sm text-gold") { textNode(patron.name) }
                                 div(className = "text-xs text-gray") { textNode(patron.role) }
-                                div(className = "text-xs text-dark-gray mt-02") { textNode(patron.topicDescription) }
+                                if (patron.topicDescription.isNotEmpty()) {
+                                    div(className = "text-xs text-dark-gray mt-02") { textNode(patron.topicDescription) }
+                                }
                             }
                         }
                         button(t("tavern.talk_btn", "Talk"), className = "btn btn-xs btn-primary ml-1") {
@@ -86,8 +139,13 @@ fun IComponent.KhorinisTavernModal(
             }
 
             // Close / Leave button
+            val leaveBtnText = if (subLocation?.sectorId == "14" || subLocation == null) {
+                t("tavern.leave_btn", "Leave Tavern")
+            } else {
+                "Leave Location"
+            }
             div(className = "d-flex justify-center mt-1") {
-                button(t("tavern.leave_btn", "Leave Tavern"), className = "btn btn-outline text-gold w-full") {
+                button(leaveBtnText, className = "btn btn-outline text-gold w-full") {
                     onClick { onClose() }
                 }
             }

@@ -375,6 +375,27 @@ fun IComponent.StrategicMap(
                     }
                 }
             }
+
+            // Gothic Waiting Indicators:
+            val isAiTurn = models.GothicIndicators.isComputerTurn(gameState)
+            val aiTurnCount = gameState?.currentTurn ?: 1
+
+            // Feature 1: The Swamp Camp "Swampweed Exhale" (Smoke Effect)
+            SwampweedSmokeEffect(
+                isThinking = isAiTurn,
+                boardCorner = "bottom-right"
+            )
+
+            // Feature 2: Colony Chat Log ("Small Talk" Overlay) on the board corner
+            if (isAiTurn && aiTurnCount > 0 && aiTurnCount % 3 == 0) {
+                div(className = "board-corner-colony-chat") {
+                    ColonyChatLog(
+                        isThinking = isAiTurn,
+                        aiTurnCount = aiTurnCount,
+                        arrowPosition = "top-center"
+                    )
+                }
+            }
         }
         
         // Render TerritoryCard modal if a territory is inspected
