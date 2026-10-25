@@ -44,6 +44,7 @@ fun IComponent.TerritoryCard(
     val isTeamOwner = ownerTeam == myPlayer?.team
 
     var isTavernOpen by remember { mutableStateOf(false) }
+    var isInfoOpen by remember(sectorId) { mutableStateOf(false) }
     LaunchedEffect(activeTavernDialogue) {
         if (activeTavernDialogue != null) {
             isTavernOpen = true
@@ -81,8 +82,15 @@ fun IComponent.TerritoryCard(
                         }
                     }
                 }
-                button("✕", className = "btn-modal-close") {
-                    onClick { onClose() }
+                div(className = "d-flex items-center gap-05") {
+                    button(t("territory.info_btn"), className = "btn btn-xs btn-location-info") {
+                        id("location-info-btn-$sectorId")
+                        title(t("territory.info_tip"))
+                        onClick { isInfoOpen = true }
+                    }
+                    button("✕", className = "btn-modal-close") {
+                        onClick { onClose() }
+                    }
                 }
             }
             
@@ -322,6 +330,14 @@ fun IComponent.TerritoryCard(
                 onTalk = { patronId ->
                     sendAction(GameAction.TalkToTavernPatron(sectorId, commanderForSubLocation.id, patronId))
                 }
+            )
+        }
+
+        if (isInfoOpen) {
+            LocationInfoModal(
+                sectorId = sectorId,
+                fallbackName = territoryDef?.name ?: "Sector $sectorId",
+                onClose = { isInfoOpen = false }
             )
         }
     }
