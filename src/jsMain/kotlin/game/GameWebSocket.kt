@@ -20,7 +20,10 @@ class GameWebSocket(
     private val onTavernDialogueReceived: (GameEvent.TavernDialogueReceived) -> Unit = {},
     private val onHideHarvested: (GameEvent.HideHarvested) -> Unit = {},
     private val onHideSold: (GameEvent.HideSold) -> Unit = {},
-    private val onHunterIntelReceived: (GameEvent.HunterIntelReceived) -> Unit = {}
+    private val onHunterIntelReceived: (GameEvent.HunterIntelReceived) -> Unit = {},
+    private val onTacticalBattleStarted: (GameEvent.TacticalBattleStarted) -> Unit = {},
+    private val onTacticalStateUpdated: (GameEvent.TacticalStateUpdated) -> Unit = {},
+    private val onTacticalBattleEnded: (GameEvent.TacticalBattleEnded) -> Unit = {}
 ) {
     private var ws: WebSocket? = null
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
@@ -62,6 +65,9 @@ class GameWebSocket(
                     is GameEvent.HideHarvested -> onHideHarvested(gameEvent)
                     is GameEvent.HideSold -> onHideSold(gameEvent)
                     is GameEvent.HunterIntelReceived -> onHunterIntelReceived(gameEvent)
+                    is GameEvent.TacticalBattleStarted -> onTacticalBattleStarted(gameEvent)
+                    is GameEvent.TacticalStateUpdated -> onTacticalStateUpdated(gameEvent)
+                    is GameEvent.TacticalBattleEnded -> onTacticalBattleEnded(gameEvent)
                 }
             } catch (e: Exception) {
                 console.error("Failed to parse event: $data", e)

@@ -445,8 +445,8 @@ fun IComponent.StrategicMap(
                     else -> "chance-low"
                 }
                 
-                val isAttacker10x = battleChar.army.total() > enemyChar.army.total() * 10 && battleChar.army.total() > 0
-                val isDefender10x = enemyChar.army.total() > battleChar.army.total() * 10 && enemyChar.army.total() > 0
+                val isAttacker10x = battleChar.army.total() >= 4 && (enemyChar.army.total() == 0 || battleChar.army.total() >= enemyChar.army.total() * 4)
+                val isDefender10x = enemyChar.army.total() >= 4 && (battleChar.army.total() == 0 || enemyChar.army.total() >= battleChar.army.total() * 4)
                 
                 div(className = "territory-modal-backdrop") {
                     onClick {

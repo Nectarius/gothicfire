@@ -50,7 +50,7 @@ object DeterministicTriageEngine {
             val garrisonArmy = allCastleCharacters.sumOf { it.army.total() }
 
             if (enemiesAdjacentToCastle.isNotEmpty() && isAtCastle && garrisonArmy < 5) {
-                val maxRecruit = (100 - char.army.total()).coerceAtLeast(0)
+                val maxRecruit = (models.MAX_SQUAD_SIZE - char.army.total()).coerceAtLeast(0)
                 if (maxRecruit > 0 && territory != null) {
                     if (char.gold >= 50 && territory.protection >= 20) {
                         val count = (char.gold / 50).coerceAtMost(maxRecruit)
@@ -84,7 +84,7 @@ object DeterministicTriageEngine {
         // Critical State 3: Sole Castle Guardian Forbidden From Marching Out
         // ----------------------------------------------------------------------
         if (mustStayAtCastle && isAtCastle) {
-            val maxRecruit = (100 - char.army.total()).coerceAtLeast(0)
+            val maxRecruit = (models.MAX_SQUAD_SIZE - char.army.total()).coerceAtLeast(0)
             if (char.army.total() == 0 && maxRecruit > 0 && territory != null) {
                 if (char.gold >= 50 && territory.protection >= 20) {
                     val count = (char.gold / 50).coerceAtMost(maxRecruit)
@@ -116,7 +116,7 @@ object DeterministicTriageEngine {
             } else emptyList()
 
             if (adjEnemies.isNotEmpty()) {
-                val maxRecruit = 100
+                val maxRecruit = models.MAX_SQUAD_SIZE
                 if (territory != null && char.gold >= 50 && territory.protection >= 20) {
                     val count = (char.gold / 50).coerceAtMost(maxRecruit)
                     logger.info("Deterministic Override: Defenseless Commander ${char.name} adjacent to enemy ${adjEnemies.first().name}. Recruiting $count Heavy Infantry.")

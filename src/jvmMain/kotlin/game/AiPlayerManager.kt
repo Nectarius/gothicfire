@@ -47,6 +47,12 @@ object AiPlayerManager {
             iterations++
             val gameState = gameSession.gameState
             
+            // If a tactical battle is in progress, do not process strategic actions
+            if (gameState.activeTacticalBattle != null) {
+                logger.info("Active tactical combat in progress. Halting strategic bot loop.")
+                return
+            }
+
             // If the turn has already advanced or game ended, stop
             if (gameState.activeTeamTurn != activeTeam || gameState.status != GameStatus.IN_PROGRESS) {
                 break
@@ -104,7 +110,14 @@ object AiPlayerManager {
                 logger.info("AI Action: $action")
                 
                 when (action) {
-                    is BotAction.Move -> gameSession.moveCharacter(playerId, action.targetSector, action.characterId, action.strategy)
+                    is BotAction.Move -> {
+                        gameSession.moveCharacter(playerId, action.targetSector, action.characterId, action.strategy)
+                        // If this move initiated a tactical combat mini-game, stop strategic actions immediately
+                        if (gameSession.gameState.activeTacticalBattle != null) {
+                            logger.info("Bot move initiated tactical combat. Halting strategic bot loop.")
+                            return
+                        }
+                    }
                     is BotAction.Recruit -> gameSession.recruitArmy(playerId, action.unitType, action.count, action.characterId)
                     is BotAction.CollectResources -> gameSession.collectResources(playerId, action.sectorId, action.characterId)
                     is BotAction.UpgradeTerritory -> gameSession.upgradeTerritory(playerId, action.sectorId, action.upgradeType, action.characterId)
@@ -115,7 +128,7 @@ object AiPlayerManager {
         
         // Final fallback: if we reached max iterations and the turn still hasn't ended, forcefully skip remaining bot characters
         val finalGameState = gameSession.gameState
-        if (finalGameState.activeTeamTurn == activeTeam && finalGameState.status == GameStatus.IN_PROGRESS) {
+        if (finalGameState.activeTacticalBattle == null && finalGameState.activeTeamTurn == activeTeam && finalGameState.status == GameStatus.IN_PROGRESS) {
             val finalBotPlayers = finalGameState.players.filter { it.team == activeTeam && it.isBot }
             val finalBotCharacters = finalGameState.characters.filter { char -> finalBotPlayers.any { it.id == char.playerId } && !char.hasActedThisTurn && !char.isDead }
             

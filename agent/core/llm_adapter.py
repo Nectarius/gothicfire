@@ -177,7 +177,7 @@ class LlamaCppLlm(BaseLlm):
                 stop_seqs = list(llm_request.config.stop_sequences)
 
         t0 = time.perf_counter()
-        inference_timeout = float(os.getenv("AI_INFERENCE_TIMEOUT", "8.0"))
+        inference_timeout = float(os.getenv("AI_INFERENCE_TIMEOUT", "30.0"))
 
         async def _acquire_and_generate() -> Dict[str, Any]:
             async with get_async_inference_lock():

@@ -76,14 +76,14 @@ class LlmAiDecisionService(
 
         val currentFood = char.food
         val currentArmy = char.army.total()
-        val maxRecruit = (100 - currentArmy).coerceAtLeast(0)
+        val maxRecruit = (models.MAX_SQUAD_SIZE - currentArmy).coerceAtLeast(0)
 
         // 1. Recruitment options (Mages, Heavy Infantry, Archers, Light Infantry)
         if (territory != null && maxRecruit > 0) {
             val baseRecruitScore = when {
                 currentArmy == 0 -> 85 // Defenseless commander must recruit immediately
-                currentArmy < 10 -> 70
-                currentArmy < 25 -> 55
+                currentArmy < 4 -> 70
+                currentArmy < 10 -> 55
                 else -> 45
             }
 

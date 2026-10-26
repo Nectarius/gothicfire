@@ -80,7 +80,7 @@ fun resolveFight(attacker: Character, defender: Character, locationProtection: I
     val attackerTotal = attacker.army.total()
     val defenderTotal = defender.army.total()
     
-    if (attackerTotal > defenderTotal * 10 && attackerTotal > 0) {
+    if (attackerTotal >= 4 && (defenderTotal == 0 || attackerTotal >= defenderTotal * 4)) {
         val losses = kotlin.math.min(attackerTotal, (defenderTotal * 0.05).toInt())
         val remainingArmy = applyCasualties(attacker.army, losses)
         val winnerChar = attacker.copy(army = remainingArmy)
@@ -96,7 +96,7 @@ fun resolveFight(attacker: Character, defender: Character, locationProtection: I
             isOverwhelming = true
         )
     }
-    if (defenderTotal > attackerTotal * 10 && defenderTotal > 0) {
+    if (defenderTotal >= 4 && (attackerTotal == 0 || defenderTotal >= attackerTotal * 4)) {
         val losses = kotlin.math.min(defenderTotal, (attackerTotal * 0.05).toInt())
         val remainingArmy = applyCasualties(defender.army, losses)
         val winnerChar = defender.copy(army = remainingArmy)
@@ -169,10 +169,10 @@ fun estimateWinChance(attacker: Character, defender: Character, locationProtecti
     val attackerTotal = attacker.army.total()
     val defenderTotal = defender.army.total()
     
-    if (attackerTotal > defenderTotal * 10 && attackerTotal > 0) {
+    if (attackerTotal >= 4 && (defenderTotal == 0 || attackerTotal >= defenderTotal * 4)) {
         return 100
     }
-    if (defenderTotal > attackerTotal * 10 && defenderTotal > 0) {
+    if (defenderTotal >= 4 && (attackerTotal == 0 || defenderTotal >= attackerTotal * 4)) {
         return 0
     }
     

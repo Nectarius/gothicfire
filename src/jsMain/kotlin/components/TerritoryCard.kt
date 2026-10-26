@@ -285,7 +285,7 @@ fun IComponent.TerritoryCard(
                     div(className = "d-flex justify-between items-center mb-05") {
                         h4(className = "m-0 text-sm") { textNode(t("territory.recruit_army_for", activeChar.name)) }
                         span(className = "text-xs text-primary font-600") {
-                            textNode("Army: ${activeChar.army.total()}/100 | Gold: ${activeChar.gold}🪙")
+                            textNode("Army: ${activeChar.army.total()}/${models.MAX_SQUAD_SIZE} | Gold: ${activeChar.gold}🪙")
                         }
                     }
                     p(className = "text-xs text-dark-gray m-0 mb-05 text-center") {

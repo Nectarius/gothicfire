@@ -120,6 +120,30 @@ sealed class GameAction {
     ) : GameAction()
 
     @Serializable
+    data class TacticalMoveUnit(
+        val battleId: String,
+        val unitId: String,
+        val targetX: Int,
+        val targetY: Int
+    ) : GameAction()
+
+    @Serializable
+    data class TacticalAttackUnit(
+        val battleId: String,
+        val attackerUnitId: String,
+        val targetUnitId: String
+    ) : GameAction()
+
+    @Serializable
+    data class TacticalEndUnitTurn(val battleId: String) : GameAction()
+
+    @Serializable
+    data class TacticalRetreat(val battleId: String) : GameAction()
+
+    @Serializable
+    data class TacticalAutoResolve(val battleId: String) : GameAction()
+
+    @Serializable
     data object EndGame : GameAction()
     
     @Serializable
@@ -211,4 +235,13 @@ sealed class GameEvent {
         val grounds: List<HuntingGround>,
         val timestamp: Long = 0L
     ) : GameEvent()
+
+    @Serializable
+    data class TacticalBattleStarted(val battleState: TacticalBattleState) : GameEvent()
+
+    @Serializable
+    data class TacticalStateUpdated(val battleState: TacticalBattleState, val lastActionLog: String) : GameEvent()
+
+    @Serializable
+    data class TacticalBattleEnded(val battleState: TacticalBattleState, val winnerPlayerId: String) : GameEvent()
 }

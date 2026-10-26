@@ -217,5 +217,8 @@ data class GameState(
     val isPvE: Boolean = false,
     val huntingCamps: List<HuntingCamp> = emptyList(),
     val furMarket: Map<HideType, FurMarketEntry> = FurMarket.initial(),
-    val furSalesThisTurn: Map<String, Set<HideType>> = emptyMap()
+    val furSalesThisTurn: Map<String, Set<HideType>> = emptyMap(),
+    val activeTacticalBattle: TacticalBattleState? = null
 )
+
+const val MAX_SQUAD_SIZE = 20

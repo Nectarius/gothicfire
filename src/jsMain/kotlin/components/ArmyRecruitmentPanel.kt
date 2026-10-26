@@ -122,7 +122,7 @@ fun IComponent.ArmyRecruitmentPanel(
                 // Recruitment Slider
                 val selectedUnitCost = unitOptions.find { it.first == selectedUnitType }?.third?.first ?: 30
                 val maxAffordable = (selectedChar.gold / selectedUnitCost)
-                val spaceLeft = 100 - selectedChar.army.total()
+                val spaceLeft = models.MAX_SQUAD_SIZE - selectedChar.army.total()
                 val maxRecruit = kotlin.math.min(maxAffordable, spaceLeft)
                 
                 if (maxRecruit > 0) {

@@ -97,6 +97,11 @@ fun Route.gameSocket() {
                             is GameAction.HarvestHide -> game.harvestHide(playerId, action.characterId, action.hideType)
                             is GameAction.SellHide -> game.sellHide(playerId, action.characterId, action.hideType)
                             is GameAction.AskHunterAboutHide -> game.askHunterAboutHide(playerId, action.sectorId, action.patronId, action.hideType, action.characterId)
+                            is GameAction.TacticalMoveUnit -> game.tacticalMoveUnit(playerId, action.battleId, action.unitId, action.targetX, action.targetY)
+                            is GameAction.TacticalAttackUnit -> game.tacticalAttackUnit(playerId, action.battleId, action.attackerUnitId, action.targetUnitId)
+                            is GameAction.TacticalEndUnitTurn -> game.tacticalEndUnitTurn(playerId, action.battleId)
+                            is GameAction.TacticalRetreat -> game.tacticalRetreat(playerId, action.battleId)
+                            is GameAction.TacticalAutoResolve -> game.tacticalAutoResolve(playerId, action.battleId)
                             is GameAction.EndGame -> {
                                 val isPvE = game.gameState.isPvE
                                 game.endGame(playerId)

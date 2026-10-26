@@ -28,6 +28,7 @@ import components.AdvisorModal
 import components.CastleDialogueModal
 import components.EventPopupModal
 import components.VictoryPopupModal
+import components.TacticalBattleModal
 import game.GameWebSocket
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -216,6 +217,15 @@ class App : Application() {
                     },
                     onHunterIntelReceived = { event ->
                         activeHunterIntel = event
+                    },
+                    onTacticalBattleStarted = { event ->
+                        gameState = gameState?.copy(activeTacticalBattle = event.battleState)
+                    },
+                    onTacticalStateUpdated = { event ->
+                        gameState = gameState?.copy(activeTacticalBattle = event.battleState)
+                    },
+                    onTacticalBattleEnded = { event ->
+                        gameState = gameState?.copy(activeTacticalBattle = null)
                     }
                 )
             }
@@ -635,6 +645,17 @@ class App : Application() {
                         VictoryPopupModal(
                             gameState = gameState!!,
                             onClose = { victoryAcknowledged = true }
+                        )
+                    }
+
+                    if (gameState?.activeTacticalBattle != null) {
+                        val effectivePlayerId = yourPlayerId.ifBlank {
+                            currentUser?.name ?: currentUser?.id ?: gameState?.players?.firstOrNull { !it.isBot }?.id ?: ""
+                        }
+                        TacticalBattleModal(
+                            battleState = gameState!!.activeTacticalBattle!!,
+                            yourPlayerId = effectivePlayerId,
+                            sendAction = { ws.sendAction(it) }
                         )
                     }
                 }
