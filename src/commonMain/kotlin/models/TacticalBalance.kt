@@ -81,7 +81,7 @@ object DefaultTacticalBalanceConfig {
         baseAttack = 6,
         baseDefense = 6,
         damageType = "WEAPON",
-        weaponDefense = 8,
+        weaponDefense = 9,
         arrowDefense = 8,
         magicDefense = 4,
         defaultMoves = 2,
@@ -91,10 +91,10 @@ object DefaultTacticalBalanceConfig {
         attackPattern = "MELEE",
         requiresLineOfSight = false,
         bypassesArmor = false,
-        attackPerCount = 0.5,
-        defensePerCount = 0.3,
-        weaponDefensePerCount = 0.3,
-        arrowDefensePerCount = 0.3,
+        attackPerCount = 0.7,
+        defensePerCount = 0.5,
+        weaponDefensePerCount = 0.5,
+        arrowDefensePerCount = 0.5,
         magicDefensePerCount = 0.1
     )
 
@@ -115,7 +115,7 @@ object DefaultTacticalBalanceConfig {
         attackPattern = "MELEE",
         requiresLineOfSight = false,
         bypassesArmor = false,
-        attackPerCount = 0.5,
+        attackPerCount = 0.7,
         defensePerCount = 0.3,
         weaponDefensePerCount = 0.2,
         arrowDefensePerCount = 0.2,

@@ -33,7 +33,10 @@ fun IComponent.MarketPanel(
     div(className = "modal-overlay") {
         div(className = "modal-content glass p-4 max-w-lg") {
             div(className = "d-flex justify-between items-center mb-1") {
-                h2(className = "m-0 text-warning") { textNode(t("market.title")) }
+                h2(className = "m-0 text-warning d-flex items-center gap-05") { 
+                    span { textNode("⚖️") }
+                    textNode(t("market.title")) 
+                }
                 button("✖", className = "btn btn-xs btn-outline") {
                     onClick { onClose() }
                 }

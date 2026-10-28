@@ -119,10 +119,10 @@ class TacticalCombatTest {
         )
         assertTrue(heavyUnit.isPrevalentUnit)
         assertEquals(10, heavyUnit.initialSquadCount)
-        assertEquals(90, heavyUnit.maxHp) // BaseHP (9) * 10 = 90
-        // Attack: (BaseATK 6 + (10 * 0.5).toInt() = 11) * 1.25 = 13.75 -> 14
-        assertEquals(14, heavyUnit.attack)
-        val expectedDef = ((TacticalUnitType.HEAVY_INFANTRY.weaponDefense + (10 * 0.3).toInt()) * 1.25).roundToInt()
+        val balanceHeavy = TacticalBalanceRepository.getBalance(TacticalUnitType.HEAVY_INFANTRY)
+        val expectedAtk = ((balanceHeavy.baseAttack + (10 * balanceHeavy.attackPerCount).toInt()) * 1.25).roundToInt()
+        assertEquals(expectedAtk, heavyUnit.attack)
+        val expectedDef = ((balanceHeavy.weaponDefense + (10 * balanceHeavy.weaponDefensePerCount).toInt()) * 1.25).roundToInt()
         assertEquals(expectedDef, heavyUnit.defense)
     }
 

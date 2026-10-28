@@ -78,7 +78,13 @@ fun IComponent.GameLobby(
 
     
     div(className = "lobby-container glass p-4 text-center w-full") {
-        h1(className = "m-0 mb-2") { textNode(t("lobby.title")) }
+        div(className = "lobby-header-banner mb-3") {
+            img(src = "/gothic_fire_icon.png", alt = "Gothic Fire", className = "lobby-emblem-img")
+            h1(className = "lobby-main-title m-0") { textNode(t("lobby.title")) }
+            p(className = "lobby-subtitle text-gray text-sm mt-05 m-0") { 
+                textNode("Turn-based Dark Fantasy Warfare in Khorinis & The Valley of Mines") 
+            }
+        }
         
         if (creatingPvE) {
             div(className = "glass p-4 mt-2 text-left") {

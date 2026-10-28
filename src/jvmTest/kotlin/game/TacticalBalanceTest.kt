@@ -75,7 +75,7 @@ class TacticalBalanceTest {
         assertEquals(9, heavy.baseHp)
         assertEquals(6, heavy.baseAttack)
         assertEquals("WEAPON", heavy.damageType)
-        assertEquals(8, heavy.weaponDefense)
+        assertEquals(9, heavy.weaponDefense)
         assertEquals(8, heavy.arrowDefense)
         assertEquals(4, heavy.magicDefense)
         assertEquals(2, heavy.defaultMoves)

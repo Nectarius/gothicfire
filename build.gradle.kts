@@ -57,3 +57,8 @@ tasks.named("compileKotlinJvm") {
 tasks.named("compileKotlinJs") {
     dependsOn("kspCommonMainKotlinMetadata")
 }
+
+// Bundle root tactical_balance.json as a single source of truth into JVM resources
+tasks.named<ProcessResources>("jvmProcessResources") {
+    from(rootProject.file("tactical_balance.json"))
+}

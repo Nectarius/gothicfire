@@ -260,38 +260,45 @@ class App : Application() {
 
             // Navbar — hidden in fullscreen map mode
             if (!mapFullscreen) {
-                nav(className = "navbar glass") {
-                    div(className = "navbar-brand") {
-                        textNode(t("nav.brand"))
+                nav(className = "navbar glass gothic-navbar") {
+                    div(className = "navbar-brand-wrapper") {
+                        img(src = "/gothic_fire_icon.png", alt = "Gothic Fire", className = "navbar-brand-logo")
+                        div(className = "navbar-brand-col") {
+                            span(className = "navbar-brand-title") { textNode(t("nav.brand")) }
+                            span(className = "navbar-brand-subtitle") { textNode("Chronicles of Myrtana") }
+                        }
                     }
                     div(className = "d-flex items-center gap-20") {
                         // Language Switcher
-                        div(className = "d-flex items-center gap-05") {
+                        div(className = "gothic-lang-group") {
                             val activeLang = I18n.currentLanguage.value
-                            button("EN", className = "btn btn-xs language-btn ${if (activeLang == Language.EN) "btn-primary" else "glass"}") {
+                            button("EN", className = "gothic-lang-btn ${if (activeLang == Language.EN) "active" else ""}") {
                                 title("Switch to English")
                                 onClick { I18n.setLanguage(Language.EN) }
                             }
-                            button("ΕΛ", className = "btn btn-xs language-btn ${if (activeLang == Language.EL) "btn-primary" else "glass"}") {
+                            button("ΕΛ", className = "gothic-lang-btn ${if (activeLang == Language.EL) "active" else ""}") {
                                 title("Αλλαγή σε Ελληνικά")
                                 onClick { I18n.setLanguage(Language.EL) }
                             }
-                            button("RU", className = "btn btn-xs language-btn ${if (activeLang == Language.RU) "btn-primary" else "glass"}") {
+                            button("RU", className = "gothic-lang-btn ${if (activeLang == Language.RU) "active" else ""}") {
                                 title("Переключить на Русский")
                                 onClick { I18n.setLanguage(Language.RU) }
                             }
                         }
 
                         if (currentUser != null) {
-                            span { textNode(t("nav.welcome", currentUser?.name ?: "")) }
-                            a(href = "/logout", className = "btn btn-primary text-none") {
+                            div(className = "gothic-user-badge") {
+                                span(className = "gothic-user-crest") { textNode("🛡️") }
+                                span(className = "gothic-user-name") { textNode(currentUser?.name ?: "") }
+                            }
+                            a(href = "/logout", className = "btn btn-gothic-logout text-none") {
                                 textNode(t("nav.logout"))
                             }
                         } else {
-                            a(href = "/login", className = "btn btn-primary text-none") {
+                            a(href = "/login", className = "btn btn-gothic-login text-none") {
                                 textNode(t("nav.login_google"))
                             }
-                            a(href = "/auth/twitter", className = "btn btn-primary text-none") {
+                            a(href = "/auth/twitter", className = "btn btn-gothic-login text-none") {
                                 textNode(t("nav.login_twitter"))
                             }
                         }
@@ -311,17 +318,30 @@ class App : Application() {
                 } else {
                     // Tabs — hidden in fullscreen map mode
                     if (!mapFullscreen) {
-                        div(className = "d-flex gap-1 mb-2") {
-                            button(t("nav.tab_notes"), className = "btn ${if (currentTab == "notes") "btn-primary" else "glass"}") {
+                        div(className = "gothic-nav-tabs-bar mb-2") {
+                            button(className = "gothic-nav-tab ${if (currentTab == "notes") "active" else ""}") {
+                                span(className = "gothic-tab-icon") { textNode("📜") }
+                                span(className = "gothic-tab-label") { textNode(t("nav.tab_notes")) }
                                 onClick { currentTab = "notes" }
                             }
-                            button(t("nav.tab_discussions"), className = "btn ${if (currentTab == "discussions") "btn-primary" else "glass"}") {
+                            button(className = "gothic-nav-tab ${if (currentTab == "discussions") "active" else ""}") {
+                                span(className = "gothic-tab-icon") { textNode("💬") }
+                                span(className = "gothic-tab-label") { textNode(t("nav.tab_discussions")) }
                                 onClick { currentTab = "discussions" }
                             }
-                            button(t("nav.tab_map"), className = "btn ${if (currentTab == "map") "btn-primary" else "glass"}") {
+                            button(className = "gothic-nav-tab ${if (currentTab == "map") "active" else ""}") {
+                                span(className = "gothic-tab-icon") { textNode("🗺️") }
+                                span(className = "gothic-tab-label") { textNode(t("nav.tab_map")) }
+                                if (gameState != null && gameState!!.status == models.GameStatus.IN_PROGRESS) {
+                                    span(className = "gothic-tab-live-pulse") {
+                                        title("Active Battle in Progress")
+                                    }
+                                }
                                 onClick { currentTab = "map" }
                             }
-                            button(t("nav.tab_history"), className = "btn ${if (currentTab == "history") "btn-primary" else "glass"}") {
+                            button(className = "gothic-nav-tab ${if (currentTab == "history") "active" else ""}") {
+                                span(className = "gothic-tab-icon") { textNode("⚔️") }
+                                span(className = "gothic-tab-label") { textNode(t("nav.tab_history")) }
                                 onClick { currentTab = "history" }
                             }
                         }
