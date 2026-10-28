@@ -144,6 +144,9 @@ sealed class GameAction {
     data class TacticalAutoResolve(val battleId: String) : GameAction()
 
     @Serializable
+    data class TacticalAcknowledgeResult(val battleId: String) : GameAction()
+
+    @Serializable
     data object EndGame : GameAction()
     
     @Serializable

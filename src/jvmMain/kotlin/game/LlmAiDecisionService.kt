@@ -54,6 +54,51 @@ class LlmAiDecisionService(
         val territory = snapshot.gameState.territories[sectorId]
         val isAtCastle = char.currentSector == snapshot.gameState.teamCastles[snapshot.botTeam]
 
+        // --------------------------------------------------------------------------
+        // Dynamic Threat Routing:
+        // Use fast heuristic algorithm for routine moves unless player comes within
+        // 2 turns of reaching the base castle or any bot character on the map.
+        // --------------------------------------------------------------------------
+        val enemyPlayers = snapshot.gameState.players.filter { it.team != snapshot.botTeam }
+        val activeEnemyChars = snapshot.gameState.characters.filter { c ->
+            !c.isDead && c.currentSector != null && enemyPlayers.any { p -> p.id == c.playerId }
+        }
+
+        val teamCastleId = snapshot.gameState.teamCastles[snapshot.botTeam]
+        val minDistanceToCastle = if (teamCastleId != null) {
+            activeEnemyChars.minOfOrNull { enemy ->
+                getSectorDistance(enemy.currentSector!!, teamCastleId)
+            } ?: Int.MAX_VALUE
+        } else Int.MAX_VALUE
+
+        val allLivingBotChars = snapshot.gameState.characters.filter { c ->
+            !c.isDead && c.currentSector != null &&
+                    snapshot.gameState.players.find { p -> p.id == c.playerId }?.team == snapshot.botTeam
+        }
+        val minDistanceToBotChars = if (allLivingBotChars.isNotEmpty() && activeEnemyChars.isNotEmpty()) {
+            activeEnemyChars.flatMap { enemy ->
+                allLivingBotChars.map { bot ->
+                    getSectorDistance(enemy.currentSector!!, bot.currentSector!!)
+                }
+            }.minOrNull() ?: Int.MAX_VALUE
+        } else Int.MAX_VALUE
+
+        // Threat threshold: closer than 2 turns (distance <= 2) to castle or any bot character
+        val isThreatened = minDistanceToCastle <= 2 || minDistanceToBotChars <= 2
+
+        if (!isThreatened) {
+            logger.info(
+                "Fast Heuristic Engine selected for ${char.name} at sector $sectorId: no enemy threat within 2 turns " +
+                "(min Castle distance: $minDistanceToCastle, min Character distance: $minDistanceToBotChars). Skipping LLM."
+            )
+            return executeHeuristicFallback(char, snapshot, mustStayAtCastle)
+        }
+
+        logger.info(
+            "Complex Tactical Threat active for ${char.name} (min Castle dist: $minDistanceToCastle, min Unit dist: $minDistanceToBotChars <= 2 turns). " +
+            "Escalating to LLM AI Agent..."
+        )
+
         // Best battle strategy available for this character
         val bestStrategy = when {
             char.archon >= 6 && char.army.total() > 5 -> BattleStrategy.ARCANE_PHALANX

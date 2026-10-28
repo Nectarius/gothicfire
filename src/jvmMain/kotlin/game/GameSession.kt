@@ -711,6 +711,33 @@ class GameSession(
                 battleToStart = battleState
                 return@withLock
             } else {
+                val castleOwner = gameState.teamCastles.entries.find { it.value == targetSector }?.key
+                val isEnemyCastle = castleOwner != null && castleOwner != player.team
+                if (isEnemyCastle) {
+                    val opposingPlayer = gameState.players.find { it.team == castleOwner && !it.isBot }
+                        ?: gameState.players.find { it.team == castleOwner }
+                    if (opposingPlayer != null) {
+                        val garrisonChar = Character(
+                            id = "garrison_${targetSector}_${UUID.randomUUID().toString().take(6)}",
+                            playerId = opposingPlayer.id,
+                            name = "Castle Garrison",
+                            warlord = 5,
+                            intellect = 5,
+                            vanguard = 5,
+                            archon = 5,
+                            currentSector = targetSector,
+                            army = Army(heavyInfantry = 6, archers = 6)
+                        )
+                        val battleState = initiateTacticalBattleState(player, charToPlace, garrisonChar, targetSector, strategy, isPlaceAction = true)
+                        gameState = gameState.copy(
+                            characters = gameState.characters + garrisonChar,
+                            activeTacticalBattle = battleState
+                        )
+                        battleToStart = battleState
+                        return@withLock
+                    }
+                }
+
                 val captureRes = handleCaptureTerritory(newTerritories, targetSector, player)
                 newTerritories = captureRes.updatedTerritories
                 
@@ -725,12 +752,6 @@ class GameSession(
                     } else it
                 }
                 gameState = gameState.copy(characters = newChars, territories = newTerritories)
-                
-                val castleOwner = gameState.teamCastles.entries.find { it.value == targetSector }?.key
-                val isCastleCaptured = castleOwner != null && castleOwner != player.team
-                if (isCastleCaptured) {
-                    gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = player.team)
-                }
             }
             
             checkTurnEnd()
@@ -780,6 +801,33 @@ class GameSession(
                 battleToStart = battleState
                 return@withLock
             } else {
+                val castleOwner = gameState.teamCastles.entries.find { it.value == targetSector }?.key
+                val isEnemyCastle = castleOwner != null && castleOwner != player.team
+                if (isEnemyCastle) {
+                    val opposingPlayer = gameState.players.find { it.team == castleOwner && !it.isBot }
+                        ?: gameState.players.find { it.team == castleOwner }
+                    if (opposingPlayer != null) {
+                        val garrisonChar = Character(
+                            id = "garrison_${targetSector}_${UUID.randomUUID().toString().take(6)}",
+                            playerId = opposingPlayer.id,
+                            name = "Castle Garrison",
+                            warlord = 5,
+                            intellect = 5,
+                            vanguard = 5,
+                            archon = 5,
+                            currentSector = targetSector,
+                            army = Army(heavyInfantry = 6, archers = 6)
+                        )
+                        val battleState = initiateTacticalBattleState(player, charToMove, garrisonChar, targetSector, strategy, isPlaceAction = false)
+                        gameState = gameState.copy(
+                            characters = gameState.characters + garrisonChar,
+                            activeTacticalBattle = battleState
+                        )
+                        battleToStart = battleState
+                        return@withLock
+                    }
+                }
+
                 val captureRes = handleCaptureTerritory(newTerritories, targetSector, player)
                 newTerritories = captureRes.updatedTerritories
                 
@@ -794,12 +842,6 @@ class GameSession(
                     } else it
                 }
                 gameState = gameState.copy(characters = newChars, territories = newTerritories)
-                
-                val castleOwner = gameState.teamCastles.entries.find { it.value == targetSector }?.key
-                val isCastleCaptured = castleOwner != null && castleOwner != player.team
-                if (isCastleCaptured) {
-                    gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = player.team)
-                }
             }
             checkTurnEnd()
         }
@@ -2059,7 +2101,15 @@ class GameSession(
             )
             newTerritories = newTerritories + (pending.targetSector to damagedTerr)
 
-            if (isAttackerWinner) {
+            val otherDefendersAtSector = gameState.characters.filter {
+                it.currentSector == pending.targetSector &&
+                it.id != defenderChar.id &&
+                !it.isDead &&
+                it.playerId != pending.attackerPlayerId &&
+                !it.id.startsWith("garrison_")
+            }
+
+            if (isAttackerWinner && otherDefendersAtSector.isEmpty()) {
                 val captureRes = handleCaptureTerritory(newTerritories, pending.targetSector, attackerPlayer)
                 newTerritories = captureRes.updatedTerritories
                 lootedFood = captureRes.lootedFood
@@ -2100,15 +2150,18 @@ class GameSession(
             val concludedBattle = finalBattleState.copy(isFinished = true, winnerPlayerId = winnerPlayerId)
             endedEventToSend = GameEvent.TacticalBattleEnded(concludedBattle, winnerPlayerId)
 
+            val finalCleanChars = newChars.filter { !it.id.startsWith("garrison_") }
+
             gameState = gameState.copy(
-                characters = newChars,
+                characters = finalCleanChars,
                 territories = newTerritories,
                 activeTacticalBattle = null
             )
             pendingTacticalBattle = null
 
             val castleOwner = gameState.teamCastles.entries.find { it.value == pending.targetSector }?.key
-            val isCastleCapturedByAttacker = isAttackerWinner && castleOwner != null && castleOwner != attackerPlayer.team
+            val otherDefendersAtCastle = otherDefendersAtSector
+            val isCastleCapturedByAttacker = isAttackerWinner && castleOwner != null && castleOwner != attackerPlayer.team && otherDefendersAtCastle.isEmpty()
 
             if (isCastleCapturedByAttacker) {
                 gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = attackerPlayer.team)
@@ -2119,8 +2172,8 @@ class GameSession(
                 val humanTeam = gameState.teamInfos.keys.find { it != Team.YELLOW } ?: Team.RED
                 val humanPlayerIds = gameState.players.filter { it.team == humanTeam }.map { it.id }.toSet()
                 val yellowPlayerIds = gameState.players.filter { it.team == Team.YELLOW }.map { it.id }.toSet()
-                val allHumanDead = humanPlayerIds.isNotEmpty() && newChars.filter { it.playerId in humanPlayerIds }.all { it.isDead }
-                val allYellowDead = yellowPlayerIds.isNotEmpty() && newChars.filter { it.playerId in yellowPlayerIds }.all { it.isDead }
+                val allHumanDead = humanPlayerIds.isNotEmpty() && finalCleanChars.filter { it.playerId in humanPlayerIds }.all { it.isDead }
+                val allYellowDead = yellowPlayerIds.isNotEmpty() && finalCleanChars.filter { it.playerId in yellowPlayerIds }.all { it.isDead }
 
                 if (allYellowDead) {
                     gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = humanTeam)
@@ -2134,8 +2187,8 @@ class GameSession(
                     val team2 = teams[1]
                     val team1PlayerIds = gameState.players.filter { it.team == team1 }.map { it.id }.toSet()
                     val team2PlayerIds = gameState.players.filter { it.team == team2 }.map { it.id }.toSet()
-                    val allTeam1Dead = team1PlayerIds.isNotEmpty() && newChars.filter { it.playerId in team1PlayerIds }.all { it.isDead }
-                    val allTeam2Dead = team2PlayerIds.isNotEmpty() && newChars.filter { it.playerId in team2PlayerIds }.all { it.isDead }
+                    val allTeam1Dead = team1PlayerIds.isNotEmpty() && finalCleanChars.filter { it.playerId in team1PlayerIds }.all { it.isDead }
+                    val allTeam2Dead = team2PlayerIds.isNotEmpty() && finalCleanChars.filter { it.playerId in team2PlayerIds }.all { it.isDead }
 
                     if (allTeam1Dead) {
                         gameState = gameState.copy(status = GameStatus.GAME_OVER, winningTeam = team2)
@@ -2177,6 +2230,26 @@ class GameSession(
         }
     }
 
+    suspend fun tacticalAcknowledgeResult(playerId: String, battleId: String) {
+        var shouldTriggerBot = false
+        mutex.withLock {
+            if (gameState.activeTacticalBattle?.battleId == battleId) {
+                gameState = gameState.copy(activeTacticalBattle = null)
+                pendingTacticalBattle = null
+                if (gameState.isPvE && gameState.activeTeamTurn == Team.YELLOW && gameState.status == GameStatus.IN_PROGRESS) {
+                    shouldTriggerBot = true
+                }
+            }
+        }
+        broadcastState()
+        if (shouldTriggerBot) {
+            GlobalScope.launch {
+                delay(500)
+                AiPlayerManager.executeBotTurn(this@GameSession)
+            }
+        }
+    }
+
     private fun checkAndTriggerTacticalAi(battleState: TacticalBattleState) {
         if (battleState.isFinished) return
         val activeOwnerId = battleState.activeUnitOwnerId
@@ -2211,20 +2284,20 @@ class GameSession(
             when (action) {
                 is TacticalAiAction.MoveAndAttack -> {
                     tacticalMoveUnit(botPlayerId, battleId, freshUnit.id, action.moveX, action.moveY)
-                    delay(300)
+                    delay(500)
                     val postMoveBattle = gameState.activeTacticalBattle ?: return
                     if (!postMoveBattle.isFinished) {
                         tacticalAttackUnit(botPlayerId, battleId, freshUnit.id, action.targetUnitId)
-                        delay(300)
+                        delay(500)
                     }
                 }
                 is TacticalAiAction.AttackOnly -> {
                     tacticalAttackUnit(botPlayerId, battleId, freshUnit.id, action.targetUnitId)
-                    delay(300)
+                    delay(500)
                 }
                 is TacticalAiAction.MoveOnly -> {
                     tacticalMoveUnit(botPlayerId, battleId, freshUnit.id, action.moveX, action.moveY)
-                    delay(300)
+                    delay(500)
                 }
                 is TacticalAiAction.Pass -> {}
             }

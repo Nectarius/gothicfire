@@ -192,10 +192,10 @@ object TacticalRules {
     ): TacticalUnit {
         val archetype = deriveHeroArchetype(char)
         val maxHp = when (archetype) {
-            TacticalUnitType.WARRIOR_HERO -> 36 + char.warlord * 2
-            TacticalUnitType.ARCHER_HERO -> 30 + char.vanguard * 2
-            TacticalUnitType.MAGE_HERO -> 28 + (char.archon + char.intellect) * 2
-            else -> 30
+            TacticalUnitType.WARRIOR_HERO -> 56 + char.warlord * 4
+            TacticalUnitType.ARCHER_HERO -> 50 + char.vanguard * 4
+            TacticalUnitType.MAGE_HERO -> 46 + (char.archon + char.intellect) * 3
+            else -> 50
         }
         val atk = when (archetype) {
             TacticalUnitType.WARRIOR_HERO -> 8 + char.warlord
@@ -204,10 +204,10 @@ object TacticalRules {
             else -> 8
         }
         val def = when (archetype) {
-            TacticalUnitType.WARRIOR_HERO -> 4 + (char.warlord / 2)
-            TacticalUnitType.ARCHER_HERO -> 3
-            TacticalUnitType.MAGE_HERO -> 2
-            else -> 3
+            TacticalUnitType.WARRIOR_HERO -> 6 + (char.warlord / 2)
+            TacticalUnitType.ARCHER_HERO -> 5 + (char.vanguard / 3)
+            TacticalUnitType.MAGE_HERO -> 4 + (char.archon / 3)
+            else -> 4
         }
         val moves = archetype.defaultMoves
 
@@ -465,6 +465,14 @@ object TacticalRules {
                     }
                 }
                 BattleStrategy.NONE -> {}
+            }
+        }
+
+        // Troop Bodyguard Aura: If target is a Hero and has living friendly troops, troops guard the commander
+        if (target.unitType.isHero) {
+            val hasAllyTroops = state.units.any { it.isAlive && it.ownerPlayerId == target.ownerPlayerId && !it.unitType.isHero }
+            if (hasAllyTroops) {
+                effectiveDef += 3
             }
         }
 

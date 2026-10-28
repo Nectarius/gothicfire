@@ -118,7 +118,15 @@ class App : Application() {
             val ws = remember {
                 GameWebSocket(
                     onStateUpdated = { newState, playerId ->
-                        gameState = newState
+                        val currentTactical = gameState?.activeTacticalBattle
+                        val effectiveTactical = if (newState.activeTacticalBattle != null) {
+                            newState.activeTacticalBattle
+                        } else if (currentTactical != null && currentTactical.isFinished) {
+                            currentTactical
+                        } else {
+                            null
+                        }
+                        gameState = newState.copy(activeTacticalBattle = effectiveTactical)
                         yourPlayerId = playerId
                         wsError = ""
                         if (newState.status == models.GameStatus.IN_PROGRESS && newState.players.any { it.id == playerId }) {
@@ -225,7 +233,7 @@ class App : Application() {
                         gameState = gameState?.copy(activeTacticalBattle = event.battleState)
                     },
                     onTacticalBattleEnded = { event ->
-                        gameState = gameState?.copy(activeTacticalBattle = null)
+                        gameState = gameState?.copy(activeTacticalBattle = event.battleState)
                     }
                 )
             }
@@ -641,7 +649,7 @@ class App : Application() {
                         )
                     }
                     
-                    if (gameState != null && gameState!!.status == models.GameStatus.GAME_OVER && !victoryAcknowledged) {
+                    if (gameState != null && gameState!!.status == models.GameStatus.GAME_OVER && !victoryAcknowledged && gameState?.activeTacticalBattle == null) {
                         VictoryPopupModal(
                             gameState = gameState!!,
                             onClose = { victoryAcknowledged = true }
@@ -655,7 +663,14 @@ class App : Application() {
                         TacticalBattleModal(
                             battleState = gameState!!.activeTacticalBattle!!,
                             yourPlayerId = effectivePlayerId,
-                            sendAction = { ws.sendAction(it) }
+                            sendAction = { ws.sendAction(it) },
+                            onClose = {
+                                val battleId = gameState?.activeTacticalBattle?.battleId
+                                if (battleId != null) {
+                                    ws.sendAction(models.GameAction.TacticalAcknowledgeResult(battleId))
+                                }
+                                gameState = gameState?.copy(activeTacticalBattle = null)
+                            }
                         )
                     }
                 }

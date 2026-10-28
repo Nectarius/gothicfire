@@ -435,4 +435,159 @@ class TacticalCombatTest {
         session.tacticalRetreat("player1", activeBattle.battleId)
         assertNull(session.gameState.activeTacticalBattle, "Battle should be concluded after retreat")
     }
+
+    @Test
+    fun testUnoccupiedCastleTriggersGarrisonBattleInsteadOfInstantGameOver() = runBlocking {
+        val session = GameSession()
+        session.startPvEGame(
+            playerId = "player1",
+            gameName = "Garrison Test",
+            allowSecondPlayer = false,
+            playerTeam = Team.RED,
+            playerTeamColor = "#D32F2F",
+            playerTeamName = "Red Clan",
+            chosenHeroes = listOf(PredefinedCharacters[0].templateId, PredefinedCharacters[1].templateId),
+            chosenCastle = "14" // Khorinis City (Protection 20)
+        )
+
+        val humanChars = session.gameState.characters.filter { it.playerId == "player1" }
+        val botPlayer = session.gameState.players.find { it.isBot }!!
+        val botChars = session.gameState.characters.filter { it.playerId == botPlayer.id }
+
+        val humanHero = humanChars[0]
+        val otherHuman = humanChars[1]
+        val botHero = botChars[0]
+
+        // Human heroes are away from castle 14 (moved to sectors 1 and 2).
+        // Bot hero is adjacent at sector 11.
+        session.gameState = session.gameState.copy(
+            status = GameStatus.IN_PROGRESS,
+            activeTeamTurn = botPlayer.team,
+            characters = session.gameState.characters.map { char ->
+                when (char.id) {
+                    humanHero.id -> char.copy(currentSector = "1", hasActedThisTurn = true)
+                    otherHuman.id -> char.copy(currentSector = "2", hasActedThisTurn = true)
+                    botHero.id -> char.copy(currentSector = "11", hasActedThisTurn = false, army = Army(heavyInfantry = 6))
+                    else -> char.copy(currentSector = "23")
+                }
+            }
+        )
+
+        // Bot moves into unoccupied player castle 14
+        session.moveCharacter(botPlayer.id, targetSector = "14", characterId = botHero.id)
+
+        // Crucial Assertion: The game MUST NOT be instantly GAME_OVER
+        assertNotEquals(GameStatus.GAME_OVER, session.gameState.status, "Unoccupied castle must not cause instant GAME_OVER")
+        assertEquals(GameStatus.IN_PROGRESS, session.gameState.status)
+
+        // A tactical battle against Castle Garrison should be triggered
+        val battle = session.gameState.activeTacticalBattle
+        assertNotNull(battle, "Tactical battle should be triggered against castle garrison")
+        assertEquals("14", battle.sectorId)
+        assertTrue(battle.tiles.any { row -> row.any { it == TacticalTileType.FORTRESS_WALL } }, "Fortress biome must contain wall tiles")
+
+        // Defender should be Castle Garrison with units
+        val defenderUnits = battle.units.filter { it.ownerPlayerId == "player1" }
+        assertTrue(defenderUnits.isNotEmpty(), "Castle garrison must spawn defender units")
+        assertTrue(battle.units.any { it.name.contains("Garrison") || it.unitType == TacticalUnitType.HEAVY_INFANTRY })
+    }
+
+    @Test
+    fun testStationedDefenderPreventsCastleCaptureWhenAllyFalls() = runBlocking {
+        val session = GameSession()
+        session.startPvEGame(
+            playerId = "player1",
+            gameName = "Multi Defender Test",
+            allowSecondPlayer = false,
+            playerTeam = Team.RED,
+            playerTeamColor = "#D32F2F",
+            playerTeamName = "Red Clan",
+            chosenHeroes = listOf(PredefinedCharacters[0].templateId, PredefinedCharacters[1].templateId),
+            chosenCastle = "14"
+        )
+
+        val humanChars = session.gameState.characters.filter { it.playerId == "player1" }
+        val botPlayer = session.gameState.players.find { it.isBot }!!
+        val botChars = session.gameState.characters.filter { it.playerId == botPlayer.id }
+
+        val humanHero1 = humanChars[0]
+        val humanHero2 = humanChars[1]
+        val botHero = botChars[0]
+
+        // Both human heroes stationed at castle 14!
+        session.gameState = session.gameState.copy(
+            status = GameStatus.IN_PROGRESS,
+            activeTeamTurn = botPlayer.team,
+            characters = session.gameState.characters.map { char ->
+                when (char.id) {
+                    humanHero1.id -> char.copy(currentSector = "14", hasActedThisTurn = false, army = Army(heavyInfantry = 2))
+                    humanHero2.id -> char.copy(currentSector = "14", hasActedThisTurn = false, army = Army(heavyInfantry = 10))
+                    botHero.id -> char.copy(currentSector = "11", hasActedThisTurn = false, army = Army(heavyInfantry = 15))
+                    else -> char.copy(currentSector = "23")
+                }
+            }
+        )
+
+        // Bot attacks castle 14
+        session.moveCharacter(botPlayer.id, targetSector = "14", characterId = botHero.id)
+
+        val battle = session.gameState.activeTacticalBattle
+        assertNotNull(battle)
+        assertTrue(battle.tiles.any { row -> row.any { it == TacticalTileType.FORTRESS_WALL } })
+
+        // Conclude battle with bot winning against humanHero1
+        session.tacticalAutoResolve(botPlayer.id, battle.battleId)
+
+        // Since humanHero2 is STILL alive and stationed at castle 14:
+        // 1. Castle 14 must STILL belong to player1!
+        val territory = session.gameState.territories["14"]
+        assertEquals("player1", territory?.ownerPlayerId, "Castle must not be captured while humanHero2 is stationed there")
+
+        // 2. Game must NOT be GAME_OVER!
+        assertNotEquals(GameStatus.GAME_OVER, session.gameState.status, "Game must remain in progress while another hero defends the castle")
+        assertEquals(GameStatus.IN_PROGRESS, session.gameState.status)
+    }
+
+    @Test
+    fun testHeroBodyguardAuraIncreasesDefense() {
+        val hero = TacticalUnit(
+            id = "h1", name = "Gorn", unitType = TacticalUnitType.WARRIOR_HERO,
+            ownerPlayerId = "p1", ownerTeam = Team.RED,
+            x = 1, y = 1, currentHp = 50, maxHp = 50, attack = 10, defense = 6,
+            movesRemaining = 2, maxMoves = 2
+        )
+        val troop = TacticalUnit(
+            id = "t1", name = "Heavy Guard", unitType = TacticalUnitType.HEAVY_INFANTRY,
+            ownerPlayerId = "p1", ownerTeam = Team.RED,
+            x = 1, y = 2, currentHp = 30, maxHp = 30, attack = 10, defense = 6,
+            movesRemaining = 2, maxMoves = 2
+        )
+        val attacker = TacticalUnit(
+            id = "a1", name = "Attacker", unitType = TacticalUnitType.HEAVY_INFANTRY,
+            ownerPlayerId = "p2", ownerTeam = Team.BLUE,
+            x = 2, y = 1, currentHp = 30, maxHp = 30, attack = 16, defense = 4,
+            movesRemaining = 2, maxMoves = 2
+        )
+
+        val battleWithGuards = TacticalBattleState(
+            battleId = "b1",
+            sectorId = "1",
+            tiles = emptyList(),
+            attackerPlayerId = "p2",
+            defenderPlayerId = "p1",
+            attackerCharId = "a1",
+            defenderCharId = "h1",
+            activeUnitOwnerId = "p2",
+            units = listOf(hero, troop, attacker)
+        )
+        val battleWithoutGuards = battleWithGuards.copy(units = listOf(hero, attacker))
+
+        val dmgWithGuards = TacticalRules.calculateDamage(attacker, hero, battleWithGuards)
+        val dmgWithoutGuards = TacticalRules.calculateDamage(attacker, hero, battleWithoutGuards)
+
+        assertTrue(
+            dmgWithGuards < dmgWithoutGuards,
+            "Hero with alive troop bodyguards must take less damage (got $dmgWithGuards with guards vs $dmgWithoutGuards without)"
+        )
+    }
 }

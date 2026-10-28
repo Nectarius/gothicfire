@@ -7,6 +7,29 @@ fun isAdjacentSector(from: String, to: String): Boolean {
 }
 
 /**
+ * Computes shortest path distance in terms of strategic sector moves using Breadth-First Search (BFS).
+ * Returns 0 if from == to, 1 for adjacent, 2 for reachable in 2 moves, etc.
+ * Returns Int.MAX_VALUE if unreachable or invalid sector.
+ */
+fun getSectorDistance(from: String, to: String): Int {
+    if (from == to) return 0
+    val visited = mutableSetOf(from)
+    val queue = ArrayDeque<Pair<String, Int>>()
+    queue.add(from to 0)
+    while (queue.isNotEmpty()) {
+        val (current, dist) = queue.removeFirst()
+        val neighbors = MapData[current]?.adjacentIds ?: emptyList()
+        for (next in neighbors) {
+            if (next == to) return dist + 1
+            if (visited.add(next)) {
+                queue.add(next to dist + 1)
+            }
+        }
+    }
+    return Int.MAX_VALUE
+}
+
+/**
  * Fog-of-War Visibility Rules:
  * 1. In LOBBY or GAME_OVER, all characters are visible.
  * 2. A player always sees their own characters and allied characters.

@@ -125,6 +125,7 @@ class LlmAiDecisionServiceTest {
         val llmService = LlmAiDecisionService(fakeOpponent, trackingHeuristic)
 
         val botPlayer = Player(id = "bot_1", name = "Computer", team = Team.YELLOW, isBot = true)
+        val enemyPlayer = Player(id = "enemy_1", name = "Human", team = Team.RED, isBot = false)
         val botChar = Character(
             id = "bot_char_1",
             playerId = "bot_1",
@@ -135,13 +136,21 @@ class LlmAiDecisionServiceTest {
             army = Army(heavyInfantry = 10),
             currentSector = "14"
         )
+        // Enemy at adjacent sector 11 (threat distance = 1 <= 2 turns) -> escalates to LLM agent
+        val enemyChar = Character(
+            id = "enemy_char_1",
+            playerId = "enemy_1",
+            name = "Scout",
+            army = Army(heavyInfantry = 5),
+            currentSector = "11"
+        )
         val gameState = GameState(
             status = GameStatus.IN_PROGRESS,
             gameName = "Healthy Agent Game",
-            players = listOf(botPlayer),
-            characters = listOf(botChar),
+            players = listOf(botPlayer, enemyPlayer),
+            characters = listOf(botChar, enemyChar),
             currentTurn = 1,
-            teamCastles = mapOf(Team.YELLOW to "14"),
+            teamCastles = mapOf(Team.YELLOW to "14", Team.RED to "23"),
             territories = mapOf("14" to TerritoryState(sectorId = "14", protection = 25, ownerPlayerId = "bot_1", ownerTeam = Team.YELLOW))
         )
         val snapshot = BotGameStateSnapshot(
@@ -152,7 +161,7 @@ class LlmAiDecisionServiceTest {
         )
 
         val actions = llmService.decideTurn(snapshot)
-        assertEquals(1, fakeOpponent.callCount, "Python agent should be queried for character decision")
+        assertEquals(1, fakeOpponent.callCount, "Python agent should be queried for character decision when threat is within 2 turns")
         assertEquals(0, trackingHeuristic.decideForCharacterCalls, "HeuristicAiService should NOT be used when agent succeeds")
         assertEquals(1, actions.size)
         assertTrue(actions.first() is BotAction.Skip, "Should execute the agent's chosen move")
@@ -165,6 +174,7 @@ class LlmAiDecisionServiceTest {
         val llmService = LlmAiDecisionService(fakeOpponent, trackingHeuristic)
 
         val botPlayer = Player(id = "bot_1", name = "Computer", team = Team.YELLOW, isBot = true)
+        val enemyPlayer = Player(id = "enemy_1", name = "Human", team = Team.RED, isBot = false)
         val botChar = Character(
             id = "bot_char_1",
             playerId = "bot_1",
@@ -175,13 +185,20 @@ class LlmAiDecisionServiceTest {
             army = Army(heavyInfantry = 0, lightInfantry = 0),
             currentSector = "14"
         )
+        val enemyChar = Character(
+            id = "enemy_char_1",
+            playerId = "enemy_1",
+            name = "Rival",
+            army = Army(lightInfantry = 5),
+            currentSector = "11"
+        )
         val gameState = GameState(
             status = GameStatus.IN_PROGRESS,
             gameName = "Timeout Test Game",
-            players = listOf(botPlayer),
-            characters = listOf(botChar),
+            players = listOf(botPlayer, enemyPlayer),
+            characters = listOf(botChar, enemyChar),
             currentTurn = 1,
-            teamCastles = mapOf(Team.YELLOW to "14"),
+            teamCastles = mapOf(Team.YELLOW to "14", Team.RED to "23"),
             territories = mapOf("14" to TerritoryState(sectorId = "14", protection = 25, cultivation = 20, ownerPlayerId = "bot_1", ownerTeam = Team.YELLOW))
         )
         val snapshot = BotGameStateSnapshot(
@@ -192,7 +209,7 @@ class LlmAiDecisionServiceTest {
         )
 
         val actions = llmService.decideTurn(snapshot)
-        assertEquals(1, fakeOpponent.callCount, "Python agent should be attempted first")
+        assertEquals(1, fakeOpponent.callCount, "Python agent should be attempted when enemy is within 2 turns")
         assertEquals(1, trackingHeuristic.decideForCharacterCalls, "HeuristicAiService must be called on agent timeout")
         assertEquals(1, actions.size)
         assertTrue(actions.first() is BotAction.Recruit, "Heuristic fallback should recruit for 0-army commander")
@@ -205,6 +222,7 @@ class LlmAiDecisionServiceTest {
         val llmService = LlmAiDecisionService(fakeOpponent, trackingHeuristic)
 
         val botPlayer = Player(id = "bot_1", name = "Computer", team = Team.YELLOW, isBot = true)
+        val enemyPlayer = Player(id = "enemy_1", name = "Human", team = Team.RED, isBot = false)
         val botChar = Character(
             id = "bot_char_1",
             playerId = "bot_1",
@@ -215,13 +233,20 @@ class LlmAiDecisionServiceTest {
             army = Army(heavyInfantry = 0),
             currentSector = "14"
         )
+        val enemyChar = Character(
+            id = "enemy_char_1",
+            playerId = "enemy_1",
+            name = "Orc Raider",
+            army = Army(heavyInfantry = 5),
+            currentSector = "11"
+        )
         val gameState = GameState(
             status = GameStatus.IN_PROGRESS,
             gameName = "Error Test Game",
-            players = listOf(botPlayer),
-            characters = listOf(botChar),
+            players = listOf(botPlayer, enemyPlayer),
+            characters = listOf(botChar, enemyChar),
             currentTurn = 1,
-            teamCastles = mapOf(Team.YELLOW to "14"),
+            teamCastles = mapOf(Team.YELLOW to "14", Team.RED to "23"),
             territories = mapOf("14" to TerritoryState(sectorId = "14", protection = 30, ownerPlayerId = "bot_1", ownerTeam = Team.YELLOW))
         )
         val snapshot = BotGameStateSnapshot(
@@ -232,10 +257,72 @@ class LlmAiDecisionServiceTest {
         )
 
         val actions = llmService.decideTurn(snapshot)
-        assertEquals(1, fakeOpponent.callCount, "Python agent should be attempted first")
+        assertEquals(1, fakeOpponent.callCount, "Python agent should be attempted when enemy is within 2 turns")
         assertEquals(1, trackingHeuristic.decideForCharacterCalls, "HeuristicAiService must be called on agent error messages")
         assertEquals(1, actions.size)
         assertTrue(actions.first() is BotAction.Recruit, "Heuristic fallback should recruit army for defenseless character")
+    }
+
+    @Test
+    fun testFastHeuristicBypassesLlmWhenEnemyIsFartherThanTwoTurns() = runBlocking {
+        val fakeOpponent = FakeAiOpponentService(Result.success("WAIT"))
+        val trackingHeuristic = TrackingHeuristicAiService()
+        val llmService = LlmAiDecisionService(fakeOpponent, trackingHeuristic)
+
+        val botPlayer = Player(id = "bot_1", name = "Computer", team = Team.YELLOW, isBot = true)
+        val enemyPlayer = Player(id = "enemy_1", name = "Human", team = Team.RED, isBot = false)
+        val botChar = Character(
+            id = "bot_char_1",
+            playerId = "bot_1",
+            name = "Diego",
+            currentSector = "23" // Bot at castle 23
+        )
+        // Enemy is at sector 14 (distance across map > 4 turns)
+        val enemyChar = Character(
+            id = "enemy_char_1",
+            playerId = "enemy_1",
+            name = "Player Hero",
+            currentSector = "14"
+        )
+        val gameState = GameState(
+            status = GameStatus.IN_PROGRESS,
+            gameName = "Fast Turn Game",
+            players = listOf(botPlayer, enemyPlayer),
+            characters = listOf(botChar, enemyChar),
+            currentTurn = 1,
+            teamCastles = mapOf(Team.YELLOW to "23", Team.RED to "14"),
+            territories = mapOf("23" to TerritoryState(sectorId = "23", ownerPlayerId = "bot_1", ownerTeam = Team.YELLOW))
+        )
+        val snapshot = BotGameStateSnapshot(
+            gameState = gameState,
+            botTeam = Team.YELLOW,
+            botCharacters = listOf(botChar),
+            botPlayers = listOf(botPlayer)
+        )
+
+        val actions = llmService.decideTurn(snapshot)
+        assertEquals(0, fakeOpponent.callCount, "LLM agent must NOT be called when enemy is farther than 2 turns away!")
+        assertEquals(1, trackingHeuristic.decideForCharacterCalls, "Fast HeuristicAiService must be directly invoked for fast turn execution")
+        assertEquals(1, actions.size)
+    }
+
+    @Test
+    fun testSectorDistanceBfsAccuracy() {
+        // Same sector
+        assertEquals(0, getSectorDistance("14", "14"))
+
+        // Adjacent sector (distance = 1 turn)
+        assertEquals(1, getSectorDistance("14", "11"))
+        assertEquals(1, getSectorDistance("14", "25"))
+        assertEquals(1, getSectorDistance("14", "26"))
+
+        // 2 moves away (distance = 2 turns)
+        assertEquals(2, getSectorDistance("14", "15")) // 14 -> 11 -> 15
+        assertEquals(2, getSectorDistance("14", "27")) // 14 -> 26 -> 27
+
+        // Far sector (distance >= 4 turns)
+        val distToCastle23 = getSectorDistance("14", "23")
+        assertTrue(distToCastle23 >= 4, "Distance between Khorinis 14 and Onar's Farm 23 should be >= 4 (was $distToCastle23)")
     }
 
     private class FakeAiOpponentService(

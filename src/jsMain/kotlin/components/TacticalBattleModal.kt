@@ -10,7 +10,8 @@ import models.*
 fun IComponent.TacticalBattleModal(
     battleState: TacticalBattleState,
     yourPlayerId: String,
-    sendAction: (GameAction) -> Unit
+    sendAction: (GameAction) -> Unit,
+    onClose: (() -> Unit)? = null
 ) {
     var selectedUnitId by remember { mutableStateOf<String?>(null) }
 
@@ -25,7 +26,7 @@ fun IComponent.TacticalBattleModal(
 
     val myUnits = battleState.units.filter { it.isAlive && it.ownerPlayerId == resolvedPlayerId }
     val enemyUnits = battleState.units.filter { it.isAlive && it.ownerPlayerId != resolvedPlayerId }
-    val isMyTurn = (battleState.activeUnitOwnerId == resolvedPlayerId)
+    val isMyTurn = (battleState.activeUnitOwnerId == resolvedPlayerId && !battleState.isFinished)
 
     // Auto-select active unit or first alive ally unit with moves remaining if none is explicitly selected
     val effectiveSelectedUnitId = selectedUnitId?.takeIf { id -> myUnits.any { it.id == id } }
@@ -50,6 +51,83 @@ fun IComponent.TacticalBattleModal(
 
     div(className = "tactical-modal-backdrop") {
         div(className = "tactical-modal-card glass") {
+            if (battleState.isFinished) {
+                val isWinner = battleState.winnerPlayerId == resolvedPlayerId
+                val myHero = battleState.units.find { it.ownerPlayerId == resolvedPlayerId && it.unitType.isHero }
+                val enemyHero = battleState.units.find { it.ownerPlayerId != resolvedPlayerId && it.unitType.isHero }
+                val isMyHeroDead = myHero != null && !myHero.isAlive
+                val isEnemyHeroDead = enemyHero != null && !enemyHero.isAlive
+
+                val myLivingUnits = battleState.units.filter { it.ownerPlayerId == resolvedPlayerId && it.isAlive }
+                val enemyLivingUnits = battleState.units.filter { it.ownerPlayerId != resolvedPlayerId && it.isAlive }
+
+                div(className = "tactical-results-overlay") {
+                    div(className = "tactical-results-card ${if (isWinner) "result-victory" else "result-defeat"}") {
+                        div(className = "tactical-results-icon") {
+                            textNode(if (isWinner) "🏆" else "💀")
+                        }
+                        h2(className = "tactical-results-title") {
+                            textNode(if (isWinner) "VICTORY ACHIEVED" else "DEFEAT IN TACTICAL COMBAT")
+                        }
+                        p(className = "tactical-results-subtitle") {
+                            textNode(
+                                when {
+                                    isWinner && isEnemyHeroDead -> "Enemy Commander was slain in battle! The enemy ranks have broken!"
+                                    isWinner -> "All enemy forces were eliminated in $sectorName!"
+                                    isMyHeroDead -> "Your commander ${myHero?.name ?: ""} fell in combat! Your forces were routed!"
+                                    else -> "All friendly forces were eliminated in $sectorName!"
+                                }
+                            )
+                        }
+
+                        div(className = "tactical-results-breakdown") {
+                            div(className = "tactical-casualty-box flex-1") {
+                                div(className = "font-600 text-sm mb-05 ${if (isWinner) "text-primary" else "text-red"}") {
+                                    textNode("Your Forces")
+                                }
+                                div(className = "text-xs text-gray") {
+                                    textNode("Commander: ${if (myHero?.isAlive == true) "Alive (${myHero.currentHp}/${myHero.maxHp} HP)" else "Slain 💀"}")
+                                }
+                                div(className = "text-xs text-gray mt-02") {
+                                    textNode("Surviving Units: ${myLivingUnits.size}")
+                                }
+                            }
+                            div(className = "tactical-casualty-box flex-1") {
+                                div(className = "font-600 text-sm mb-05 ${if (!isWinner) "text-primary" else "text-red"}") {
+                                    textNode("Enemy Forces")
+                                }
+                                div(className = "text-xs text-gray") {
+                                    textNode("Commander: ${if (enemyHero?.isAlive == true) "Alive (${enemyHero.currentHp}/${enemyHero.maxHp} HP)" else "Slain 💀"}")
+                                }
+                                div(className = "text-xs text-gray mt-02") {
+                                    textNode("Surviving Units: ${enemyLivingUnits.size}")
+                                }
+                            }
+                        }
+
+                        div(className = "tactical-results-log-container text-left") {
+                            div(className = "text-xs font-600 text-gray mb-05") { textNode("Battle Chronicle:") }
+                            div(className = "tactical-results-log") {
+                                val recentLogs = battleState.battleLog.takeLast(6)
+                                for (entry in recentLogs) {
+                                    div(className = "text-xs text-light mb-02") {
+                                        textNode(entry)
+                                    }
+                                }
+                            }
+                        }
+
+                        button(
+                            "Return to Strategic Map ➔",
+                            className = "btn-tactical-acknowledge"
+                        ) {
+                            onClick {
+                                onClose?.invoke() ?: sendAction(GameAction.TacticalAcknowledgeResult(battleState.battleId))
+                            }
+                        }
+                    }
+                }
+            }
 
             // 1. Top Header
             div(className = "tactical-header d-flex justify-between items-center") {
@@ -152,14 +230,16 @@ fun IComponent.TacticalBattleModal(
                                     }
 
                                     // Render obstacle icons when not plain
-                                    when (tileType) {
-                                        TacticalTileType.FOREST -> div(className = "tile-obstacle-icon") { textNode("🌲") }
-                                        TacticalTileType.RIVER -> div(className = "tile-obstacle-icon") { textNode("🌊") }
-                                        TacticalTileType.BRIDGE -> div(className = "tile-bridge-overlay") { textNode("🌉") }
-                                        TacticalTileType.CLIFF_ROCK -> div(className = "tile-obstacle-icon") { textNode("⛰️") }
-                                        TacticalTileType.FORTRESS_WALL -> div(className = "tile-obstacle-icon") { textNode("🧱") }
-                                        TacticalTileType.FORTRESS_GATE -> div(className = "tile-gate-overlay") { textNode("⛩️") }
-                                        TacticalTileType.PLAIN -> {}
+                                    val obstacleSvg = TacticalIcons.renderTileObstacle(tileType)
+                                    if (obstacleSvg != null) {
+                                        val overlayClass = when (tileType) {
+                                            TacticalTileType.BRIDGE -> "tile-bridge-overlay"
+                                            TacticalTileType.FORTRESS_GATE -> "tile-gate-overlay"
+                                            else -> "tile-obstacle-icon"
+                                        }
+                                        div(className = overlayClass) {
+                                            rawHtml(obstacleSvg)
+                                        }
                                     }
 
                                     // Render Unit Figurine if present
@@ -171,7 +251,7 @@ fun IComponent.TacticalBattleModal(
                                             if (unitOnTile.isPrevalentUnit) {
                                                 div(className = "prevalent-crown") {
                                                     title("Prevalent Squad: +25% ATK & DEF")
-                                                    textNode("👑")
+                                                    rawHtml(TacticalIcons.CROWN)
                                                 }
                                             }
 
@@ -205,10 +285,14 @@ fun IComponent.TacticalBattleModal(
 
                                     // Overlay target icons
                                     if (isMoveTarget) {
-                                        div(className = "move-pin-indicator") { textNode("•") }
+                                        div(className = "move-pin-indicator") {
+                                            rawHtml(TacticalIcons.MOVE_PIN)
+                                        }
                                     }
                                     if (isAttackTarget) {
-                                        div(className = "attack-target-crosshair") { textNode("🎯") }
+                                        div(className = "attack-target-crosshair") {
+                                            rawHtml(TacticalIcons.CROSSHAIR)
+                                        }
                                     }
                                 }
                             }

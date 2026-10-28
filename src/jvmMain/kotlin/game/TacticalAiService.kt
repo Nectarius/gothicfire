@@ -83,9 +83,14 @@ object TacticalAiService {
         val expectedDmg = TacticalRules.calculateDamage(attacker, target, state, rngVariance = 0)
         var score = (expectedDmg * 5).coerceIn(10, 50)
 
-        // Prioritize enemy Hero
+        // Prioritize enemy Hero when vulnerable or wounded
         if (target.unitType.isHero) {
-            score += 30
+            val hasLivingTroops = state.units.any { it.isAlive && it.ownerPlayerId == target.ownerPlayerId && !it.unitType.isHero }
+            if (!hasLivingTroops || target.currentHp <= 30) {
+                score += 25
+            } else {
+                score += 10
+            }
         }
 
         // Prioritize killing low-HP units

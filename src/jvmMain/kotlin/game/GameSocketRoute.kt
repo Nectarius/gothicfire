@@ -102,6 +102,7 @@ fun Route.gameSocket() {
                             is GameAction.TacticalEndUnitTurn -> game.tacticalEndUnitTurn(playerId, action.battleId)
                             is GameAction.TacticalRetreat -> game.tacticalRetreat(playerId, action.battleId)
                             is GameAction.TacticalAutoResolve -> game.tacticalAutoResolve(playerId, action.battleId)
+                            is GameAction.TacticalAcknowledgeResult -> game.tacticalAcknowledgeResult(playerId, action.battleId)
                             is GameAction.EndGame -> {
                                 val isPvE = game.gameState.isPvE
                                 game.endGame(playerId)
