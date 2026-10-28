@@ -38,59 +38,46 @@ val TacticalUnitType.isHero: Boolean
     get() = this == TacticalUnitType.WARRIOR_HERO || this == TacticalUnitType.ARCHER_HERO || this == TacticalUnitType.MAGE_HERO
 
 val TacticalUnitType.defaultMoves: Int
-    get() = when (this) {
-        TacticalUnitType.WARRIOR_HERO -> 2
-        TacticalUnitType.ARCHER_HERO -> 3
-        TacticalUnitType.MAGE_HERO -> 2
-        TacticalUnitType.ARCHER -> 2
-        TacticalUnitType.HEAVY_INFANTRY -> 2
-        TacticalUnitType.LIGHT_INFANTRY -> 3
-        TacticalUnitType.MAGE -> 2
-    }
+    get() = TacticalBalanceRepository.getBalance(this).defaultMoves
 
 val TacticalUnitType.baseHp: Int
-    get() = when (this) {
-        TacticalUnitType.WARRIOR_HERO -> 36
-        TacticalUnitType.ARCHER_HERO -> 30
-        TacticalUnitType.MAGE_HERO -> 28
-        TacticalUnitType.ARCHER -> 6
-        TacticalUnitType.HEAVY_INFANTRY -> 9
-        TacticalUnitType.LIGHT_INFANTRY -> 7
-        TacticalUnitType.MAGE -> 5
-    }
+    get() = TacticalBalanceRepository.getBalance(this).baseHp
 
 val TacticalUnitType.baseAttack: Int
-    get() = when (this) {
-        TacticalUnitType.WARRIOR_HERO -> 8
-        TacticalUnitType.ARCHER_HERO -> 7
-        TacticalUnitType.MAGE_HERO -> 8
-        TacticalUnitType.ARCHER -> 5
-        TacticalUnitType.HEAVY_INFANTRY -> 6
-        TacticalUnitType.LIGHT_INFANTRY -> 5
-        TacticalUnitType.MAGE -> 7
-    }
+    get() = TacticalBalanceRepository.getBalance(this).baseAttack
 
 val TacticalUnitType.baseDefense: Int
-    get() = when (this) {
-        TacticalUnitType.WARRIOR_HERO -> 4
-        TacticalUnitType.ARCHER_HERO -> 3
-        TacticalUnitType.MAGE_HERO -> 2
-        TacticalUnitType.ARCHER -> 2
-        TacticalUnitType.HEAVY_INFANTRY -> 6
-        TacticalUnitType.LIGHT_INFANTRY -> 3
-        TacticalUnitType.MAGE -> 2
-    }
+    get() = TacticalBalanceRepository.getBalance(this).baseDefense
+
+val TacticalUnitType.weaponDefense: Int
+    get() = TacticalBalanceRepository.getBalance(this).weaponDefense
+
+val TacticalUnitType.arrowDefense: Int
+    get() = TacticalBalanceRepository.getBalance(this).arrowDefense
+
+val TacticalUnitType.magicDefense: Int
+    get() = TacticalBalanceRepository.getBalance(this).magicDefense
+
+val TacticalUnitType.damageType: String
+    get() = TacticalBalanceRepository.getBalance(this).damageType
 
 val TacticalUnitType.defaultIcon: String
-    get() = when (this) {
-        TacticalUnitType.WARRIOR_HERO -> "/tactical/hero_warrior.jpg"
-        TacticalUnitType.ARCHER_HERO -> "/tactical/hero_archer.jpg"
-        TacticalUnitType.MAGE_HERO -> "/tactical/hero_mage.jpg"
-        TacticalUnitType.ARCHER -> "/tactical/unit_archer.jpg"
-        TacticalUnitType.HEAVY_INFANTRY -> "/tactical/unit_heavy_infantry.jpg"
-        TacticalUnitType.LIGHT_INFANTRY -> "/tactical/unit_light_infantry.jpg"
-        TacticalUnitType.MAGE -> "/tactical/unit_mage.jpg"
-    }
+    get() = TacticalBalanceRepository.getBalance(this).iconUrl
+
+@Serializable
+enum class UnitFacing {
+    NORTH,
+    SOUTH,
+    EAST,
+    WEST
+}
+
+@Serializable
+enum class TacticalAttackAngle {
+    FRONT,
+    FLANK,
+    REAR
+}
 
 @Serializable
 data class TacticalUnit(
@@ -104,14 +91,19 @@ data class TacticalUnit(
     val maxHp: Int,
     val attack: Int,
     val defense: Int,
-    val maxMoves: Int,
-    val movesRemaining: Int,
+    val maxMoves: Int = 2,
+    val movesRemaining: Int = 2,
     val hasAttackedThisTurn: Boolean = false,
     val initialSquadCount: Int = 1,
     val isPrevalentUnit: Boolean = false,
     val name: String = "",
     val iconUrl: String = "",
-    val characterId: String? = null
+    val characterId: String? = null,
+    val damageType: String = "",
+    val weaponDefense: Int = defense,
+    val arrowDefense: Int = defense,
+    val magicDefense: Int = defense,
+    val facing: UnitFacing = UnitFacing.EAST
 ) {
     val isAlive: Boolean
         get() = currentHp > 0
@@ -172,10 +164,11 @@ object TacticalRules {
         if (thisCount < maxCount) return 1.0 to false
 
         val tiedCount = counts.count { it.second == maxCount }
+        val rules = TacticalBalanceRepository.getRules()
         return if (tiedCount == 1) {
-            1.25 to true
+            rules.prevalenceBonusSingle to true
         } else {
-            1.15 to true
+            rules.prevalenceBonusTied to true
         }
     }
 
@@ -191,25 +184,32 @@ object TacticalRules {
         spawnY: Int
     ): TacticalUnit {
         val archetype = deriveHeroArchetype(char)
+        val balance = TacticalBalanceRepository.getBalance(archetype)
         val maxHp = when (archetype) {
-            TacticalUnitType.WARRIOR_HERO -> 56 + char.warlord * 4
-            TacticalUnitType.ARCHER_HERO -> 50 + char.vanguard * 4
-            TacticalUnitType.MAGE_HERO -> 46 + (char.archon + char.intellect) * 3
-            else -> 50
+            TacticalUnitType.WARRIOR_HERO -> balance.baseHp + char.warlord * balance.hpScalingFactor
+            TacticalUnitType.ARCHER_HERO -> balance.baseHp + char.vanguard * balance.hpScalingFactor
+            TacticalUnitType.MAGE_HERO -> balance.baseHp + (char.archon + char.intellect) * balance.hpScalingFactor
+            else -> balance.baseHp
         }
         val atk = when (archetype) {
-            TacticalUnitType.WARRIOR_HERO -> 8 + char.warlord
-            TacticalUnitType.ARCHER_HERO -> 7 + char.vanguard
-            TacticalUnitType.MAGE_HERO -> 8 + char.archon
-            else -> 8
+            TacticalUnitType.WARRIOR_HERO -> balance.baseAttack + (char.warlord * balance.attackScalingFactor).toInt()
+            TacticalUnitType.ARCHER_HERO -> balance.baseAttack + (char.vanguard * balance.attackScalingFactor).toInt()
+            TacticalUnitType.MAGE_HERO -> balance.baseAttack + (char.archon * balance.attackScalingFactor).toInt()
+            else -> balance.baseAttack
         }
-        val def = when (archetype) {
-            TacticalUnitType.WARRIOR_HERO -> 6 + (char.warlord / 2)
-            TacticalUnitType.ARCHER_HERO -> 5 + (char.vanguard / 3)
-            TacticalUnitType.MAGE_HERO -> 4 + (char.archon / 3)
-            else -> 4
+        val statForScaling = when (archetype) {
+            TacticalUnitType.WARRIOR_HERO -> char.warlord
+            TacticalUnitType.ARCHER_HERO -> char.vanguard
+            TacticalUnitType.MAGE_HERO -> char.archon
+            else -> 0
         }
-        val moves = archetype.defaultMoves
+        val weaponDef = balance.weaponDefense + (if (balance.weaponDefenseScalingDivisor > 0) statForScaling / balance.weaponDefenseScalingDivisor else 0)
+        val arrowDef = balance.arrowDefense + (if (balance.arrowDefenseScalingDivisor > 0) statForScaling / balance.arrowDefenseScalingDivisor else 0)
+        val magicDef = balance.magicDefense + (if (balance.magicDefenseScalingDivisor > 0) statForScaling / balance.magicDefenseScalingDivisor else 0)
+        val generalDef = weaponDef
+        val moves = balance.defaultMoves
+
+        val initialFacing = if (spawnX <= 4) UnitFacing.EAST else UnitFacing.WEST
 
         return TacticalUnit(
             id = "${battleId}_hero_${char.id}",
@@ -221,14 +221,19 @@ object TacticalRules {
             currentHp = maxHp,
             maxHp = maxHp,
             attack = atk,
-            defense = def,
+            defense = generalDef,
             maxMoves = moves,
             movesRemaining = moves,
             initialSquadCount = 1,
             isPrevalentUnit = false,
             name = char.name,
-            iconUrl = archetype.defaultIcon,
-            characterId = char.id
+            iconUrl = balance.iconUrl,
+            characterId = char.id,
+            damageType = balance.damageType,
+            weaponDefense = weaponDef,
+            arrowDefense = arrowDef,
+            magicDefense = magicDef,
+            facing = initialFacing
         )
     }
 
@@ -245,22 +250,30 @@ object TacticalRules {
         spawnX: Int,
         spawnY: Int
     ): TacticalUnit {
+        val balance = TacticalBalanceRepository.getBalance(type)
         val (prevalenceMult, isPrevalent) = calculatePrevalenceMultiplier(type, army)
-        val maxHp = type.baseHp * count
-        val rawAtk = type.baseAttack + (count * 0.5).toInt()
-        val rawDef = type.baseDefense + (count * 0.3).toInt()
+        val maxHp = balance.baseHp * count
+        val rawAtk = balance.baseAttack + (count * balance.attackPerCount).toInt()
+        val rawWeaponDef = balance.weaponDefense + (count * balance.weaponDefensePerCount).toInt()
+        val rawArrowDef = balance.arrowDefense + (count * balance.arrowDefensePerCount).toInt()
+        val rawMagicDef = balance.magicDefense + (count * balance.magicDefensePerCount).toInt()
 
         val atk = (rawAtk * prevalenceMult).roundToInt()
-        val def = (rawDef * prevalenceMult).roundToInt()
-        val moves = type.defaultMoves
+        val weaponDef = (rawWeaponDef * prevalenceMult).roundToInt()
+        val arrowDef = (rawArrowDef * prevalenceMult).roundToInt()
+        val magicDef = (rawMagicDef * prevalenceMult).roundToInt()
+        val generalDef = weaponDef
+        val moves = balance.defaultMoves
 
         val name = when (type) {
             TacticalUnitType.ARCHER -> "Archers ($count)"
             TacticalUnitType.HEAVY_INFANTRY -> "Heavy Infantry ($count)"
             TacticalUnitType.LIGHT_INFANTRY -> "Light Infantry ($count)"
             TacticalUnitType.MAGE -> "Battle Mages ($count)"
-            else -> type.name
+            else -> balance.name.ifBlank { type.name }
         }
+
+        val initialFacing = if (spawnX <= 4) UnitFacing.EAST else UnitFacing.WEST
 
         return TacticalUnit(
             id = "${battleId}_troop_${type.name}_${playerId}",
@@ -272,13 +285,18 @@ object TacticalRules {
             currentHp = maxHp,
             maxHp = maxHp,
             attack = atk,
-            defense = def,
+            defense = generalDef,
             maxMoves = moves,
             movesRemaining = moves,
             initialSquadCount = count,
             isPrevalentUnit = isPrevalent,
             name = name,
-            iconUrl = type.defaultIcon
+            iconUrl = balance.iconUrl,
+            damageType = balance.damageType,
+            weaponDefense = weaponDef,
+            arrowDefense = arrowDef,
+            magicDefense = magicDef,
+            facing = initialFacing
         )
     }
 
@@ -388,48 +406,87 @@ object TacticalRules {
         if (attacker.ownerPlayerId == target.ownerPlayerId) return false
         if (attacker.hasAttackedThisTurn) return false
 
+        val balance = TacticalBalanceRepository.getBalance(attacker.unitType)
         val dx = kotlin.math.abs(target.x - attacker.x)
         val dy = kotlin.math.abs(target.y - attacker.y)
+        val chebyshevDist = max(dx, dy)
 
-        return when (attacker.unitType) {
-            TacticalUnitType.WARRIOR_HERO,
-            TacticalUnitType.HEAVY_INFANTRY,
-            TacticalUnitType.LIGHT_INFANTRY -> {
-                // Any adjacent (Chebyshev distance = 1)
-                max(dx, dy) == 1
-            }
-            TacticalUnitType.ARCHER_HERO -> {
-                // Horizontal or Vertical, Range 1..2
-                val isOrthogonal = (dx == 0 && dy in 1..2) || (dy == 0 && dx in 1..2)
-                isOrthogonal && isLineOfSightClear(attacker.x, attacker.y, target.x, target.y, state.tiles)
-            }
-            TacticalUnitType.MAGE_HERO -> {
-                // Any direction, Range 1..3, bypasses line-of-sight obstacles
-                max(dx, dy) in 1..3
-            }
-            TacticalUnitType.ARCHER -> {
-                // Diagonal or Vertical, Range 1..2
-                val isDiagOrVert = (dx == dy && dx in 1..2) || (dx == 0 && dy in 1..2)
-                isDiagOrVert && isLineOfSightClear(attacker.x, attacker.y, target.x, target.y, state.tiles)
-            }
-            TacticalUnitType.MAGE -> {
-                // Any direction, Range 1..2, bypasses line-of-sight obstacles
-                max(dx, dy) in 1..2
-            }
+        if (chebyshevDist < balance.minRange || chebyshevDist > balance.maxRange) {
+            return false
+        }
+
+        val patternMatches = when (balance.attackPattern) {
+            "MELEE", "ADJACENT" -> max(dx, dy) == 1
+            "ORTHOGONAL" -> (dx == 0 && dy in balance.minRange..balance.maxRange) || (dy == 0 && dx in balance.minRange..balance.maxRange)
+            "DIAGONAL_OR_VERTICAL" -> (dx == dy && dx in balance.minRange..balance.maxRange) || (dx == 0 && dy in balance.minRange..balance.maxRange)
+            "ANY_DIRECTION" -> true
+            else -> chebyshevDist in balance.minRange..balance.maxRange
+        }
+        if (!patternMatches) return false
+
+        if (balance.requiresLineOfSight && !isLineOfSightClear(attacker.x, attacker.y, target.x, target.y, state.tiles)) {
+            return false
+        }
+
+        return true
+    }
+
+    /**
+     * Determines whether an attack strikes the target from FRONT, FLANK, or REAR based on target's facing.
+     */
+    fun determineAttackAngle(attacker: TacticalUnit, target: TacticalUnit): TacticalAttackAngle {
+        val dx = attacker.x - target.x
+        val dy = attacker.y - target.y
+        if (dx == 0 && dy == 0) return TacticalAttackAngle.FRONT
+
+        val forward = when (target.facing) {
+            UnitFacing.EAST -> dx
+            UnitFacing.WEST -> -dx
+            UnitFacing.SOUTH -> dy
+            UnitFacing.NORTH -> -dy
+        }
+        val lateral = when (target.facing) {
+            UnitFacing.EAST, UnitFacing.WEST -> kotlin.math.abs(dy)
+            UnitFacing.SOUTH, UnitFacing.NORTH -> kotlin.math.abs(dx)
+        }
+
+        return when {
+            forward < 0 && lateral < -forward -> TacticalAttackAngle.REAR
+            forward > 0 && lateral < forward -> TacticalAttackAngle.FRONT
+            else -> TacticalAttackAngle.FLANK
         }
     }
 
     /**
-     * Calculates combat damage considering prevalence, strategy buffs, and armor bypass.
+     * Calculates combat damage considering prevalence, strategy buffs, armor bypass, and flank/rear attack angles.
      */
     fun calculateDamage(
         attacker: TacticalUnit,
         target: TacticalUnit,
         state: TacticalBattleState,
-        rngVariance: Int = 0
+        rngVariance: Int = 0,
+        attackAngleOverride: TacticalAttackAngle? = null
     ): Int {
+        val rules = TacticalBalanceRepository.getRules()
+        val attackerBalance = TacticalBalanceRepository.getBalance(attacker.unitType)
         var effectiveAtk = attacker.attack
-        var effectiveDef = target.defense
+
+        // Determine defense stat based on attacker's damage type:
+        // WEAPON (physical melee) -> target.weaponDefense
+        // ARROW (ranged piercing) -> target.arrowDefense
+        // MAGIC (magical) -> target.magicDefense
+        val intrinsicDamageType = attackerBalance.damageType
+        val effectiveDamageType = when {
+            attacker.damageType.isNotBlank() && attacker.damageType.equals(intrinsicDamageType, ignoreCase = true) -> attacker.damageType
+            attacker.damageType.isNotBlank() && attacker.damageType != "WEAPON" -> attacker.damageType
+            else -> intrinsicDamageType
+        }.ifBlank { "WEAPON" }.uppercase()
+        var effectiveDef = when (effectiveDamageType) {
+            "WEAPON", "PHYSICAL", "MELEE" -> target.weaponDefense
+            "ARROW", "RANGED" -> target.arrowDefense
+            "MAGIC", "MAGICAL" -> target.magicDefense
+            else -> target.defense
+        }
 
         // Strategy Buffs
         val isAttackerTeam = attacker.ownerPlayerId == state.attackerPlayerId
@@ -445,23 +502,23 @@ object TacticalRules {
                         it.unitType == TacticalUnitType.MAGE || it.unitType == TacticalUnitType.HEAVY_INFANTRY
                     }
                     if (hasPhalanxSynergy && (attacker.unitType == TacticalUnitType.HEAVY_INFANTRY || attacker.unitType == TacticalUnitType.MAGE)) {
-                        effectiveDef += 2
+                        effectiveDef += rules.strategyArcanePhalanxDefenseBonus
                     }
                 }
                 BattleStrategy.HAMMER_AND_SPELL -> {
-                    // Warrior Hero and Heavy Infantry gain +2 Attack after a Mage attacks a target
+                    // Warrior Hero and Heavy Infantry gain attack buff after a Mage attacks a target
                     if (state.mageAttackedTargetIds.contains(target.id) &&
                         (attacker.unitType == TacticalUnitType.WARRIOR_HERO || attacker.unitType == TacticalUnitType.HEAVY_INFANTRY)
                     ) {
-                        effectiveAtk += 2
+                        effectiveAtk += rules.strategyHammerAndSpellAttackBonus
                     }
                 }
                 BattleStrategy.SPELL_INFUSED_VOLLEY -> {
-                    // Archer and Mage units gain +2 Attack when targeting the same enemy in a round
+                    // Archer and Mage units gain attack buff when targeting the same enemy in a round
                     if (state.targetsHitThisRound.contains(target.id) &&
                         (attacker.unitType == TacticalUnitType.ARCHER || attacker.unitType == TacticalUnitType.MAGE || attacker.unitType == TacticalUnitType.ARCHER_HERO)
                     ) {
-                        effectiveAtk += 2
+                        effectiveAtk += rules.strategySpellInfusedVolleyAttackBonus
                     }
                 }
                 BattleStrategy.NONE -> {}
@@ -472,16 +529,26 @@ object TacticalRules {
         if (target.unitType.isHero) {
             val hasAllyTroops = state.units.any { it.isAlive && it.ownerPlayerId == target.ownerPlayerId && !it.unitType.isHero }
             if (hasAllyTroops) {
-                effectiveDef += 3
+                effectiveDef += rules.bodyguardDefenseBonus
             }
         }
 
-        // Mage bypasses physical armor
-        if (attacker.unitType == TacticalUnitType.MAGE || attacker.unitType == TacticalUnitType.MAGE_HERO) {
-            effectiveDef = min(effectiveDef, 1)
+        // Armor bypass fallback if target had identical default defense across all types
+        if (attackerBalance.bypassesArmor && effectiveDamageType == "MAGIC" && target.magicDefense == target.defense && target.defense > rules.mageBypassDefenseCap) {
+            effectiveDef = min(effectiveDef, rules.mageBypassDefenseCap)
         }
 
         val baseDamage = max(1, effectiveAtk - (effectiveDef / 2))
-        return max(1, baseDamage + rngVariance)
+
+        // Positional modifiers: Flank (+50%) and Rear (x2.0 double bonus)
+        val attackAngle = attackAngleOverride ?: determineAttackAngle(attacker, target)
+        val angleMultiplier = when (attackAngle) {
+            TacticalAttackAngle.REAR -> rules.rearAttackBonus
+            TacticalAttackAngle.FLANK -> rules.flankAttackBonus
+            TacticalAttackAngle.FRONT -> 1.0
+        }
+        val damageWithBonus = (baseDamage * angleMultiplier).roundToInt()
+
+        return max(1, damageWithBonus + rngVariance)
     }
 }

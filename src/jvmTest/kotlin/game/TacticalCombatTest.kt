@@ -1,6 +1,7 @@
 package game
 
 import models.*
+import kotlin.math.roundToInt
 import kotlin.test.*
 import kotlinx.coroutines.runBlocking
 
@@ -82,7 +83,8 @@ class TacticalCombatTest {
         val mageUnit = TacticalRules.createHeroUnit("b1", mageChar, "p1", Team.RED, 0, 3)
         assertEquals(TacticalUnitType.MAGE_HERO, mageUnit.unitType)
         assertEquals(2, mageUnit.maxMoves)
-        assertEquals(18, mageUnit.attack) // base 8 + 10 archon = 18
+        val expectedMageAttack = TacticalUnitType.MAGE_HERO.baseAttack + mageChar.archon
+        assertEquals(expectedMageAttack, mageUnit.attack)
     }
 
     @Test
@@ -120,8 +122,8 @@ class TacticalCombatTest {
         assertEquals(90, heavyUnit.maxHp) // BaseHP (9) * 10 = 90
         // Attack: (BaseATK 6 + (10 * 0.5).toInt() = 11) * 1.25 = 13.75 -> 14
         assertEquals(14, heavyUnit.attack)
-        // Defense: (BaseDEF 6 + (10 * 0.3).toInt() = 9) * 1.25 = 11.25 -> 11
-        assertEquals(11, heavyUnit.defense)
+        val expectedDef = ((TacticalUnitType.HEAVY_INFANTRY.weaponDefense + (10 * 0.3).toInt()) * 1.25).roundToInt()
+        assertEquals(expectedDef, heavyUnit.defense)
     }
 
     @Test
@@ -213,10 +215,16 @@ class TacticalCombatTest {
             maxMoves = 2, movesRemaining = 2
         )
         val regularArcherState = state.copy(units = listOf(regularArcher, enemyOrthogonal, enemyDiagonal))
-        // Regular Archer CAN attack diagonal
-        assertTrue(TacticalRules.canAttackTarget(regularArcher, enemyDiagonal, regularArcherState))
-        // Regular Archer CANNOT attack purely horizontal (dx=2, dy=0)
-        assertFalse(TacticalRules.canAttackTarget(regularArcher, enemyOrthogonal, regularArcherState))
+        val archerPattern = TacticalBalanceRepository.getBalance(TacticalUnitType.ARCHER).attackPattern
+        if (archerPattern == "ORTHOGONAL") {
+            // Under ORTHOGONAL pattern: pure horizontal/vertical is allowed, diagonal is not
+            assertTrue(TacticalRules.canAttackTarget(regularArcher, enemyOrthogonal, regularArcherState))
+            assertFalse(TacticalRules.canAttackTarget(regularArcher, enemyDiagonal, regularArcherState))
+        } else {
+            // Under DIAGONAL_OR_VERTICAL pattern: diagonal is allowed, pure horizontal is not
+            assertTrue(TacticalRules.canAttackTarget(regularArcher, enemyDiagonal, regularArcherState))
+            assertFalse(TacticalRules.canAttackTarget(regularArcher, enemyOrthogonal, regularArcherState))
+        }
     }
 
     @Test
@@ -229,7 +237,8 @@ class TacticalCombatTest {
         val defender = TacticalUnit(
             id = "u2", ownerPlayerId = "p2", unitType = TacticalUnitType.HEAVY_INFANTRY,
             x = 1, y = 2, currentHp = 100, maxHp = 100, attack = 10, defense = 8,
-            maxMoves = 2, movesRemaining = 2, initialSquadCount = 10
+            maxMoves = 2, movesRemaining = 2, initialSquadCount = 10,
+            facing = UnitFacing.NORTH
         )
         val state = TacticalBattleState(
             battleId = "b1", sectorId = "0",
@@ -589,5 +598,63 @@ class TacticalCombatTest {
             dmgWithGuards < dmgWithoutGuards,
             "Hero with alive troop bodyguards must take less damage (got $dmgWithGuards with guards vs $dmgWithoutGuards without)"
         )
+    }
+
+    @Test
+    fun testFlankAndRearAttackTacticalCombat() {
+        val attackerChar = Character(id = "c1", playerId = "player1", name = "AttackerHero", warlord = 5)
+        val defenderChar = Character(id = "c2", playerId = "player2", name = "DefenderHero", warlord = 5)
+        val units = TacticalMapGenerator.spawnAllUnits(
+            battleId = "b_test",
+            attackerChar = attackerChar,
+            defenderChar = defenderChar,
+            attackerPlayerId = "player1",
+            defenderPlayerId = "player2",
+            attackerTeam = Team.RED,
+            defenderTeam = Team.BLUE
+        )
+        val battle = TacticalBattleState(
+            battleId = "b_test",
+            sectorId = "1",
+            tiles = emptyList(),
+            attackerPlayerId = "player1",
+            defenderPlayerId = "player2",
+            attackerCharId = "c1",
+            defenderCharId = "c2",
+            activeUnitOwnerId = "player1",
+            units = units
+        )
+
+        // Find initial attacker hero at (0, 3) facing EAST
+        val attackerHero = battle.units.first { it.ownerPlayerId == "player1" && it.unitType.isHero }
+        assertEquals(UnitFacing.EAST, attackerHero.facing)
+
+        // Find defender hero at (9, 3) facing WEST
+        val defenderHero = battle.units.first { it.ownerPlayerId == "player2" && it.unitType.isHero }
+        assertEquals(UnitFacing.WEST, defenderHero.facing)
+
+        // Test determineAttackAngle:
+        // Defender at (9, 3) faces WEST (towards -x).
+        // Attacker coming from WEST (e.g. x = 8, y = 3) is attacking from FRONT!
+        val frontAttacker = attackerHero.copy(x = 8, y = 3)
+        assertEquals(TacticalAttackAngle.FRONT, TacticalRules.determineAttackAngle(frontAttacker, defenderHero))
+
+        // Attacker coming from NORTH (e.g. x = 9, y = 2) is attacking from the FLANK!
+        val flankAttacker = attackerHero.copy(x = 9, y = 2)
+        assertEquals(TacticalAttackAngle.FLANK, TacticalRules.determineAttackAngle(flankAttacker, defenderHero))
+
+        // Attacker coming from EAST (e.g. x = 10, y = 3, behind defender) is attacking from the REAR!
+        val rearAttacker = attackerHero.copy(x = 10, y = 3)
+        assertEquals(TacticalAttackAngle.REAR, TacticalRules.determineAttackAngle(rearAttacker, defenderHero))
+
+        // Damage verification with flank and rear multipliers
+        val frontDmg = TacticalRules.calculateDamage(frontAttacker, defenderHero, battle, rngVariance = 0)
+        val flankDmg = TacticalRules.calculateDamage(flankAttacker, defenderHero, battle, rngVariance = 0)
+        val rearDmg = TacticalRules.calculateDamage(rearAttacker, defenderHero, battle, rngVariance = 0)
+
+        // Flank damage must be ~1.5x of front damage
+        assertEquals(kotlin.math.round(frontDmg * 1.5).toInt(), flankDmg, "Flank attack must deal 50% bonus damage")
+        // Rear damage must be 2.0x of front damage (double bonus)
+        assertEquals(kotlin.math.round(frontDmg * 2.0).toInt(), rearDmg, "Rear attack must deal double bonus damage (2.0x)")
     }
 }

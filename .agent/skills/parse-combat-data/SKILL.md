@@ -11,7 +11,8 @@ Collects and extracts tactical and strategic combat data strictly from the dedic
 ## Strict Scope Rules
 
 ### Target File Paths
-- **Primary Source (Tactical)**: `src/commonMain/kotlin/models/TacticalCombatModels.kt` (480 lines)
+- **Balance Configuration**: `tactical_balance.json` (root and resources) & `src/commonMain/kotlin/models/TacticalBalance.kt`
+- **Primary Source (Tactical Rules & Logic)**: `src/commonMain/kotlin/models/TacticalCombatModels.kt`
 - **Secondary Source (Strategic)**: `src/commonMain/kotlin/models/FightLogic.kt` (196 lines)
 - **Output / Benchmark Suite**: `agent/eval_sets/tactical_suite.json` (optional)
 
@@ -30,15 +31,14 @@ Collects and extracts tactical and strategic combat data strictly from the dedic
 | :--- | :--- | :--- |
 | **L10–L25** | `TacticalTileType` | `PLAIN`, `FOREST`, `RIVER`, `BRIDGE`, `CLIFF_ROCK`, `FORTRESS_WALL`, `FORTRESS_GATE`, `isTraversable`, `blocksLineOfSight` |
 | **L27–L50** | `TacticalUnitType` | `WARRIOR_HERO`, `ARCHER_HERO`, `MAGE_HERO`, `ARCHER`, `HEAVY_INFANTRY`, `LIGHT_INFANTRY`, `MAGE`, `defaultMoves` |
-| **L51–L83** | Base Stat Tables | `baseHp` (Hero: 28-36, Troop: 5-9), `baseAttack` (5-8), `baseDefense` (2-6) |
-| **L96–L140** | Data Classes | `TacticalUnit` (HP, ATK, DEF, moves, initialSquadCount, isPrevalentUnit), `TacticalBattleState` (10x8 grid, turn phases) |
-| **L144–L153**| Hero Derivation | `TacticalRules.deriveHeroArchetype(char)`: Warlord -> Warrior, Vanguard -> Archer, Archon/Intellect -> Mage |
-| **L155–L180**| Prevalence Bonus | `calculatePrevalenceMultiplier`: Single dominant troop type = **+25% ATK & DEF** (`1.25`); tied = **+15%** (`1.15`) |
-| **L182–L284**| Unit Factories | `createHeroUnit`: Scaled by character stats; `createTroopUnit`: Headcount scaling (`rawAtk = baseAtk + (count * 0.5)`) |
-| **L286–L315**| Squad Casualty Map | `calculateSurvivingCount`: `ceil(initial * (currentHp / maxHp))`; `mapSurvivingArmy` maps back to `Army` |
-| **L318–L377**| Grid Pathfinding | `findValidMoves` (BFS with 4-directional moves and obstacle blocking), `isLineOfSightClear` (Raycast) |
-| **L380–L420**| Attack Matrix | `canAttackTarget`: Melee = Chebyshev 1; Archer Hero = Orthogonal 1..2; Mage = 1..3 LoS-bypass; Regular Archer = Diag/Vert 1..2 |
-| **L422–L480**| Damage Calculation | `calculateDamage`: `damage = max(1, effectiveAtk - (effectiveDef / 2))`. Strategy buffs: `ARCANE_PHALANX`, `HAMMER_AND_SPELL`, `SPELL_INFUSED_VOLLEY` |
+| **L51–L83** | Base Stat Tables | `baseHp`, `baseAttack`, `baseDefense`, `weaponDefense`, `arrowDefense`, `magicDefense`, `damageType` |
+| **L68–L116** | Data Classes | `TacticalUnit` (HP, ATK, DEF, weaponDefense, arrowDefense, magicDefense, damageType, moves, facing: `NORTH`/`SOUTH`/`EAST`/`WEST`), `TacticalBattleState` |
+| **L120–L158**| Hero Derivation | `TacticalRules.deriveHeroArchetype(char)`: Warlord -> Warrior, Vanguard -> Archer, Archon/Intellect -> Mage |
+| **L160–L220**| Unit Factories | `createHeroUnit`: Scaled with character stats across weapon/arrow/magic defenses; `createTroopUnit`: Headcount and prevalence scaling |
+| **L281–L310**| Squad Casualty Map | `calculateSurvivingCount`: `ceil(initial * (currentHp / maxHp))`; `mapSurvivingArmy` maps back to `Army` |
+| **L315–L373**| Grid Pathfinding | `findValidMoves` (BFS with 4-directional moves and obstacle blocking), `isLineOfSightClear` (Raycast) |
+| **L375–L410**| Attack Matrix | `canAttackTarget`: Pattern matching (`MELEE`, `ORTHOGONAL`, `DIAGONAL_OR_VERTICAL`, `ANY_DIRECTION`) from balance config |
+| **L415–L520**| Damage Calculation | `determineAttackAngle`: `FRONT` (1.0x), `FLANK` (+50% bonus / 1.5x), `REAR` (double bonus / 2.0x). `calculateDamage`: `damage = max(1, (effectiveAtk - (effectiveDef / 2)) * angleMultiplier)`. Strategy buffs: `ARCANE_PHALANX`, `HAMMER_AND_SPELL`, `SPELL_INFUSED_VOLLEY` |
 
 ### `src/commonMain/kotlin/models/FightLogic.kt`
 | Line Range | Component | Key Identifiers / Description |

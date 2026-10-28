@@ -56,6 +56,9 @@ fun main() {
     val logger = LoggerFactory.getLogger("Server")
     val isDev = (EnvConfig["APP_MODE"] ?: "DEV").equals("DEV", ignoreCase = true)
 
+    // Load tactical combat balance settings into memory upon startup
+    config.TacticalBalanceLoader.loadBalanceSettings()
+
     embeddedServer(
         factory = Netty,
         configure = {
@@ -92,6 +95,9 @@ fun main() {
 
 fun Application.module() {
     val isDev = (EnvConfig["APP_MODE"] ?: "DEV").equals("DEV", ignoreCase = true)
+
+    // Ensure tactical balance is loaded in memory for Application module
+    config.TacticalBalanceLoader.loadBalanceSettings()
 
     install(CORS) {
         allowMethod(HttpMethod.Options)

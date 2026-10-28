@@ -274,6 +274,17 @@ fun IComponent.TacticalBattleModal(
                                                 }
                                             }
 
+                                            // Facing pointer
+                                            div(className = "facing-pointer facing-${unitOnTile.facing.name.lowercase()}") {
+                                                attribute("title", "Facing: ${unitOnTile.facing.name}")
+                                                textNode(when (unitOnTile.facing) {
+                                                    UnitFacing.NORTH -> "▲"
+                                                    UnitFacing.SOUTH -> "▼"
+                                                    UnitFacing.EAST -> "▶"
+                                                    UnitFacing.WEST -> "◀"
+                                                })
+                                            }
+
                                             // Mini HP bar
                                             div(className = "figurine-hp-bar") {
                                                 div(className = if (isAlly) "figurine-hp-fill ally" else "figurine-hp-fill enemy") {
@@ -292,6 +303,24 @@ fun IComponent.TacticalBattleModal(
                                     if (isAttackTarget) {
                                         div(className = "attack-target-crosshair") {
                                             rawHtml(TacticalIcons.CROSSHAIR)
+                                        }
+                                        if (selectedUnit != null && unitOnTile != null) {
+                                            val attackAngle = TacticalRules.determineAttackAngle(selectedUnit, unitOnTile)
+                                            when (attackAngle) {
+                                                TacticalAttackAngle.REAR -> {
+                                                    div(className = "tactical-angle-badge angle-rear") {
+                                                        attribute("title", "Rear Attack: Double Damage (x2.0)!")
+                                                        textNode("REAR x2")
+                                                    }
+                                                }
+                                                TacticalAttackAngle.FLANK -> {
+                                                    div(className = "tactical-angle-badge angle-flank") {
+                                                        attribute("title", "Flank Attack: +50% Damage (x1.5)!")
+                                                        textNode("FLANK +50%")
+                                                    }
+                                                }
+                                                TacticalAttackAngle.FRONT -> {}
+                                            }
                                         }
                                     }
                                 }
@@ -349,7 +378,10 @@ fun IComponent.TacticalBattleModal(
                                     }
                                     div(className = "d-flex justify-between text-xs mt-05 text-gray") {
                                         span { textNode("HP ${unit.currentHp}/${unit.maxHp}") }
-                                        span { textNode("⚔️ ${unit.attack} 🛡️ ${unit.defense}") }
+                                        span {
+                                            attribute("title", "Weapon Def: ${unit.weaponDefense} | Arrow Def: ${unit.arrowDefense} | Magic Def: ${unit.magicDefense}")
+                                            textNode("⚔️ ${unit.attack} 🛡️ ${unit.weaponDefense}/${unit.arrowDefense}/${unit.magicDefense}")
+                                        }
                                         span {
                                             textNode("👟 ${unit.movesRemaining}/${unit.maxMoves}")
                                         }

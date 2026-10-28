@@ -1853,9 +1853,17 @@ class GameSession(
             if ((targetX to targetY) !in validMoves) return
 
             val dist = kotlin.math.abs(targetX - unit.x) + kotlin.math.abs(targetY - unit.y)
+            val newFacing = when {
+                targetX > unit.x -> UnitFacing.EAST
+                targetX < unit.x -> UnitFacing.WEST
+                targetY > unit.y -> UnitFacing.SOUTH
+                targetY < unit.y -> UnitFacing.NORTH
+                else -> unit.facing
+            }
             val updatedUnit = unit.copy(
                 x = targetX,
                 y = targetY,
+                facing = newFacing,
                 movesRemaining = (unit.movesRemaining - dist).coerceAtLeast(0)
             )
             val log = "${unit.name} moved to ($targetX, $targetY)."
@@ -1889,12 +1897,20 @@ class GameSession(
 
             if (!TacticalRules.canAttackTarget(attacker, target, battle)) return
 
+            val attackAngle = TacticalRules.determineAttackAngle(attacker, target)
             val rng = kotlin.random.Random.nextInt(-1, 2)
             val dmg = TacticalRules.calculateDamage(attacker, target, battle, rng)
             val newHp = (target.currentHp - dmg).coerceAtLeast(0)
             val isTargetKilled = newHp <= 0
 
-            val updatedAttacker = attacker.copy(hasAttackedThisTurn = true)
+            val attackerFacing = when {
+                target.x > attacker.x && kotlin.math.abs(target.x - attacker.x) >= kotlin.math.abs(target.y - attacker.y) -> UnitFacing.EAST
+                target.x < attacker.x && kotlin.math.abs(target.x - attacker.x) >= kotlin.math.abs(target.y - attacker.y) -> UnitFacing.WEST
+                target.y > attacker.y -> UnitFacing.SOUTH
+                target.y < attacker.y -> UnitFacing.NORTH
+                else -> attacker.facing
+            }
+            val updatedAttacker = attacker.copy(hasAttackedThisTurn = true, facing = attackerFacing)
             val updatedTarget = target.copy(currentHp = newHp)
 
             val updatedUnits = battle.units.map {
@@ -1905,7 +1921,12 @@ class GameSession(
                 }
             }
 
-            val log = "${attacker.name} attacked ${target.name} for $dmg damage!${if (isTargetKilled) " ${target.name} was defeated!" else ""}"
+            val angleTag = when (attackAngle) {
+                TacticalAttackAngle.REAR -> " from behind (REAR ATTACK x2.0)"
+                TacticalAttackAngle.FLANK -> " from the side (FLANK ATTACK +50%)"
+                TacticalAttackAngle.FRONT -> ""
+            }
+            val log = "${attacker.name} attacked ${target.name}$angleTag for $dmg damage!${if (isTargetKilled) " ${target.name} was defeated!" else ""}"
 
             val mageTargets = if (attacker.unitType == TacticalUnitType.MAGE || attacker.unitType == TacticalUnitType.MAGE_HERO) {
                 battle.mageAttackedTargetIds + target.id
