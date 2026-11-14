@@ -23,6 +23,15 @@ enum class HideType(
     }
 }
 
+/**
+ * Represents a hunting camp pitched by a player
+ * @property sectorId The ID of the sector where the camp is pitched
+ * @property ownerPlayerId The ID of the player who owns the camp
+ * @property ownerTeam The team of the player who owns the camp
+ * @property pitchedByCharId The ID of the character who pitched the camp
+ * @property pitchedOnTurn The turn on which the camp was pitched
+ */
+ */
 @Serializable
 data class HuntingCamp(
     val sectorId: String,
