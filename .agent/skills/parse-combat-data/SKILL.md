@@ -11,9 +11,11 @@ Collects and extracts tactical and strategic combat data strictly from the dedic
 ## Strict Scope Rules
 
 ### Target File Paths
-- **Balance Configuration**: `tactical_balance.json` (root and resources) & `src/commonMain/kotlin/models/TacticalBalance.kt`
-- **Primary Source (Tactical Rules & Logic)**: `src/commonMain/kotlin/models/TacticalCombatModels.kt`
-- **Secondary Source (Strategic)**: `src/commonMain/kotlin/models/FightLogic.kt` (196 lines)
+- **Balance Configuration**: `tactical_balance.json` (repository root only; no duplicate in `src/*/resources/`) & `src/commonMain/kotlin/models/TacticalBalance.kt` (341 lines)
+- **Balance Loader**: `src/jvmMain/kotlin/config/TacticalBalanceLoader.kt` (55 lines — loads `TACTICAL_BALANCE_PATH`, working dir `tactical_balance.json`, `/tactical_balance.json` classpath resource, or built-in defaults)
+- **Primary Source (Tactical Rules & Logic)**: `src/commonMain/kotlin/models/TacticalCombatModels.kt` (554 lines)
+- **Tactical Grid Bot AI**: `src/jvmMain/kotlin/game/TacticalAiService.kt` (239 lines — heuristic AI for 10x8 tactical combat)
+- **Secondary Source (Strategic)**: `src/commonMain/kotlin/models/FightLogic.kt` (195 lines)
 - **Output / Benchmark Suite**: `agent/eval_sets/tactical_suite.json` (optional)
 
 ### Bypassed Areas (Do NOT Touch)
@@ -30,49 +32,48 @@ Collects and extracts tactical and strategic combat data strictly from the dedic
 | Line Range | Component | Key Identifiers / Description |
 | :--- | :--- | :--- |
 | **L10–L25** | `TacticalTileType` | `PLAIN`, `FOREST`, `RIVER`, `BRIDGE`, `CLIFF_ROCK`, `FORTRESS_WALL`, `FORTRESS_GATE`, `isTraversable`, `blocksLineOfSight` |
-| **L27–L50** | `TacticalUnitType` | `WARRIOR_HERO`, `ARCHER_HERO`, `MAGE_HERO`, `ARCHER`, `HEAVY_INFANTRY`, `LIGHT_INFANTRY`, `MAGE`, `defaultMoves` |
-| **L51–L83** | Base Stat Tables | `baseHp`, `baseAttack`, `baseDefense`, `weaponDefense`, `arrowDefense`, `magicDefense`, `damageType` |
-| **L68–L116** | Data Classes | `TacticalUnit` (HP, ATK, DEF, weaponDefense, arrowDefense, magicDefense, damageType, moves, facing: `NORTH`/`SOUTH`/`EAST`/`WEST`), `TacticalBattleState` |
-| **L120–L158**| Hero Derivation | `TacticalRules.deriveHeroArchetype(char)`: Warlord -> Warrior, Vanguard -> Archer, Archon/Intellect -> Mage |
-| **L160–L220**| Unit Factories | `createHeroUnit`: Scaled with character stats across weapon/arrow/magic defenses; `createTroopUnit`: Headcount and prevalence scaling |
-| **L281–L310**| Squad Casualty Map | `calculateSurvivingCount`: `ceil(initial * (currentHp / maxHp))`; `mapSurvivingArmy` maps back to `Army` |
-| **L315–L373**| Grid Pathfinding | `findValidMoves` (BFS with 4-directional moves and obstacle blocking), `isLineOfSightClear` (Raycast) |
-| **L375–L410**| Attack Matrix | `canAttackTarget`: Pattern matching (`MELEE`, `ORTHOGONAL`, `DIAGONAL_OR_VERTICAL`, `ANY_DIRECTION`) from balance config |
-| **L415–L520**| Damage Calculation | `determineAttackAngle`: `FRONT` (1.0x), `FLANK` (+50% bonus / 1.5x), `REAR` (double bonus / 2.0x). `calculateDamage`: `damage = max(1, (effectiveAtk - (effectiveDef / 2)) * angleMultiplier)`. Strategy buffs: `ARCANE_PHALANX`, `HAMMER_AND_SPELL`, `SPELL_INFUSED_VOLLEY` |
+| **L27–L65** | `TacticalUnitType` & Properties | `WARRIOR_HERO`, `ARCHER_HERO`, `MAGE_HERO`, `ARCHER`, `HEAVY_INFANTRY`, `LIGHT_INFANTRY`, `MAGE`, `defaultMoves`, `baseHp`, `baseAttack`, `baseDefense`, `weaponDefense`, `arrowDefense`, `magicDefense`, `damageType` |
+| **L67–L132** | Data Classes | `UnitFacing` (`NORTH`/`SOUTH`/`EAST`/`WEST`), `TacticalAttackAngle`, `TacticalUnit`, `TacticalBattleState` |
+| **L136–L145**| Hero Derivation | `TacticalRules.deriveHeroArchetype(char)`: Warlord -> Warrior, Vanguard -> Archer, Archon + (Intellect/2) -> Mage |
+| **L153–L301**| Prevalence & Unit Factories | `calculatePrevalenceMultiplier`, `createHeroUnit` (stat-scaled HP/ATK/defenses), `createTroopUnit` (headcount and prevalence scaling) |
+| **L307–L333**| Squad Casualty Map | `calculateSurvivingCount`: `ceil(initial * (currentHp / maxHp))`; `mapSurvivingArmy` maps back to `Army` |
+| **L338–L395**| Grid Pathfinding & LoS | `findValidMoves` (BFS with 4-directional moves and obstacle blocking), `isLineOfSightClear` (Raycast) |
+| **L400–L432**| Attack Matrix | `canAttackTarget`: Pattern matching (`MELEE`/`ADJACENT`, `ORTHOGONAL`, `DIAGONAL_OR_VERTICAL`, `ANY_DIRECTION`) and range/LoS checks from balance config |
+| **L437–L553**| Damage Calculation | `determineAttackAngle`: `FRONT` (1.0x), `FLANK` (1.5x), `REAR` (2.0x). `calculateDamage`: `baseDamage = max(1, effectiveAtk - (effectiveDef / 2))`, `damageWithBonus = (baseDamage * angleMultiplier).roundToInt()`. Includes strategy buffs (`ARCANE_PHALANX`, `HAMMER_AND_SPELL`, `SPELL_INFUSED_VOLLEY`), **Troop Bodyguard Aura** (`L528–L534`: `+bodyguardDefenseBonus` when Hero has living allied troops), and **Armor Bypass** (`L537–L539`: caps `effectiveDef` at `mageBypassDefenseCap` when `bypassesArmor && MAGIC && magicDefense == defense`) |
 
 ### `src/commonMain/kotlin/models/FightLogic.kt`
 | Line Range | Component | Key Identifiers / Description |
 | :--- | :--- | :--- |
-| **L9–L14** | `effectiveProtection` | Diminishing returns: `ln(1.0 + raw / 8.0) * 8.0`, max effective = 25.0 |
+| **L9–L14** | `effectiveProtection` | Diminishing returns (`raw * 0.1` for `< 20`; `ln(1.0 + raw / 8.0) * 8.0`, max `25.0` for `>= 20`) |
 | **L27–L58** | Strategic Scores | `calculateArmyCombatScore`, `calculateStatBonus` (Warlord, Archon, Vanguard, Intellect scaling) |
-| **L60–L196**| `calculateFight` | Full automated strategic fight resolver, casualty calculation, and strategy modifiers |
+| **L79–L195**| Strategic Resolution | `resolveFight` (4x overwhelming check, strategy/siege negation, d20 rolls, casualty ratios), `calculateFightResult`, `estimateWinChance` |
 
 ---
 
 ## Fast Query Patterns
 
 ### 1. Lookup Base Unit Stats & Move Limits
-- **File**: `src/commonMain/kotlin/models/TacticalCombatModels.kt`
-- **Range**: Lines 40 to 83
+- **File**: `src/commonMain/kotlin/models/TacticalBalance.kt` (or `tactical_balance.json`)
+- **Range**: Lines 76 to 267 (`DefaultTacticalBalanceConfig`)
 - **Fast CLI Command**:
   ```bash
-  sed -n '40,84p' src/commonMain/kotlin/models/TacticalCombatModels.kt
+  sed -n '76,267p' src/commonMain/kotlin/models/TacticalBalance.kt
   ```
 
-### 2. Lookup Tactical Damage Formula & Strategy Buffs
+### 2. Lookup Tactical Damage Formula, Bodyguard Aura & Strategy Buffs
 - **File**: `src/commonMain/kotlin/models/TacticalCombatModels.kt`
-- **Range**: Lines 425 to 475
+- **Range**: Lines 463 to 553
 - **Fast CLI Command**:
   ```bash
-  sed -n '425,475p' src/commonMain/kotlin/models/TacticalCombatModels.kt
+  sed -n '463,553p' src/commonMain/kotlin/models/TacticalCombatModels.kt
   ```
 
 ### 3. Lookup Attack Range & Line-of-Sight Matrix
 - **File**: `src/commonMain/kotlin/models/TacticalCombatModels.kt`
-- **Range**: Lines 380 to 420
+- **Range**: Lines 381 to 432
 - **Fast CLI Command**:
   ```bash
-  sed -n '380,420p' src/commonMain/kotlin/models/TacticalCombatModels.kt
+  sed -n '381,432p' src/commonMain/kotlin/models/TacticalCombatModels.kt
   ```
 
 ### 4. Lookup Strategic Army Scoring & Hero Stat Synergy

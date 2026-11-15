@@ -11,15 +11,15 @@ Inspects world map geography, sector adjacencies, castle stronghold IDs, fog-of-
 ## Strict Scope Rules
 
 ### Target File Paths
-- **Map Graph & Territories**: `src/commonMain/kotlin/models/MapData.kt` (71 lines)
-- **Visibility & Adjacency Logic**: `src/commonMain/kotlin/models/GridUtils.kt` (59 lines)
-- **Tactical Biome & Grid Generator**: `src/commonMain/kotlin/models/TacticalMapGenerator.kt` (260 lines)
+- **Map Graph & Territories**: `src/commonMain/kotlin/models/MapData.kt` (70 lines)
+- **Visibility & Adjacency Logic**: `src/commonMain/kotlin/models/GridUtils.kt` (81 lines)
+- **Tactical Biome & Grid Generator**: `src/commonMain/kotlin/models/TacticalMapGenerator.kt` (267 lines)
 
 ### Bypassed Areas (Do NOT Touch)
 - Do **NOT** scan frontend UI components (`src/jsMain/kotlin/components/StrategicMap.kt`, `TerritoryCard.kt`).
 - Do **NOT** read loose or stale top-level JSON dumps (`map_data.json`, `map_data_new.json`, `location_info.json`).
 - Do **NOT** read image assets (`*.png`, `*.jpg`).
-- Adjacencies must only be validated through `MapData[id].adjacentIds` or `isAdjacentSector()`.
+- Adjacencies must only be validated through `MapData[id]?.adjacentIds` or `isAdjacentSector()`.
 
 ---
 
@@ -27,33 +27,32 @@ Inspects world map geography, sector adjacencies, castle stronghold IDs, fog-of-
 
 ### `src/commonMain/kotlin/models/MapData.kt`
 - **Territory Data Class (L3–L12)**:
-  `data class Territory(val id: String, val x: Int, val y: Int, val adjacentIds: List<String>, val isCastle: Boolean = false, val name: String, val protection: Int = 10, val cultivation: Int = 10)`
-- **Map Graph (L14–L70)**: 54 sectors indexed by String `"0"` to `"53"`.
+  `data class Territory(val id: String, val x: Int, val y: Int, val adjacentIds: List<String>, val isCastle: Boolean = false, val name: String? = null, val protection: Int = if (isCastle) 20 else 5, val cultivation: Int = if (isCastle) 14 else 10)`
+- **Map Graph (L14–L70)**: 55 sectors indexed by String `"0"` to `"54"`.
 - **Key Stronghold / Castle Sectors (`isCastle = true`)**:
   - Sector **`7`**: Monastery of Innos (Prot: 20, Cult: 14)
   - Sector **`14`**: City of Khorinis (Prot: 20, Cult: 14)
   - Sector **`23`**: Onar's Farm (Prot: 20, Cult: 14)
-  - Sector **`52`**: Old Camp Fortress (Prot: 20, Cult: 14)
+  - Sector **`52`**: Fortress of the Pass (Prot: 20, Cult: 14)
 
 ### `src/commonMain/kotlin/models/GridUtils.kt`
 - **Adjacency Validation (L3–L7)**: `isAdjacentSector(from: String, to: String): Boolean` checks bidirectional linkage.
-- **Fog-of-War Visibility Rules (L9–L58)**:
+- **Shortest Path Distance (L14–L30)**: `getSectorDistance(from: String, to: String): Int` computes BFS shortest path in strategic sector moves (`0` if same, `Int.MAX_VALUE` if unreachable).
+- **Fog-of-War Visibility Rules (L40–L80)**:
   1. Status is `LOBBY` or `GAME_OVER` -> All characters visible.
   2. Character on player's team -> Always visible.
-  3. Character is in any Castle (`targetTerritory.isCastle || teamCastles.containsValue(sector)`) -> Always visible.
+  3. Character is in any Castle (`targetTerritory?.isCastle == true || gameState.teamCastles.containsValue(targetSector)`) -> Always visible.
   4. Scout rule -> Visible if any living allied character is in the same or adjacent sector (`allySector == targetSector || isAdjacentSector(allySector, targetSector)`).
 
 ### `src/commonMain/kotlin/models/TacticalMapGenerator.kt`
 - **Grid Dimensions**: `GRID_WIDTH = 10`, `GRID_HEIGHT = 8`.
-- **Biomes (L10–L25)**: `FOREST`, `RIVER`, `CANYON`, `FORTRESS`, `SWAMP`, `CAVE`, `PLAIN`.
-- **Biome Detection (L27–L50)**:
-  - Castle sectors (`7`, `14`, `23`, `52`) -> `FORTRESS`
-  - Sector names containing River / Bridge -> `RIVER`
-  - Sector names containing Gorge / Canyon / Rock / Cliff -> `CANYON`
-  - Sector names containing Forest / Woods / Grove -> `FOREST`
-  - Sector names containing Swamp / Marsh -> `SWAMP`
-  - Sector names containing Cave / Crypt / Mine -> `CAVE`
-  - Default -> `PLAIN`
+- **Biomes (L5–L20)**: `FOREST`, `RIVER`, `CANYON`, `FORTRESS`, `PLAINS`.
+- **Biome Detection (L29–L77)**: Uses both `MapData[sectorId]` and `LocationInfoCatalog[sectorId]` (`name`, `title`, `region`, `description`):
+  - Castle sectors (`isCastle == true`) or gate/barricade/hideout/citadel/monastery keywords -> `FORTRESS`
+  - Sector names/titles containing mountains / gorge / canyon / crags / defile / pass / tunnel -> `CANYON`
+  - Sector names/titles containing bridge / waterfall / lake / coast / cove / beach / harbor -> `RIVER`
+  - Sector names/titles/region/desc containing forest / woods / grove / hollow / grimwald -> `FOREST`
+  - Additional lore (`region` / `desc`) fallbacks for `RIVER`, `CANYON`, `FORTRESS`, otherwise default -> `PLAINS`
 
 ---
 
@@ -80,16 +79,16 @@ Inspects world map geography, sector adjacencies, castle stronghold IDs, fog-of-
 
 ### 3. Check Visibility / Fog-of-War Rules
 - **File**: `src/commonMain/kotlin/models/GridUtils.kt`
-- **Range**: Lines 17 to 58
+- **Range**: Lines 32 to 80
 - **Fast CLI Command**:
   ```bash
-  sed -n '17,58p' src/commonMain/kotlin/models/GridUtils.kt
+  sed -n '32,80p' src/commonMain/kotlin/models/GridUtils.kt
   ```
 
 ### 4. Check Biome Generation & Backdrop Assets
 - **File**: `src/commonMain/kotlin/models/TacticalMapGenerator.kt`
-- **Range**: Lines 20 to 55
+- **Range**: Lines 5 to 77
 - **Fast CLI Command**:
   ```bash
-  sed -n '20,55p' src/commonMain/kotlin/models/TacticalMapGenerator.kt
+  sed -n '5,77p' src/commonMain/kotlin/models/TacticalMapGenerator.kt
   ```

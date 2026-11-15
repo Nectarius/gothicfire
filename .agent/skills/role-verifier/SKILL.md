@@ -18,9 +18,9 @@ Run only the checks relevant to the changed stacks:
    - Run `./gradlew jvmTest` (or `./gradlew test` / `./gradlew jarWithJs` for full-stack bundling).
    - If `src/jsMain/` locales changed, run the locale key-parity check from `.agent/skills/ui-and-i18n/SKILL.md`.
 2. **Python AI Microservice** (when `agent/` or `tactical_balance.json` changed):
-   - Run `.venv/bin/python agent/verify_agent.py` and the eval JSON validation from `.agent/skills/eval-ai-changes/SKILL.md`.
+   - Run `venv/bin/python agent/verify_agent.py` and the eval JSON validation from `.agent/skills/eval-ai-changes/SKILL.md`.
 3. **Contract Parity**:
-   - Confirm Kotlin request/response DTOs match `agent/core/schemas.py` field names and aliases (e.g. camelCase / snake_case).
+   - Confirm Kotlin request/response DTOs (`AiOpponentService.kt`, `AdvisorModels.kt`, `CastleModels.kt`, and callers in `LlmAiDecisionService.kt` / `AdvisorService.kt`) match `agent/core/schemas.py` field names and aliases (e.g. camelCase / snake_case).
 
 ## Reporting Format
 
